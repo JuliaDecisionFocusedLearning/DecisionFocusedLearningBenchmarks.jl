@@ -10,7 +10,7 @@ This represents the Warcraft shortest paths problem of
 - If `acyclic = false`, a cell has edges to each one of its 8 neighbors.
 - If `acyclic = true`, a cell has edges to its south, east and southeast neighbors only (ensures an acyclic graph where topological sort will work)
 """
-function warcraft_grid_graph(costs::AbstractMatrix{R}; acyclic::Bool = false) where {R}
+function warcraft_grid_graph(costs::AbstractMatrix{R}; acyclic::Bool=false) where {R}
     h, w = size(costs)
     V = h * w
     E = count_edges(h, w; acyclic)
@@ -23,7 +23,7 @@ function warcraft_grid_graph(costs::AbstractMatrix{R}; acyclic::Bool = false) wh
     sizehint!(destinations, E)
     sizehint!(weights, E)
 
-    for v1 = 1:V
+    for v1 in 1:V
         i1, j1 = index_to_coord(v1, h, w)
         for Δi in (-1, 0, 1), Δj in (-1, 0, 1)
             i2, j2 = i1 + Δi, j1 + Δj

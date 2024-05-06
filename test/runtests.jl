@@ -10,20 +10,14 @@ using Zygote
     @testset verbose = true "Formalities" begin
         @testset "Aqua" begin
             Aqua.test_all(
-                InferOptBenchmarks;
-                ambiguities = false,
-                deps_compat = (check_extras = false),
+                InferOptBenchmarks; ambiguities=false, deps_compat=(check_extras = false)
             )
         end
         @testset "JET" begin
-            JET.test_package(InferOptBenchmarks; target_defined_modules = true)
+            JET.test_package(InferOptBenchmarks; target_defined_modules=true)
         end
         @testset "JuliaFormatter" begin
-            @test JuliaFormatter.format(
-                InferOptBenchmarks;
-                verbose = false,
-                overwrite = false,
-            )
+            @test JuliaFormatter.format(InferOptBenchmarks; verbose=false, overwrite=false)
         end
         @testset "Documenter" begin
             Documenter.doctest(InferOptBenchmarks)
