@@ -29,4 +29,8 @@ using Zygote
             Documenter.doctest(InferOptBenchmarks)
         end
     end
+
+    @testset "Warcraft" begin
+        include("WarcraftTest/WarcraftTest.jl")
+    end
 end

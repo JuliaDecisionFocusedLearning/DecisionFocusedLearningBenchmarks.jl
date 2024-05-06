@@ -8,11 +8,16 @@ cp(
 )
 
 makedocs(;
-    modules = [InferOptBenchmarks],
+    modules = [InferOptBenchmarks, InferOptBenchmarks.Warcraft],
     authors = "Members of JuliaDecisionFocusedLearning",
     sitename = "InferOptBenchmarks.jl",
     format = Documenter.HTML(),
-    pages = ["Home" => "index.md", "API reference" => "api.md"],
+    pages = [
+        "Home" => "index.md",  #
+        "API reference" => [
+            "warcraft.md",  #
+        ],
+    ],
 )
 
 deploydocs(;

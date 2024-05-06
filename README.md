@@ -5,4 +5,4 @@
 [![Coverage](https://codecov.io/gh/JuliaDecisionFocusedLearning/InferOptBenchmarks.jl/branch/main/graph/badge.svg)](https://app.codecov.io/gh/JuliaDecisionFocusedLearning/InferOptBenchmarks.jl)
 [![Code Style: Blue](https://img.shields.io/badge/code%20style-blue-4495d1.svg)](https://github.com/JuliaDiff/BlueStyle)
 
-Set of benchmark problems to be solved with [InferOpt.jl](https://github.com/axelparmentier/InferOpt.jl)
+Set of benchmark problems to be solved with [InferOpt.jl](https://github.com/JuliaDecisionFocusedLearning/InferOpt.jl)
