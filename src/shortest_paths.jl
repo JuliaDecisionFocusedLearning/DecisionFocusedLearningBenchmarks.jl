@@ -119,6 +119,11 @@ function generate_dataset(
     return (; features, costs, solutions)
 end
 
+"""
+$TYPEDSIGNATURES
+
+Initialize a linear model for `bench` using `Flux`.
+"""
 function generate_statistical_model(bench::ShortestPathBenchmark)
     (; p, graph) = bench
     return Chain(Dense(p, ne(graph)))
