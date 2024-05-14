@@ -90,7 +90,7 @@ $TYPEDSIGNATURES
 Constructor for [`ShortestPathBenchmark`](@ref).
 """
 function generate_dataset(
-    bench::ShortestPathBenchmark, dataset_size=10; seed::Int=0, type::Type=Float32
+    bench::ShortestPathBenchmark, dataset_size::Int=10; seed::Int=0, type::Type=Float32
 )
     # Set seed
     rng = MersenneTwister(seed)
@@ -106,7 +106,7 @@ function generate_dataset(
     ξ = if ν == 0.0
         [ones(type, E) for _ in 1:dataset_size]
     else
-        [rand(rng, type, Uniform(1 - ν, 1 + ν), E) for _ in 1:dataset_size]
+        [rand(rng, Uniform{type}(1 - ν, 1 + ν), E) for _ in 1:dataset_size]
     end
     costs = [
         (1 .+ (3 .+ B * zᵢ ./ type(sqrt(p))) .^ deg) .* ξᵢ for (ξᵢ, zᵢ) in zip(ξ, features)
