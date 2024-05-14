@@ -1,36 +1,15 @@
 """
 $TYPEDEF
 
-Abstract benchmark type.
+Abstract type for a benchmark problem.
 
-# Interface
-Each subtype should have the following fields (or overwrite corresponding methods):
-- `features`: vector of feature arrays
-- `optimization_parameters`: label 'true' optimization parameters
-- `solutions`: label solutions
-- `maximizer`: (combinatorial) optimization (arg) maximizer
+The following methods need to be implemented:
+- [`generate_dataset`](@ref)
+- [`generate_statistical_model`](@ref)
+- [`generate_maximizer`](@ref)
 """
 abstract type AbstractBenchmark end
 
-"""
-$TYPEDSIGNATURES
-"""
-get_features(bench::AbstractBenchmark) = bench.features
-
-"""
-$TYPEDSIGNATURES
-"""
-get_optimization_parameters(bench::AbstractBenchmark) = bench.optimization_parameters
-
-"""
-$TYPEDSIGNATURES
-"""
-get_solutions(bench::AbstractBenchmark) = bench.solutions
-
-"""
-$TYPEDSIGNATURES
-"""
-get_maximizer(bench::AbstractBenchmark) = bench.maximizer
-
-input_size(bench::AbstractBenchmark) = length(get_features(bench)[1])
-output_size(bench::AbstractBenchmark) = length(get_solutions(bench)[1])
+function generate_dataset end
+function generate_statistical_model end
+function generate_maximizer end

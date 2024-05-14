@@ -33,19 +33,20 @@ using Zygote
     end
 
     @testset "Shortest paths" begin
-        bench = ShortestPathBenchmark(50)
-        features = get_features(bench)
-        solutions = get_solutions(bench)
-        maximizer = get_maximizer(bench)
+        bench = ShortestPathBenchmark()
 
-        model = Chain(Dense(5, 40), softplus)
+        (; features, costs, solutions) = generate_dataset(bench)
+
+        model = generate_statistical_model(bench)
+        maximizer = generate_maximizer(bench)
+
         perturbed = PerturbedAdditive(maximizer; nb_samples=10, ε=0.1)
         fyl = FenchelYoungLoss(perturbed)
 
         opt_state = Flux.setup(Adam(), model)
         loss_history = Float64[]
         gap_history = Float64[]
-        E = 500
+        E = 100
         @showprogress for epoch in 1:E
             loss = 0.0
             for (x, y) in zip(features, solutions)
@@ -57,7 +58,10 @@ using Zygote
                 Flux.update!(opt_state, model, grads[1])
             end
             push!(loss_history, loss ./ E)
-            push!(gap_history, compute_gap(bench, model) .* 100)
+            push!(
+                gap_history,
+                compute_gap(bench, model, features, costs, solutions, maximizer) .* 100,
+            )
         end
 
         println(lineplot(loss_history; title="Loss"))

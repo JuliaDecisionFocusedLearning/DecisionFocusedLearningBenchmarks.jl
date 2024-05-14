@@ -1,57 +1,69 @@
-struct ShortestPathProblem end
-
 """
 $TYPEDEF
 
-Benchmark dataset using a shortest path CO layer.
+Benchmark problem for the shortest path problem.
+In this benchmark, all graphs are acyclic directed grids, all of the same size `grid_size`.
+Features are given at instance level (one dimensional vector of length `p` for each graph).
+
+Data is generated using the process described in: <https://arxiv.org/abs/2307.13565>.
 
 # Fields
 $TYPEDFIELDS
 """
-struct ShortestPathBenchmark{F<:AbstractVector,C<:AbstractVector,P<:AbstractVector,M} <:
-       AbstractBenchmark
+struct ShortestPathBenchmark <: AbstractBenchmark
+    "grid graph instance"
+    graph::SimpleDiGraph{Int64}
     "grid size of graphs"
     grid_size::Tuple{Int,Int}
-    "vector of feature arrays"
-    features::F
-    "label 'true' optimization parameters"
-    optimization_parameters::C
-    "label solutions"
-    solutions::P
-    "(combinatorial) optimization (arg) maximizer"
-    maximizer::M
+    "size of feature vectors"
+    p::Int
+    "degree of formula between features and true weights"
+    deg::Int
+    "multiplicative noise for true weights sampled between [1-ν, 1+ν]"
+    ν::Float64
+end
+
+function Base.show(io::IO, bench::ShortestPathBenchmark)
+    (; grid_size, p, deg, ν) = bench
+    return print(io, "ShortestPathBenchmark(grid_size=$grid_size, p=$p, deg=$deg, ν=$ν)")
 end
 
 """
 $TYPEDSIGNATURES
 
-Custom constructor for [`ShortestPathBenchmark`](@ref).
+Constructor for [`ShortestPathBenchmark`](@ref).
 """
-function ShortestPathBenchmark(
-    dataset_size=10; p=5, grid_size=(5, 5), deg=1, ν=0.5, seed=0, type=Float32
+function ShortestPathBenchmark(;
+    grid_size::Tuple{Int,Int}=(5, 5), p::Int=5, deg::Int=1, ν=0.0
 )
-    # Set seed
-    rng = MersenneTwister(seed)
-
-    # Compute directed grid graph
+    @assert ν >= 0.0 && ν <= 1.0
     g = DiGraph(collect(edges(Graphs.grid(grid_size))))
-    E = Graphs.ne(g)
+    return ShortestPathBenchmark(g, grid_size, p, deg, ν)
+end
+
+"""
+$TYPEDSIGNATURES
+
+Outputs a function that computes the longest path on the grid graph, given edge weights θ as input.
+
+```julia
+maximizer = generate_maximizer(bench)
+maximizer(θ)
+```
+"""
+function generate_maximizer(bench::ShortestPathBenchmark; use_dijkstra=true)
+    g = bench.graph
     V = Graphs.nv(g)
+    E = Graphs.ne(g)
 
-    # Features
-    features = [randn(rng, type, p) for _ in 1:dataset_size]
-
-    # True weights
-    B = rand(rng, Bernoulli(0.5), E, p)
-    ξ = [rand(rng, Uniform(1 - ν, 1 + ν), E) for _ in 1:dataset_size]
-    costs = [(1 .+ (3 .+ B * zᵢ ./ sqrt(p)) .^ deg) .* ξᵢ for (ξᵢ, zᵢ) in zip(ξ, features)]
     I = [src(e) for e in edges(g)]
     J = [dst(e) for e in edges(g)]
+    algo =
+        use_dijkstra ? Graphs.dijkstra_shortest_paths : Graphs.bellman_ford_shortest_paths
 
-    # Maximizer
     function shortest_path_maximizer(θ; kwargs...)
         weights = sparse(I, J, -θ, V, V)
-        parents = Graphs.bellman_ford_shortest_paths(g, 1, weights).parents
+        parents = algo(g, 1, weights).parents
         y = falses(V, V)
         u = V
         while u != 1
@@ -69,24 +81,62 @@ function ShortestPathBenchmark(
         return solution
     end
 
-    # Label solutions
-    solutions = shortest_path_maximizer.(.-costs)
-    return ShortestPathBenchmark(
-        grid_size, features, costs, solutions, shortest_path_maximizer
-    )
+    return shortest_path_maximizer
 end
 
-function objective_value(θ, y)
+"""
+$TYPEDSIGNATURES
+
+Constructor for [`ShortestPathBenchmark`](@ref).
+"""
+function generate_dataset(
+    bench::ShortestPathBenchmark, dataset_size=10; seed::Int=0, type::Type=Float32
+)
+    # Set seed
+    rng = MersenneTwister(seed)
+    (; graph, p, deg, ν) = bench
+
+    E = Graphs.ne(graph)
+
+    # Features
+    features = [randn(rng, type, p) for _ in 1:dataset_size]
+
+    # True weights
+    B = rand(rng, Bernoulli(0.5), E, p)
+    ξ = if ν == 0.0
+        [ones(type, E) for _ in 1:dataset_size]
+    else
+        [rand(rng, type, Uniform(1 - ν, 1 + ν), E) for _ in 1:dataset_size]
+    end
+    costs = [
+        (1 .+ (3 .+ B * zᵢ ./ type(sqrt(p))) .^ deg) .* ξᵢ for (ξᵢ, zᵢ) in zip(ξ, features)
+    ]
+
+    shortest_path_maximizer = generate_maximizer(bench)
+
+    # Label solutions
+    solutions = shortest_path_maximizer.(.-costs)
+    return (; features, costs, solutions)
+end
+
+function generate_statistical_model(bench::ShortestPathBenchmark)
+    (; p, graph) = bench
+    return Chain(Dense(p, ne(graph)))
+end
+
+function objective_value(::ShortestPathBenchmark, θ, y)
     return dot(θ, y)
 end
 
-function compute_gap(bench::ShortestPathBenchmark, model)
+function compute_gap(
+    bench::ShortestPathBenchmark, model, features, costs, solutions, maximizer
+)
     res = 0.0
-    for (x, ȳ, θ̄) in zip(bench.features, bench.solutions, bench.optimization_parameters)
+    for (x, ȳ, θ̄) in zip(features, solutions, costs)
         θ = model(x)
-        y = bench.maximizer(θ)
-        val = objective_value(θ̄, ȳ)
-        res += (objective_value(θ̄, y) - val) / val
+        y = maximizer(θ)
+        val = objective_value(bench, θ̄, ȳ)
+        res += (objective_value(bench, θ̄, y) - val) / val
     end
-    return res / length(bench.features)
+    return res / length(features)
 end
