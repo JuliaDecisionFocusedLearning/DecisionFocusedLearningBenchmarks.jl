@@ -12,7 +12,7 @@ makedocs(;
         "Home" => "index.md",  #
         "API reference" => [
             "interface.md",
-            "shortest_path.md",
+            "decision_focused.md",
             "warcraft.md",  #
         ],
     ],

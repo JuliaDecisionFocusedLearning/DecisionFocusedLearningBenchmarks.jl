@@ -19,8 +19,8 @@ struct ShortestPathBenchmark <: AbstractBenchmark
     p::Int
     "degree of formula between features and true weights"
     deg::Int
-    "multiplicative noise for true weights sampled between [1-ν, 1+ν]"
-    ν::Float64
+    "multiplicative noise for true weights sampled between [1-ν, 1+ν], should be between 0 and 1"
+    ν::Float32
 end
 
 function Base.show(io::IO, bench::ShortestPathBenchmark)
@@ -34,7 +34,7 @@ $TYPEDSIGNATURES
 Constructor for [`ShortestPathBenchmark`](@ref).
 """
 function ShortestPathBenchmark(;
-    grid_size::Tuple{Int,Int}=(5, 5), p::Int=5, deg::Int=1, ν=0.0
+    grid_size::Tuple{Int,Int}=(5, 5), p::Int=5, deg::Int=1, ν=0.0f0
 )
     @assert ν >= 0.0 && ν <= 1.0
     g = DiGraph(collect(edges(Graphs.grid(grid_size))))
@@ -87,7 +87,7 @@ end
 """
 $TYPEDSIGNATURES
 
-Constructor for [`ShortestPathBenchmark`](@ref).
+Generate dataset for the shortest path problem.
 """
 function Utils.generate_dataset(
     bench::ShortestPathBenchmark, dataset_size::Int=10; seed::Int=0, type::Type=Float32
