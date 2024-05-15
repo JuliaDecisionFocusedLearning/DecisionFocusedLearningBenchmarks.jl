@@ -3,13 +3,13 @@
 ## Public
 
 ```@autodocs
-Modules = [InferOptBenchmarks]
+Modules = [InferOptBenchmarks.Utils]
 Private = false
 ```
 
 ## Private
 
 ```@autodocs
-Modules = [InferOptBenchmarks]
+Modules = [InferOptBenchmarks.Utils]
 Public = false
 ```

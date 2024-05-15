@@ -10,6 +10,17 @@ The following methods should be implemented by most benchmarks:
 """
 abstract type AbstractBenchmark end
 
+"""
+Generate a dataset
+"""
 function generate_dataset end
+
+"""
+Returns the CO layer of the pipeline.
+"""
 function generate_maximizer end
+
+"""
+Initializes and return a statistical model of the pipeline.
+"""
 function generate_statistical_model end
