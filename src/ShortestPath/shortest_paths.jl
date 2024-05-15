@@ -51,7 +51,7 @@ maximizer = generate_maximizer(bench)
 maximizer(θ)
 ```
 """
-function generate_maximizer(bench::ShortestPathBenchmark; use_dijkstra=true)
+function Utils.generate_maximizer(bench::ShortestPathBenchmark; use_dijkstra=true)
     g = bench.graph
     V = Graphs.nv(g)
     E = Graphs.ne(g)
@@ -89,7 +89,7 @@ $TYPEDSIGNATURES
 
 Constructor for [`ShortestPathBenchmark`](@ref).
 """
-function generate_dataset(
+function Utils.generate_dataset(
     bench::ShortestPathBenchmark, dataset_size::Int=10; seed::Int=0, type::Type=Float32
 )
     # Set seed
@@ -112,7 +112,7 @@ function generate_dataset(
         (1 .+ (3 .+ B * zᵢ ./ type(sqrt(p))) .^ deg) .* ξᵢ for (ξᵢ, zᵢ) in zip(ξ, features)
     ]
 
-    shortest_path_maximizer = generate_maximizer(bench)
+    shortest_path_maximizer = Utils.generate_maximizer(bench)
 
     # Label solutions
     solutions = shortest_path_maximizer.(.-costs)
@@ -124,7 +124,7 @@ $TYPEDSIGNATURES
 
 Initialize a linear model for `bench` using `Flux`.
 """
-function generate_statistical_model(bench::ShortestPathBenchmark)
+function Utils.generate_statistical_model(bench::ShortestPathBenchmark)
     (; p, graph) = bench
     return Chain(Dense(p, ne(graph)))
 end

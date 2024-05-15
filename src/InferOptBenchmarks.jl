@@ -1,26 +1,13 @@
 module InferOptBenchmarks
 
-using Distributions: Uniform, Bernoulli
-using DocStringExtensions: TYPEDEF, TYPEDFIELDS, TYPEDSIGNATURES
-using Flux: Chain, Dense
-using Graphs
 using InferOpt
-using LinearAlgebra
-using Random
-using SimpleWeightedGraphs
-using SparseArrays
 
-include("interface.jl")
-
+include("Utils/Utils.jl")
 include("Warcraft/Warcraft.jl")
+include("ShortestPath/ShortestPath.jl")
 
-include("shortest_paths.jl")
-include("metrics.jl")
+using .Utils
 
-export AbstractBenchmark
-export generate_dataset, generate_maximizer, generate_statistical_model
-
-export ShortestPathBenchmark
-export compute_gap
+export AbstractBenchmark, generate_dataset, generate_statistical_model, generate_maximizer
 
 end # module InferOptBenchmarks
