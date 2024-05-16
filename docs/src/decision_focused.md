@@ -3,13 +3,13 @@
 ## Public
 
 ```@autodocs
-Modules = [InferOptBenchmarks.ShortestPath, InferOptBenchmarks.PortfolioOptimization]
+Modules = [InferOptBenchmarks.ShortestPath, InferOptBenchmarks.PortfolioOptimization, InferOptBenchmarks.SubsetSelection]
 Private = false
 ```
 
 ## Private
 
 ```@autodocs
-Modules = [InferOptBenchmarks.ShortestPath, InferOptBenchmarks.PortfolioOptimization]
+Modules = [InferOptBenchmarks.ShortestPath, InferOptBenchmarks.PortfolioOptimization, InferOptBenchmarks.SubsetSelection]
 Public = false
 ```

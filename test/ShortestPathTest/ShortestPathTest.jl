@@ -1,4 +1,4 @@
-module WarcraftTest
+module ShortestPathTest
 
 using InferOptBenchmarks.ShortestPath
 

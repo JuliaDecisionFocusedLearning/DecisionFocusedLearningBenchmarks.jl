@@ -30,4 +30,12 @@ using Test
     @testset "Shortest paths" begin
         include("ShortestPathTest/ShortestPathTest.jl")
     end
+
+    @testset "Portfolio Optimization" begin
+        include("PortfolioOptimizationTest/PortfolioOptimizationTest.jl")
+    end
+
+    @testset "Subset Selection" begin
+        include("SubsetSelectionTest/SubsetSelectionTest.jl")
+    end
 end
