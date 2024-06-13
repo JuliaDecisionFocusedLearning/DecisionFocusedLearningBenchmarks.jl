@@ -6,7 +6,7 @@ using InferOpt
 include("Utils/Utils.jl")
 
 include("Warcraft/Warcraft.jl")
-include("ShortestPath/ShortestPath.jl")
+include("FixedSizeShortestPath/FixedSizeShortestPath.jl")
 include("PortfolioOptimization/PortfolioOptimization.jl")
 include("SubsetSelection/SubsetSelection.jl")
 

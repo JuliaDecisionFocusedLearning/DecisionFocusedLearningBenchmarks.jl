@@ -1,6 +1,6 @@
-module ShortestPathTest
+module FixedSizeShortestPathTest
 
-using InferOptBenchmarks.ShortestPath
+using InferOptBenchmarks.FixedSizeShortestPath
 
 using Flux
 using InferOpt
@@ -8,7 +8,7 @@ using ProgressMeter
 using UnicodePlots
 using Zygote
 
-bench = ShortestPathBenchmark()
+bench = FixedSizeShortestPathBenchmark()
 
 (; features, costs, solutions) = generate_dataset(bench)
 

@@ -28,7 +28,7 @@ using Test
     end
 
     @testset "Shortest paths" begin
-        include("ShortestPathTest/ShortestPathTest.jl")
+        include("FixedSizeShortestPathTest/FixedSizeShortestPathTest.jl")
     end
 
     @testset "Portfolio Optimization" begin

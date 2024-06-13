@@ -10,7 +10,7 @@ Data is generated using the process described in: <https://arxiv.org/abs/2307.13
 # Fields
 $TYPEDFIELDS
 """
-struct ShortestPathBenchmark <: AbstractBenchmark
+struct FixedSizeShortestPathBenchmark <: AbstractBenchmark
     "grid graph instance"
     graph::SimpleDiGraph{Int64}
     "grid size of graphs"
@@ -23,22 +23,24 @@ struct ShortestPathBenchmark <: AbstractBenchmark
     ν::Float32
 end
 
-function Base.show(io::IO, bench::ShortestPathBenchmark)
+function Base.show(io::IO, bench::FixedSizeShortestPathBenchmark)
     (; grid_size, p, deg, ν) = bench
-    return print(io, "ShortestPathBenchmark(grid_size=$grid_size, p=$p, deg=$deg, ν=$ν)")
+    return print(
+        io, "FixedSizeShortestPathBenchmark(grid_size=$grid_size, p=$p, deg=$deg, ν=$ν)"
+    )
 end
 
 """
 $TYPEDSIGNATURES
 
-Constructor for [`ShortestPathBenchmark`](@ref).
+Constructor for [`FixedSizeShortestPathBenchmark`](@ref).
 """
-function ShortestPathBenchmark(;
+function FixedSizeShortestPathBenchmark(;
     grid_size::Tuple{Int,Int}=(5, 5), p::Int=5, deg::Int=1, ν=0.0f0
 )
     @assert ν >= 0.0 && ν <= 1.0
     g = DiGraph(collect(edges(Graphs.grid(grid_size))))
-    return ShortestPathBenchmark(g, grid_size, p, deg, ν)
+    return FixedSizeShortestPathBenchmark(g, grid_size, p, deg, ν)
 end
 
 """
@@ -51,7 +53,7 @@ maximizer = generate_maximizer(bench)
 maximizer(θ)
 ```
 """
-function Utils.generate_maximizer(bench::ShortestPathBenchmark; use_dijkstra=true)
+function Utils.generate_maximizer(bench::FixedSizeShortestPathBenchmark; use_dijkstra=true)
     g = bench.graph
     V = Graphs.nv(g)
     E = Graphs.ne(g)
@@ -90,7 +92,10 @@ $TYPEDSIGNATURES
 Generate dataset for the shortest path problem.
 """
 function Utils.generate_dataset(
-    bench::ShortestPathBenchmark, dataset_size::Int=10; seed::Int=0, type::Type=Float32
+    bench::FixedSizeShortestPathBenchmark,
+    dataset_size::Int=10;
+    seed::Int=0,
+    type::Type=Float32,
 )
     # Set seed
     rng = MersenneTwister(seed)
@@ -124,17 +129,17 @@ $TYPEDSIGNATURES
 
 Initialize a linear model for `bench` using `Flux`.
 """
-function Utils.generate_statistical_model(bench::ShortestPathBenchmark)
+function Utils.generate_statistical_model(bench::FixedSizeShortestPathBenchmark)
     (; p, graph) = bench
     return Chain(Dense(p, ne(graph)))
 end
 
-function objective_value(::ShortestPathBenchmark, θ, y)
+function objective_value(::FixedSizeShortestPathBenchmark, θ, y)
     return dot(θ, y)
 end
 
 function compute_gap(
-    bench::ShortestPathBenchmark, model, features, costs, solutions, maximizer
+    bench::FixedSizeShortestPathBenchmark, model, features, costs, solutions, maximizer
 )
     res = 0.0
     for (x, ȳ, θ̄) in zip(features, solutions, costs)
