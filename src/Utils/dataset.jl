@@ -6,14 +6,14 @@ Dataset data structure.
 # Fields
 $TYPEDFIELDS
 """
-struct InferOptDataset{I,F,C,S}
+struct InferOptDataset{F,I,C,S}
     "the only mandatory field, vector of features"
-    features::F
+    features::Vector{F}
     "list of instances, can be set to `nothing` if not needed"
     instances::I
-    "groundtruth costs of each instance, if available"
+    "groundtruth costs of each instance, set to `nothing` if not available"
     costs::C
-    "groundtruth solutions of each instance, if available"
+    "groundtruth solutions of each instance, set to `nothing` if not available"
     solutions::S
 end
 
