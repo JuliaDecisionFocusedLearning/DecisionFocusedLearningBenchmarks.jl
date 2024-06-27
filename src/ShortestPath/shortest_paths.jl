@@ -10,7 +10,7 @@ Data is generated using the process described in: <https://arxiv.org/abs/2307.13
 # Fields
 $TYPEDFIELDS
 """
-struct ShortestPath2Benchmark <: AbstractBenchmark
+struct ShortestPathBenchmark <: AbstractBenchmark
     "grid graph instance"
     graph::SimpleDiGraph{Int64}
     "grid size of graphs"
@@ -23,22 +23,22 @@ struct ShortestPath2Benchmark <: AbstractBenchmark
     ν::Float32
 end
 
-function Base.show(io::IO, bench::ShortestPath2Benchmark)
+function Base.show(io::IO, bench::ShortestPathBenchmark)
     (; grid_size, p, deg, ν) = bench
-    return print(io, "ShortestPath2Benchmark(grid_size=$grid_size, p=$p, deg=$deg, ν=$ν)")
+    return print(io, "ShortestPathBenchmark(grid_size=$grid_size, p=$p, deg=$deg, ν=$ν)")
 end
 
 """
 $TYPEDSIGNATURES
 
-Constructor for [`ShortestPath2Benchmark`](@ref).
+Constructor for [`ShortestPathBenchmark`](@ref).
 """
-function ShortestPath2Benchmark(;
+function ShortestPathBenchmark(;
     grid_size::Tuple{Int,Int}=(5, 5), p::Int=5, deg::Int=1, ν=0.0f0
 )
     @assert ν >= 0.0 && ν <= 1.0
     g = DiGraph(collect(edges(Graphs.grid(grid_size))))
-    return ShortestPath2Benchmark(g, grid_size, p, deg, ν)
+    return ShortestPathBenchmark(g, grid_size, p, deg, ν)
 end
 
 """
@@ -51,7 +51,7 @@ maximizer = generate_maximizer(bench)
 maximizer(θ)
 ```
 """
-function Utils.generate_maximizer(bench::ShortestPath2Benchmark; use_dijkstra=true)
+function Utils.generate_maximizer(bench::ShortestPathBenchmark; use_dijkstra=true)
     g = bench.graph
     V = Graphs.nv(g)
     E = Graphs.ne(g)
@@ -90,7 +90,7 @@ $TYPEDSIGNATURES
 Generate dataset for the shortest path problem.
 """
 function Utils.generate_dataset(
-    bench::ShortestPath2Benchmark, dataset_size::Int=10; seed::Int=0, type::Type=Float32
+    bench::ShortestPathBenchmark, dataset_size::Int=10; seed::Int=0, type::Type=Float32
 )
     # Set seed
     rng = MersenneTwister(seed)
@@ -124,7 +124,7 @@ $TYPEDSIGNATURES
 
 Initialize a linear model for `bench` using `Flux`.
 """
-function Utils.generate_statistical_model(bench::ShortestPath2Benchmark)
+function Utils.generate_statistical_model(bench::ShortestPathBenchmark)
     (; p, graph) = bench
     return Chain(Dense(p, ne(graph)))
 end

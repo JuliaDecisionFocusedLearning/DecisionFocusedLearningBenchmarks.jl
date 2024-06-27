@@ -1,4 +1,4 @@
-module ShortestPath2
+module ShortestPath
 
 using ..Utils
 using DocStringExtensions: TYPEDEF, TYPEDFIELDS, TYPEDSIGNATURES
@@ -11,7 +11,7 @@ using SparseArrays
 
 include("shortest_paths.jl")
 
-export ShortestPath2Benchmark
+export ShortestPathBenchmark
 export generate_dataset, generate_statistical_model, generate_maximizer
 export compute_gap
 
