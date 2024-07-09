@@ -144,9 +144,6 @@ function read_dataset(decompressed_path::String, dtype::String="train")
     terrain_weights = permutedims(terrain_weights, (2, 3, 1))
     # Normalize images
     terrain_images = Array{Float32}(terrain_images ./ 255)
-    println("Train images shape: ", size(terrain_images))
-    println("Train labels shape: ", size(terrain_labels))
-    println("Weights shape:", size(terrain_weights))
     return terrain_images, terrain_labels, terrain_weights
 end
 
@@ -158,12 +155,11 @@ The dataset is made of images of Warcraft terrains, cell cost labels and shortes
 It is a `Vector` of tuples, each `Tuple` being a dataset point.
 """
 function create_dataset(decompressed_path::String, nb_samples::Int=10000)
-    terrain_images, terrain_labels, terrain_weights = read_dataset(
-        decompressed_path, "train"
-    )
+    terrain_images, terrain_labels, terrain_weights =
+        read_dataset(decompressed_path, "train")
     X = [
-        reshape(terrain_images[:, :, :, i], (size(terrain_images[:, :, :, i])..., 1)) for
-        i in 1:nb_samples
+        reshape(terrain_images[:, :, :, i], (size(terrain_images[:, :, :, i])..., 1))
+        for i in 1:nb_samples
     ]
     Y = [terrain_labels[:, :, i] for i in 1:nb_samples]
     WG = [terrain_weights[:, :, i] for i in 1:nb_samples]
@@ -180,7 +176,7 @@ function train_test_split(X::AbstractVector, train_percentage::Real=0.5)
     N = length(X)
     N_train = floor(Int, N * train_percentage)
     N_test = N - N_train
-    train_ind, test_ind = 1:N_train, (N_train + 1):(N_train + N_test)
+    train_ind, test_ind = 1:N_train, (N_train+1):(N_train+N_test)
     X_train, X_test = X[train_ind], X[test_ind]
     return X_train, X_test
 end
@@ -207,7 +203,11 @@ function plot_image_weights_path(x, y, θ; θ_title="Weights", y_title="Path", �
     im = dropdims(x; dims=4)
     img = convert_image_for_plot(im)
     p1 = Plots.plot(
-        img; aspect_ratio=:equal, framestyle=:none, size=(300, 300), title="Terrain image"
+        img;
+        aspect_ratio=:equal,
+        framestyle=:none,
+        size=(300, 300),
+        title="Terrain image",
     )
     p2 = Plots.heatmap(
         θ;
@@ -238,7 +238,11 @@ function plot_image_path(x, y; y_title="Path")
     im = dropdims(x; dims=4)
     img = convert_image_for_plot(im)
     p1 = Plots.plot(
-        img; aspect_ratio=:equal, framestyle=:none, size=(300, 300), title="Terrain image"
+        img;
+        aspect_ratio=:equal,
+        framestyle=:none,
+        size=(300, 300),
+        title="Terrain image",
     )
     p3 = Plots.plot(
         Gray.(y .* 0.7);
@@ -307,11 +311,11 @@ function grid_bellman_ford_warcraft(g, s::Integer, d::Integer, length_max::Int=n
             for u in inneighbors(g, v)
                 d_u = dists[u, k]
                 if !isinf(d_u)
-                    d_v = dists[v, k + 1]
+                    d_v = dists[v, k+1]
                     d_v_through_u = d_u + g.weights[u, v]  # GridGraphs.vertex_weight(g, v)
                     if isinf(d_v) || (d_v_through_u < d_v)
-                        dists[v, k + 1] = d_v_through_u
-                        parents[v, k + 1] = u
+                        dists[v, k+1] = d_v_through_u
+                        parents[v, k+1] = u
                     end
                 end
             end
@@ -378,7 +382,9 @@ end
 struct WarcraftBenchmark end
 
 function Utils.generate_dataset(
-    ::WarcraftBenchmark, dataset_size::Int=10; type::Type=Float32
+    ::WarcraftBenchmark,
+    dataset_size::Int=10;
+    type::Type=Float32,
 )
     decompressed_path = datadep"warcraft/data"
     return create_dataset(decompressed_path, dataset_size)
