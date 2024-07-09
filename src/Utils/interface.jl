@@ -24,3 +24,8 @@ function generate_maximizer end
 Initializes and return a statistical model of the pipeline.
 """
 function generate_statistical_model end
+
+"""
+Plot a data sample from the dataset created by [`generate_dataset`](@ref).
+"""
+function plot_data end

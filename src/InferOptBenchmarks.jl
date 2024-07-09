@@ -26,6 +26,7 @@ include("SubsetSelection/SubsetSelection.jl")
 
 using .Utils
 
-export AbstractBenchmark, generate_dataset, generate_statistical_model, generate_maximizer
+export AbstractBenchmark,
+    generate_dataset, generate_statistical_model, generate_maximizer, plot_data
 
 end # module InferOptBenchmarks

@@ -8,6 +8,6 @@ include("interface.jl")
 export InferOptDataset
 
 export AbstractBenchmark
-export generate_dataset, generate_statistical_model, generate_maximizer
+export generate_dataset, generate_statistical_model, generate_maximizer, plot_data
 
 end
