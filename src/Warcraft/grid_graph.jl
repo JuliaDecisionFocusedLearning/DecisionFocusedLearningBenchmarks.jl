@@ -199,7 +199,7 @@ end
     plot_image_weights_path(;im, weights, path)
 Plot the image `im`, the weights `weights`, and the path `path` on the same Figure.
 """
-function Utils.plot_data(x, y, θ; θ_title="Weights", y_title="Path", θ_true=θ)
+function Utils.plot_data(x, θ, y; θ_title="Weights", y_title="Path", θ_true=θ)
     im = dropdims(x; dims=4)
     img = convert_image_for_plot(im)
     p1 = Plots.plot(
