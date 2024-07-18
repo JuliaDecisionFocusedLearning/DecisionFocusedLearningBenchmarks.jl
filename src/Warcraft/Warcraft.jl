@@ -3,6 +3,7 @@ module Warcraft
 using ..Utils
 
 using DataDeps
+using DocStringExtensions: TYPEDEF, TYPEDFIELDS, TYPEDSIGNATURES
 using Flux
 using Graphs
 using Images
@@ -14,9 +15,8 @@ using Random
 using SimpleWeightedGraphs
 using SparseArrays
 
-include("grid_graph.jl")
+include("dataset.jl")
 
-export warcraft_grid_graph, index_to_coord, coord_to_index
 export WarcraftBenchmark,
     generate_dataset, generate_maximizer, generate_statistical_model, train_test_split
 export plot_data, plot_image_path
