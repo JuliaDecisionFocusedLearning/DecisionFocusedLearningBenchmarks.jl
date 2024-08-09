@@ -3,11 +3,13 @@ $TYPEDEF
 
 Abstract type interface for a benchmark problem.
 
-The following methods should be implemented by most benchmarks:
+The following methods exist for benchmarks:
 - [`generate_dataset`](@ref)
 - [`generate_statistical_model`](@ref)
 - [`generate_maximizer`](@ref)
 - [`plot_data`](@ref)
+- [`objective_value`](@ref)
+- [`compute_gap`](@ref)
 """
 abstract type AbstractBenchmark end
 
@@ -49,3 +51,38 @@ function plot_data end
 Compute the average relative optimality gap of the pipeline on the dataset.
 """
 function compute_gap end
+
+"""
+$TYPEDSIGNATURES
+
+Default behaviour of `objective_value`.
+"""
+function objective_value(::AbstractBenchmark, θ̄::AbstractArray, y::AbstractArray)
+    return dot(θ̄, y)
+end
+
+"""
+$TYPEDSIGNATURES
+
+Default behaviour of `compute_gap` for a benchmark problem where `features`, `solutions` and `costs` are all defined.
+"""
+function compute_gap(
+    bench::AbstractBenchmark,
+    dataset::InferOptDataset{<:AbstractArray,<:AbstractArray,<:AbstractArray},
+    statistical_model,
+    maximizer,
+)
+    res = 0.0
+    X = dataset.features
+    costs = dataset.costs
+    Y = dataset.solutions
+
+    for (x, θ̄, ȳ) in zip(X, costs, Y)
+        θ = statistical_model(x)
+        y = maximizer(θ)
+        target_obj = objective_value(bench, θ̄, ȳ)
+        obj = objective_value(bench, θ̄, y)
+        res += (target_obj - obj) / abs(target_obj)
+    end
+    return res / length(dataset)
+end

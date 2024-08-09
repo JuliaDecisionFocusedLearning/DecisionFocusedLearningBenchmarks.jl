@@ -14,13 +14,8 @@
     X_train = train_dataset.features
     Y_train = train_dataset.solutions
 
-    x, y_true, θ_true = test_dataset[1]
-    θ = model(x)
-
     perturbed_maximizer = PerturbedMultiplicative(maximizer; ε=0.2, nb_samples=100)
     loss = FenchelYoungLoss(perturbed_maximizer)
-
-    yp = perturbed_maximizer(-θ_true)
 
     starting_gap = compute_gap(b, test_dataset, model, maximizer)
 

@@ -8,7 +8,7 @@ $TYPEDFIELDS
 
 `Base.length` and `Base.getindex` are implemented for this type.
 """
-@kwdef struct InferOptDataset{F,I,C,S}
+@kwdef struct InferOptDataset{F,S,C,I}
     "the only mandatory field, vector of features"
     features::Vector{F}
     "list of instances, can be set to `nothing` if not needed"
