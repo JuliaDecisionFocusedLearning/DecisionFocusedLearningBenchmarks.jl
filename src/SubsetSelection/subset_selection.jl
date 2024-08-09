@@ -55,7 +55,7 @@ function Utils.generate_dataset(
 )
     (; n, k) = bench
     rng = MersenneTwister(seed)
-    features = [randn(rng, n) for _ in 1:dataset_size]
+    features = [randn(rng, Float32, n) for _ in 1:dataset_size]
     costs = copy(features)  # we assume that the cost is the same as the feature
     solutions = top_k.(features, k)
     return InferOptDataset(; features, solutions, costs)
@@ -68,5 +68,5 @@ Initialize a linear model for `bench` using `Flux`.
 """
 function Utils.generate_statistical_model(bench::SubsetSelectionBenchmark)
     (; n) = bench
-    return Chain(Dense(n => n; bias=false))
+    return Dense(n => n; bias=false)
 end
