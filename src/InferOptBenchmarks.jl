@@ -36,6 +36,7 @@ export generate_dataset
 export generate_statistical_model
 export generate_maximizer
 export plot_data
+export compute_gap
 
 # Export all benchmarks
 export WarcraftBenchmark

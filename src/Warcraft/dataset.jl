@@ -1,9 +1,4 @@
 """
-$TYPEDEF
-"""
-struct WarcraftBenchmark end
-
-"""
 $TYPEDSIGNATURES
 
 Read the dataset of type `dtype` at the `decompressed_path` location.

@@ -18,6 +18,11 @@ using SparseArrays
 include("dataset.jl")
 
 """
+$TYPEDEF
+"""
+struct WarcraftBenchmark end
+
+"""
 $TYPEDSIGNATURES
 
 Plot the image `im`, the weights `weights`, and the path `path` on the same Figure.
@@ -94,8 +99,24 @@ function Utils.generate_statistical_model(::WarcraftBenchmark)
     return model_embedding
 end
 
-export WarcraftBenchmark,
-    generate_dataset, generate_maximizer, generate_statistical_model, train_test_split
-export plot_data, plot_image_path
+function Utils.compute_gap(
+    ::WarcraftBenchmark, dataset::InferOptDataset, statistical_model, maximizer
+)
+    res = 0.0
+    X = dataset.features
+    costs = dataset.costs
+    Y = dataset.solutions
+
+    for (x, θ̄, ȳ) in zip(X, costs, Y)
+        θ = statistical_model(x)
+        y = maximizer(θ)
+        target_obj = dot(θ̄, ȳ)
+        obj = dot(θ̄, y)
+        res += (obj - target_obj) / target_obj
+    end
+    return res / length(dataset)
+end
+
+export WarcraftBenchmark
 
 end

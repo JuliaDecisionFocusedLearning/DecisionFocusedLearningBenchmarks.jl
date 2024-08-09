@@ -12,6 +12,5 @@ using Random
 include("portfolio_optimization.jl")
 
 export PortfolioOptimizationBenchmark
-export generate_dataset, generate_statistical_model, generate_maximizer
 
 end

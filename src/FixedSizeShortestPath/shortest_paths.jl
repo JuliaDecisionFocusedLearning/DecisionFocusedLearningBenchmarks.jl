@@ -121,7 +121,7 @@ function Utils.generate_dataset(
 
     # Label solutions
     solutions = shortest_path_maximizer.(.-costs)
-    return (; features, costs, solutions)
+    return InferOptDataset(; features, costs, solutions)
 end
 
 """
@@ -138,7 +138,7 @@ function objective_value(::FixedSizeShortestPathBenchmark, θ, y)
     return dot(θ, y)
 end
 
-function compute_gap(
+function Utils.compute_gap(
     bench::FixedSizeShortestPathBenchmark, model, features, costs, solutions, maximizer
 )
     res = 0.0

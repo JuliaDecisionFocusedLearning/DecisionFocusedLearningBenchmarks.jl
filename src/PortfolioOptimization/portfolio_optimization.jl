@@ -99,7 +99,7 @@ function Utils.generate_dataset(
     maximizer = Utils.generate_maximizer(bench)
     solutions = maximizer.(costs)
 
-    return (; features, costs, solutions)
+    return InferOptDataset(; features, costs, solutions)
 end
 
 """

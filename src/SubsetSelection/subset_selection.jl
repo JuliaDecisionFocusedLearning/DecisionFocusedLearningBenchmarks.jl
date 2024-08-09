@@ -53,7 +53,7 @@ function Utils.generate_dataset(
     rng = MersenneTwister(seed)
     features = [randn(rng, n) for _ in 1:dataset_size]
     solutions = top_k.(features, k)
-    return (; features, solutions)
+    return InferOptDataset(; features, solutions)
 end
 
 """

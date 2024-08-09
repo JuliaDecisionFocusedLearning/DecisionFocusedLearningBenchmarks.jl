@@ -12,7 +12,5 @@ using SparseArrays
 include("shortest_paths.jl")
 
 export FixedSizeShortestPathBenchmark
-export generate_dataset, generate_statistical_model, generate_maximizer
-export compute_gap
 
 end

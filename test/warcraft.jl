@@ -22,6 +22,8 @@
 
     yp = perturbed_maximizer(-θ_true)
 
+    starting_gap = compute_gap(b, test_dataset, model, maximizer)
+
     opt_state = Flux.setup(Adam(1e-3), model)
     loss_history = Float64[]
     for epoch in 1:50
@@ -32,5 +34,8 @@
         push!(loss_history, val)
     end
 
+    final_gap = compute_gap(b, test_dataset, model, maximizer)
+
     @test loss_history[end] < loss_history[1]
+    @test final_gap < starting_gap
 end
