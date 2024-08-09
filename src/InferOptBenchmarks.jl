@@ -30,10 +30,17 @@ using .FixedSizeShortestPath
 using .PortfolioOptimization
 using .SubsetSelection
 
-export AbstractBenchmark,
-    generate_dataset, generate_statistical_model, generate_maximizer, plot_data
+# Interface
+export AbstractBenchmark, InferOptDataset
+export generate_dataset
+export generate_statistical_model
+export generate_maximizer
+export plot_data
 
-export WarcraftBenchmark,
-    FixedSizeShortestPathBenchmark, PortfolioOptimizationBenchmark, SubsetSelectionBenchmark
+# Export all benchmarks
+export WarcraftBenchmark
+export FixedSizeShortestPathBenchmark
+export PortfolioOptimizationBenchmark
+export SubsetSelectionBenchmark
 
 end # module InferOptBenchmarks

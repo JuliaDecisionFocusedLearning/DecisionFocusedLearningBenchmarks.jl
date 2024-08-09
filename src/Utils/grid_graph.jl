@@ -96,8 +96,6 @@ Convert a grid of cell costs into a weighted directed graph from [SimpleWeighted
 
 This can be used to model the Warcraft shortest paths problem of
 > [Differentiation of Blackbox Combinatorial Solvers](https://openreview.net/forum?id=BkevoJSYPB), Vlastelica et al. (2019)
-See [`WarcraftBenchmark`](@ref) for details.
-
 """
 function grid_graph(costs::AbstractMatrix{R}; acyclic::Bool=false) where {R}
     h, w = size(costs)
