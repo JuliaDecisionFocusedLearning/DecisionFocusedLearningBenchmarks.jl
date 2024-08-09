@@ -25,8 +25,15 @@ include("PortfolioOptimization/PortfolioOptimization.jl")
 include("SubsetSelection/SubsetSelection.jl")
 
 using .Utils
+using .Warcraft
+using .FixedSizeShortestPath
+using .PortfolioOptimization
+using .SubsetSelection
 
 export AbstractBenchmark,
     generate_dataset, generate_statistical_model, generate_maximizer, plot_data
+
+export WarcraftBenchmark,
+    FixedSizeShortestPathBenchmark, PortfolioOptimizationBenchmark, SubsetSelectionBenchmark
 
 end # module InferOptBenchmarks

@@ -2,7 +2,6 @@ module Utils
 
 using DocStringExtensions: TYPEDEF, TYPEDFIELDS, TYPEDSIGNATURES
 using Flux: softplus
-# using Graphs
 using SimpleWeightedGraphs: SimpleWeightedDiGraph
 
 include("dataset.jl")

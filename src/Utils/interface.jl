@@ -7,6 +7,7 @@ The following methods should be implemented by most benchmarks:
 - [`generate_dataset`](@ref)
 - [`generate_statistical_model`](@ref)
 - [`generate_maximizer`](@ref)
+- [`plot_data`](@ref)
 """
 abstract type AbstractBenchmark end
 
