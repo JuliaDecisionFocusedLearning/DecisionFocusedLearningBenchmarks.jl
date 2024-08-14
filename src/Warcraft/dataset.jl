@@ -42,84 +42,84 @@ function create_dataset(decompressed_path::String, nb_samples::Int=10000)
     return InferOptDataset(; features=X, solutions=Y, costs=WG)
 end
 
-"""
-$TYPEDSIGNATURES
+# """
+# $TYPEDSIGNATURES
 
-Split a dataset contained in `X` into train and test datasets.
-The proportion of the initial dataset kept in the train set is `train_percentage`.
-"""
-function train_test_split(X::AbstractVector, train_percentage::Real=0.5)
-    N = length(X)
-    N_train = floor(Int, N * train_percentage)
-    N_test = N - N_train
-    train_ind, test_ind = 1:N_train, (N_train + 1):(N_train + N_test)
-    X_train, X_test = X[train_ind], X[test_ind]
-    return X_train, X_test
-end
+# Split a dataset contained in `X` into train and test datasets.
+# The proportion of the initial dataset kept in the train set is `train_percentage`.
+# """
+# function train_test_split(X::AbstractVector, train_percentage::Real=0.5)
+#     N = length(X)
+#     N_train = floor(Int, N * train_percentage)
+#     N_test = N - N_train
+#     train_ind, test_ind = 1:N_train, (N_train + 1):(N_train + N_test)
+#     X_train, X_test = X[train_ind], X[test_ind]
+#     return X_train, X_test
+# end
 
-"""
-$TYPEDSIGNATURES
+# """
+# $TYPEDSIGNATURES
 
-Convert `image` to the proper data format to enable plots in Julia.
-"""
-function convert_image_for_plot(image::Array{Float32,3})::Array{RGB{N0f8},2}
-    new_img = Array{RGB{N0f8},2}(undef, size(image)[1], size(image)[2])
-    for i in 1:size(image)[1]
-        for j in 1:size(image)[2]
-            new_img[i, j] = RGB{N0f8}(image[i, j, 1], image[i, j, 2], image[i, j, 3])
-        end
-    end
-    return new_img
-end
+# Convert `image` to the proper data format to enable plots in Julia.
+# """
+# function convert_image_for_plot(image::Array{Float32,3})::Array{RGB{N0f8},2}
+#     new_img = Array{RGB{N0f8},2}(undef, size(image)[1], size(image)[2])
+#     for i in 1:size(image)[1]
+#         for j in 1:size(image)[2]
+#             new_img[i, j] = RGB{N0f8}(image[i, j, 1], image[i, j, 2], image[i, j, 3])
+#         end
+#     end
+#     return new_img
+# end
 
-"""
-$TYPEDSIGNATURES
+# """
+# $TYPEDSIGNATURES
 
-Plot the image `im`, the weights `weights`, and the path `path` on the same Figure.
-"""
-function plot_image_path(x, y; y_title="Path")
-    im = dropdims(x; dims=4)
-    img = convert_image_for_plot(im)
-    p1 = Plots.plot(
-        img; aspect_ratio=:equal, framestyle=:none, size=(300, 300), title="Terrain image"
-    )
-    p3 = Plots.plot(
-        Gray.(y .* 0.7);
-        aspect_ratio=:equal,
-        framestyle=:none,
-        size=(300, 300),
-        title=y_title,
-    )
-    return plot(p1, p3; layout=(1, 2), size=(600, 300))
-end
+# Plot the image `im`, the weights `weights`, and the path `path` on the same Figure.
+# """
+# function plot_image_path(x, y; y_title="Path")
+#     im = dropdims(x; dims=4)
+#     img = convert_image_for_plot(im)
+#     p1 = Plots.plot(
+#         img; aspect_ratio=:equal, framestyle=:none, size=(300, 300), title="Terrain image"
+#     )
+#     p3 = Plots.plot(
+#         Gray.(y .* 0.7);
+#         aspect_ratio=:equal,
+#         framestyle=:none,
+#         size=(300, 300),
+#         title=y_title,
+#     )
+#     return plot(p1, p3; layout=(1, 2), size=(600, 300))
+# end
 
-"""
-$TYPEDSIGNATURES
+# """
+# $TYPEDSIGNATURES
 
-Plot the train and test losses, as well as the train and test gaps computed over epochs.
-"""
-function plot_loss_and_gap(losses::Matrix{Float64}, gaps::Matrix{Float64}; filepath=nothing)
-    nb_epochs = length(losses)
-    p1 = plot(
-        collect(1:nb_epochs),
-        losses;
-        title="Loss",
-        xlabel="epochs",
-        ylabel="loss",
-        label=["train" "test"],
-    )
-    p2 = plot(
-        collect(0:nb_epochs),
-        gaps;
-        title="Gap",
-        xlabel="epochs",
-        ylabel="ratio",
-        label=["train" "test"],
-    )
-    pl = plot(p1, p2; layout=(1, 2))
-    isnothing(filepath) || Plots.savefig(pl, filepath)
-    return pl
-end
+# Plot the train and test losses, as well as the train and test gaps computed over epochs.
+# """
+# function plot_loss_and_gap(losses::Matrix{Float64}, gaps::Matrix{Float64}; filepath=nothing)
+#     nb_epochs = length(losses)
+#     p1 = plot(
+#         collect(1:nb_epochs),
+#         losses;
+#         title="Loss",
+#         xlabel="epochs",
+#         ylabel="loss",
+#         label=["train" "test"],
+#     )
+#     p2 = plot(
+#         collect(0:nb_epochs),
+#         gaps;
+#         title="Gap",
+#         xlabel="epochs",
+#         ylabel="ratio",
+#         label=["train" "test"],
+#     )
+#     pl = plot(p1, p2; layout=(1, 2))
+#     isnothing(filepath) || Plots.savefig(pl, filepath)
+#     return pl
+# end
 
 """
 $TYPEDSIGNATURES

@@ -1,3 +1,7 @@
 [deps]
 Documenter = "e30172f5-a6a5-5a46-863b-614d45cd2de4"
+Flux = "587475ba-b771-5e3f-ad9e-33799f191a9c"
+InferOpt = "4846b161-c94e-4150-8dac-c7ae193c601f"
 InferOptBenchmarks = "2fbe496a-299b-4c81-bab5-c44dfc55cf20"
+Literate = "98b081ad-f1c9-55d3-8b20-4c87d4299306"
+Plots = "91a5bcdd-55d7-5caf-9e0b-520d859cae80"
