@@ -57,20 +57,20 @@ end
 #     return X_train, X_test
 # end
 
-# """
-# $TYPEDSIGNATURES
+"""
+$TYPEDSIGNATURES
 
-# Convert `image` to the proper data format to enable plots in Julia.
-# """
-# function convert_image_for_plot(image::Array{Float32,3})::Array{RGB{N0f8},2}
-#     new_img = Array{RGB{N0f8},2}(undef, size(image)[1], size(image)[2])
-#     for i in 1:size(image)[1]
-#         for j in 1:size(image)[2]
-#             new_img[i, j] = RGB{N0f8}(image[i, j, 1], image[i, j, 2], image[i, j, 3])
-#         end
-#     end
-#     return new_img
-# end
+Convert `image` to the proper data format to enable plots in Julia.
+"""
+function convert_image_for_plot(image::Array{Float32,3})::Array{RGB{N0f8},2}
+    new_img = Array{RGB{N0f8},2}(undef, size(image)[1], size(image)[2])
+    for i in 1:size(image)[1]
+        for j in 1:size(image)[2]
+            new_img[i, j] = RGB{N0f8}(image[i, j, 1], image[i, j, 2], image[i, j, 3])
+        end
+    end
+    return new_img
+end
 
 # """
 # $TYPEDSIGNATURES

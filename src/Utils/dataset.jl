@@ -19,6 +19,10 @@ $TYPEDFIELDS
     solutions::S = nothing
 end
 
+function Base.show(io::IO, dataset::InferOptDataset)
+    return println(io, "InferOptDataset with $(length(dataset)) samples")
+end
+
 Base.length(dataset::InferOptDataset) = length(dataset.features)
 
 my_getindex(v::AbstractVector, idx...) = getindex(v, idx...)
