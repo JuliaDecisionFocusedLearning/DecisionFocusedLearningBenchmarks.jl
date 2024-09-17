@@ -29,7 +29,7 @@ Plot the image `im`, the weights `weights`, and the path `path` on the same Figu
 """
 function Utils.plot_data(
     ::WarcraftBenchmark,
-    sample::DataSample,
+    sample::DataSample;
     θ_title="Weights",
     y_title="Path",
     θ_true=sample.θ,
