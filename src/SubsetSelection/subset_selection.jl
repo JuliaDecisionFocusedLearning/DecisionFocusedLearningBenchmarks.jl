@@ -58,7 +58,7 @@ function Utils.generate_dataset(
     features = [randn(rng, Float32, n) for _ in 1:dataset_size]
     costs = copy(features)  # we assume that the cost is the same as the feature
     solutions = top_k.(features, k)
-    return InferOptDataset(; features, solutions, costs)
+    return [DataSample(; x=x, θ=θ, y=y) for (x, θ, y) in zip(features, costs, solutions)]
 end
 
 """

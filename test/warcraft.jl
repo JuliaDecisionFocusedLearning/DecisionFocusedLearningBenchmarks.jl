@@ -10,8 +10,8 @@
     maximizer = generate_maximizer(b)
 
     train_dataset, test_dataset = dataset[1:45], dataset[46:50]
-    X_train = train_dataset.features
-    Y_train = train_dataset.solutions
+    # X_train = train_dataset.features
+    # Y_train = train_dataset.solutions
 
     # perturbed_maximizer = PerturbedMultiplicative(maximizer; ε=0.2, nb_samples=100)
     # loss = FenchelYoungLoss(perturbed_maximizer)

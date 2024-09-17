@@ -31,7 +31,7 @@ using .PortfolioOptimization
 using .SubsetSelection
 
 # Interface
-export AbstractBenchmark, InferOptDataset
+export AbstractBenchmark, DataSample
 export generate_dataset
 export generate_statistical_model
 export generate_maximizer

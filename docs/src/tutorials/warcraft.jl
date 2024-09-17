@@ -45,7 +45,7 @@ model = generate_statistical_model(b)
 θ = model(x)
 # Note that the model is not trained yet, and its parameters are randomly initialized.
 
-# Finally, the [`generate_maximizer`](@ref) method can be used generates a combinatorial optimization algorithm that takes the predicted cell weights as input and returns the corresponding shortest path:
+# Finally, the [`generate_maximizer`](@ref) method can be used to generate a combinatorial optimization algorithm that takes the predicted cell weights as input and returns the corresponding shortest path:
 maximizer = generate_maximizer(b; dijkstra=true)
 # In the case o fthe Warcraft benchmark, the method has an additioonal keyword argument to chose the algorithm to use: Dijkstra's algorithm or Bellman-Ford algorithm.
 y = maximizer(θ)

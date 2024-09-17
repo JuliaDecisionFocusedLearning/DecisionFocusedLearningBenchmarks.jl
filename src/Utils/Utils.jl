@@ -5,12 +5,12 @@ using Flux: softplus
 using LinearAlgebra: dot
 using SimpleWeightedGraphs: SimpleWeightedDiGraph
 
-include("dataset.jl")
+include("data_sample.jl")
 include("interface.jl")
 include("grid_graph.jl")
 include("misc.jl")
 
-export InferOptDataset
+export DataSample
 
 export AbstractBenchmark
 export generate_dataset,

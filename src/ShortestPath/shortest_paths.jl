@@ -116,7 +116,7 @@ function Utils.generate_dataset(
 
     # Label solutions
     solutions = shortest_path_maximizer.(.-costs)
-    return InferOptDataset(; features, costs, solutions)
+    return [DataSample(; x=x, θ=θ, y=y) for (x, θ, y) in zip(features, costs, solutions)]
 end
 
 """

@@ -39,7 +39,7 @@ function create_dataset(decompressed_path::String, nb_samples::Int=10000)
     ]
     Y = [terrain_labels[:, :, i] for i in 1:nb_samples]
     WG = [terrain_weights[:, :, i] for i in 1:nb_samples]
-    return InferOptDataset(; features=X, solutions=Y, costs=WG)
+    return [DataSample(; x, y, θ) for (x, y, θ) in zip(X, Y, WG)]
 end
 
 # """

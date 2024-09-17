@@ -99,7 +99,7 @@ function Utils.generate_dataset(
     maximizer = Utils.generate_maximizer(bench)
     solutions = maximizer.(costs)
 
-    return InferOptDataset(; features, costs, solutions)
+    return [DataSample(; x=x, θ=θ, y=y) for (x, θ, y) in zip(features, costs, solutions)]
 end
 
 """

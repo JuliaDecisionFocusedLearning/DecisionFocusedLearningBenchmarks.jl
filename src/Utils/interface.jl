@@ -67,17 +67,14 @@ $TYPEDSIGNATURES
 Default behaviour of `compute_gap` for a benchmark problem where `features`, `solutions` and `costs` are all defined.
 """
 function compute_gap(
-    bench::AbstractBenchmark,
-    dataset::InferOptDataset{<:AbstractArray,<:AbstractArray,<:AbstractArray},
-    statistical_model,
-    maximizer,
+    bench::AbstractBenchmark, dataset::Vector{<:DataSample}, statistical_model, maximizer
 )
     res = 0.0
-    X = dataset.features
-    costs = dataset.costs
-    Y = dataset.solutions
 
-    for (x, θ̄, ȳ) in zip(X, costs, Y)
+    for sample in dataset
+        x = sample.x
+        θ̄ = sample.θ
+        ȳ = sample.y
         θ = statistical_model(x)
         y = maximizer(θ)
         target_obj = objective_value(bench, θ̄, ȳ)
