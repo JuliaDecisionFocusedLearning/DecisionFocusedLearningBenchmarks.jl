@@ -28,18 +28,14 @@ $TYPEDSIGNATURES
 Plot the image `im`, the weights `weights`, and the path `path` on the same Figure.
 """
 function Utils.plot_data(
-    ::WarcraftBenchmark;
-    features,
-    solution,
-    costs,
+    ::WarcraftBenchmark,
+    sample::DataSample,
     θ_title="Weights",
     y_title="Path",
-    θ_true=costs,
+    θ_true=sample.θ,
     kwargs...,
 )
-    x = features
-    y = solution
-    θ = costs
+    (; x, y, θ) = sample
     im = dropdims(x; dims=4)
     img = convert_image_for_plot(im)
     p1 = Plots.plot(

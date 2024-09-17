@@ -14,10 +14,10 @@ The following methods exist for benchmarks:
 abstract type AbstractBenchmark end
 
 """
-    generate_dataset(::AbstractBenchmark, dataset_size::Int) -> InferOptDataset
+    generate_dataset(::AbstractBenchmark, dataset_size::Int) -> Vector{<:DataSample}
 
-Generate an [`InferOptDataset`](@ref) for given benchmark as a Vector of length `dataset_size`.
-Content of the dataset can be visualized using [`plot_data`](@ref).
+Generate a `Vector` of [`DataSample`](@ref)  of length `dataset_size` for given benchmark.
+Content of the dataset can be visualized using [`plot_data`](@ref), when it applies.
 """
 function generate_dataset end
 
@@ -46,7 +46,7 @@ Check the specific benchmark documentation of `plot_data` for more details on th
 function plot_data end
 
 """
-    compute_gap(::AbstractBenchmark, dataset::InferOptDataset, statistical_model, maximizer) -> Float64
+    compute_gap(::AbstractBenchmark, dataset::Vector{<:DataSample}, statistical_model, maximizer) -> Float64
 
 Compute the average relative optimality gap of the pipeline on the dataset.
 """
