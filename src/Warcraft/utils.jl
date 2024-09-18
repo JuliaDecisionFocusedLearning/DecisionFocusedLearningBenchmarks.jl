@@ -29,33 +29,19 @@ Create the dataset corresponding to the data located at `decompressed_path`, pos
 The dataset is made of images of Warcraft terrains, cell cost labels and shortest path labels.
 It is a `Vector` of tuples, each `Tuple` being a dataset point.
 """
-function create_dataset(decompressed_path::String, nb_samples::Int=10000)
+function create_dataset(decompressed_path::String, nb_samples::Int)
+    N = min(nb_samples, 10000)
     terrain_images, terrain_labels, terrain_weights = read_dataset(
         decompressed_path, "train"
     )
     X = [
         reshape(terrain_images[:, :, :, i], (size(terrain_images[:, :, :, i])..., 1)) for
-        i in 1:nb_samples
+        i in 1:N
     ]
-    Y = [terrain_labels[:, :, i] for i in 1:nb_samples]
-    WG = [terrain_weights[:, :, i] for i in 1:nb_samples]
+    Y = [terrain_labels[:, :, i] for i in 1:N]
+    WG = [-terrain_weights[:, :, i] for i in 1:N]
     return [DataSample(; x, y, θ) for (x, y, θ) in zip(X, Y, WG)]
 end
-
-# """
-# $TYPEDSIGNATURES
-
-# Split a dataset contained in `X` into train and test datasets.
-# The proportion of the initial dataset kept in the train set is `train_percentage`.
-# """
-# function train_test_split(X::AbstractVector, train_percentage::Real=0.5)
-#     N = length(X)
-#     N_train = floor(Int, N * train_percentage)
-#     N_test = N - N_train
-#     train_ind, test_ind = 1:N_train, (N_train + 1):(N_train + N_test)
-#     X_train, X_test = X[train_ind], X[test_ind]
-#     return X_train, X_test
-# end
 
 """
 $TYPEDSIGNATURES
@@ -70,66 +56,6 @@ function convert_image_for_plot(image::Array{Float32,3})::Array{RGB{N0f8},2}
         end
     end
     return new_img
-end
-
-# """
-# $TYPEDSIGNATURES
-
-# Plot the image `im`, the weights `weights`, and the path `path` on the same Figure.
-# """
-# function plot_image_path(x, y; y_title="Path")
-#     im = dropdims(x; dims=4)
-#     img = convert_image_for_plot(im)
-#     p1 = Plots.plot(
-#         img; aspect_ratio=:equal, framestyle=:none, size=(300, 300), title="Terrain image"
-#     )
-#     p3 = Plots.plot(
-#         Gray.(y .* 0.7);
-#         aspect_ratio=:equal,
-#         framestyle=:none,
-#         size=(300, 300),
-#         title=y_title,
-#     )
-#     return plot(p1, p3; layout=(1, 2), size=(600, 300))
-# end
-
-# """
-# $TYPEDSIGNATURES
-
-# Plot the train and test losses, as well as the train and test gaps computed over epochs.
-# """
-# function plot_loss_and_gap(losses::Matrix{Float64}, gaps::Matrix{Float64}; filepath=nothing)
-#     nb_epochs = length(losses)
-#     p1 = plot(
-#         collect(1:nb_epochs),
-#         losses;
-#         title="Loss",
-#         xlabel="epochs",
-#         ylabel="loss",
-#         label=["train" "test"],
-#     )
-#     p2 = plot(
-#         collect(0:nb_epochs),
-#         gaps;
-#         title="Gap",
-#         xlabel="epochs",
-#         ylabel="ratio",
-#         label=["train" "test"],
-#     )
-#     pl = plot(p1, p2; layout=(1, 2))
-#     isnothing(filepath) || Plots.savefig(pl, filepath)
-#     return pl
-# end
-
-"""
-$TYPEDSIGNATURES
-"""
-function dijkstra_maximizer(θ::AbstractMatrix; kwargs...)
-    g = grid_graph(-θ)
-    p = dijkstra_shortest_paths(g, 1)
-    path = get_path(p.parents, 1, nv(g))
-    y = path_to_matrix(path, 12, 12)
-    return y
 end
 
 """
@@ -184,10 +110,30 @@ end
 
 """
 $TYPEDSIGNATURES
+
+Computes the longest path in given grid graph weights by computing the shortest path in the graph with opposite weights.
+Using the Ford-Bellman dynamic programming algorithm.
 """
 function bellman_maximizer(θ::AbstractMatrix; kwargs...)
     g = grid_graph(-θ)
     path = grid_bellman_ford_warcraft(g, 1, nv(g))
+    y = path_to_matrix(path, 12, 12)
+    return y
+end
+
+"""
+$TYPEDSIGNATURES
+
+Computes the longest path in given grid graph weights by computing the shortest path in the graph with opposite weights.
+Using the Dijkstra algorithm.
+
+!!! warning
+    Only works on graph with positive weights, i.e. if `θ` only contains negative values.
+"""
+function dijkstra_maximizer(θ::AbstractMatrix; kwargs...)
+    g = grid_graph(-θ)
+    p = dijkstra_shortest_paths(g, 1)
+    path = get_path(p.parents, 1, nv(g))
     y = path_to_matrix(path, 12, 12)
     return y
 end

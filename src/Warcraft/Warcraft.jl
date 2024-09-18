@@ -15,55 +15,23 @@ using Random
 using SimpleWeightedGraphs
 using SparseArrays
 
-include("dataset.jl")
+include("utils.jl")
 
 """
 $TYPEDEF
+
+Benchmark for the Warcraft shortest path problem.
+Does not have any field.
 """
 struct WarcraftBenchmark <: AbstractBenchmark end
 
 """
 $TYPEDSIGNATURES
 
-Plot the image `im`, the weights `weights`, and the path `path` on the same Figure.
-"""
-function Utils.plot_data(
-    ::WarcraftBenchmark,
-    sample::DataSample;
-    θ_title="Weights",
-    y_title="Path",
-    θ_true=sample.θ,
-    kwargs...,
-)
-    (; x, y, θ) = sample
-    im = dropdims(x; dims=4)
-    img = convert_image_for_plot(im)
-    p1 = Plots.plot(
-        img; aspect_ratio=:equal, framestyle=:none, size=(300, 300), title="Terrain image"
-    )
-    p2 = Plots.heatmap(
-        abs.(θ);
-        yflip=true,
-        aspect_ratio=:equal,
-        framestyle=:none,
-        padding=(0.0, 0.0),
-        size=(300, 300),
-        legend=false,
-        title=θ_title,
-        clim=(minimum(θ_true), maximum(θ_true)),
-    )
-    p3 = Plots.plot(
-        Gray.(y .* 0.7);
-        aspect_ratio=:equal,
-        framestyle=:none,
-        size=(300, 300),
-        title=y_title,
-    )
-    return plot(p1, p2, p3; layout=(1, 3), size=(900, 300))
-end
+Downloads and decompresses the Warcraft dataset the first time it is called.
 
-"""
-$TYPEDSIGNATURES
+!!! warning
+    `dataset_size` is capped at 10000, i.e. the number of available samples in the dataset files.
 """
 function Utils.generate_dataset(::WarcraftBenchmark, dataset_size::Int=10)
     decompressed_path = datadep"warcraft/data"
@@ -72,6 +40,9 @@ end
 
 """
 $TYPEDSIGNATURES
+
+Returns an optimization algorithm that computes a longest path on the grid graph with given weights.
+Uses a shortest path algorithm on opposite weights to get the longest path.
 """
 function Utils.generate_maximizer(::WarcraftBenchmark; dijkstra=true)
     return dijkstra ? dijkstra_maximizer : bellman_maximizer
@@ -105,8 +76,47 @@ function Utils.generate_statistical_model(::WarcraftBenchmark)
     return model_embedding
 end
 
-function Utils.objective_value(::WarcraftBenchmark, θ̄::AbstractArray, y::AbstractArray)
-    return dot(-θ̄, y)
+"""
+$TYPEDSIGNATURES
+
+Plot the content of input `DataSample` as images.
+`x` as the initial image, `θ` as the weights, and `y` as the path.
+
+The keyword argument `θ_true` is used to set the color range of the weights plot.
+"""
+function Utils.plot_data(
+    ::WarcraftBenchmark,
+    sample::DataSample;
+    θ_true=sample.θ,
+    θ_title="Weights",
+    y_title="Path",
+    kwargs...,
+)
+    (; x, y, θ) = sample
+    im = dropdims(x; dims=4)
+    img = convert_image_for_plot(im)
+    p1 = Plots.plot(
+        img; aspect_ratio=:equal, framestyle=:none, size=(300, 300), title="Terrain image"
+    )
+    p2 = Plots.heatmap(
+        -θ;
+        yflip=true,
+        aspect_ratio=:equal,
+        framestyle=:none,
+        padding=(0.0, 0.0),
+        size=(300, 300),
+        legend=false,
+        title=θ_title,
+        clim=(minimum(-θ_true), maximum(-θ_true)),
+    )
+    p3 = Plots.plot(
+        Gray.(y .* 0.7);
+        aspect_ratio=:equal,
+        framestyle=:none,
+        size=(300, 300),
+        title=y_title,
+    )
+    return plot(p1, p2, p3; layout=(1, 3), size=(900, 300))
 end
 
 export WarcraftBenchmark

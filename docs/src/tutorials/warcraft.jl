@@ -15,22 +15,22 @@ b = WarcraftBenchmark()
 # These benchmark objects behave as generators that can generate various needed elements in order to build an algorithm to tackle the problem.
 # First of all, all benchmarks are capable of generating datasets as needed, using the [`generate_dataset`](@ref) method.
 # This method takes as input the benchmark object for which the dataset is to be generated, and a second argument specifying the number of samples to generate:
-dataset = generate_dataset(b, 50)
+dataset = generate_dataset(b, 50);
 
-# We obtain a vector of [`DataSample`](@ref) object, which contains all needed data for the problem.
+# We obtain a vector of [`DataSample`](@ref) objects, containing all needed data for the problem.
 # Subdatasets can be created through regular slicing:
 train_dataset, test_dataset = dataset[1:45], dataset[46:50]
 
-# And getting an individual sample will return a NamedTuple with four keys: `features`, `instance`, `costs`, and `solution`:
+# And getting an individual sample will return a [`DataSample`](@ref) with four fields: `x`, `instance`, `θ`, and `y`:
 sample = test_dataset[1]
-# In the case the the Warcraft benchmark, `features` correspond to the input image:
+# `x` correspond to the input features, i.e. the input image (3D array) in the Warcraft benchmark case:
 x = sample.x
-# `costs` correspond to the true unknown terrain weights:
+# `θ` correspond to the true unknown terrain weights. They are negative because optimization is formulated as a maximization problem by convention:
 θ_true = sample.θ
-# `solution` correspond to the true shortest path:
+# `y` correspond to the optimal shortest path:
 y_true = sample.y
 # `instance` is not used in this benchmark, therefore set to nothing:
-sample.instance
+isnothing(sample.instance)
 
 # For some benchmarks, we provide the following plotting method [`plot_data`](@ref) to visualize the data:
 plot_data(b, sample)
@@ -85,4 +85,4 @@ final_gap = compute_gap(b, test_dataset, model, maximizer)
 #
 θ = model(x)
 y = maximizer(θ)
-plot_data(b, DataSample(; x, θ, y); θ_true=θ_true)
+plot_data(b, DataSample(; x, θ, y))
