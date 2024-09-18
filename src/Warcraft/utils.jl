@@ -38,7 +38,7 @@ function create_dataset(decompressed_path::String, nb_samples::Int)
         reshape(terrain_images[:, :, :, i], (size(terrain_images[:, :, :, i])..., 1)) for
         i in 1:N
     ]
-    Y = [terrain_labels[:, :, i] for i in 1:N]
+    Y = [BitMatrix(terrain_labels[:, :, i]) for i in 1:N]
     WG = [-terrain_weights[:, :, i] for i in 1:N]
     return [DataSample(; x, y, θ) for (x, y, θ) in zip(X, Y, WG)]
 end
