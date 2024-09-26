@@ -26,6 +26,8 @@
 
         y_bellman = bellman_maximizer(θ)
         y_dijkstra = dijkstra_maximizer(θ)
+        @test size(y_bellman) == size(y_true)
+        @test size(y_dijkstra) == size(y_true)
         @test objective_value(b, θ_true, y_bellman) ==
             objective_value(b, θ_true, y_dijkstra)
 
