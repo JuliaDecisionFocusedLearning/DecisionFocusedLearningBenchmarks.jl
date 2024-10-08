@@ -1,15 +1,14 @@
-using InferOptBenchmarks.Warcraft
-using InferOptBenchmarks.Warcraft: count_edges, get_path
-using Graphs
-using Test
+@testitem "Grid graphs" begin
+    using InferOptBenchmarks.Utils
+    using InferOptBenchmarks.Utils: count_edges, get_path, index_to_coord
+    using Graphs
 
-h = 4
-w = 7
-costs = rand(h, w)
+    h = 4
+    w = 7
+    costs = rand(h, w)
 
-for acyclic in (true, false)
-    @testset "Acyclic: $acyclic" begin
-        g = warcraft_grid_graph(costs; acyclic=acyclic)
+    for acyclic in (true, false)
+        g = grid_graph(costs; acyclic=acyclic)
         @test nv(g) == h * w
         @test ne(g) == count_edges(h, w; acyclic)
         @test all(edges(g)) do e
