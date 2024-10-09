@@ -3,13 +3,13 @@
 ## Public
 
 ```@autodocs
-Modules = [InferOptBenchmarks.Utils]
+Modules = [DecisionFocusedLearningBenchmarks.Utils]
 Private = false
 ```
 
 ## Private
 
 ```@autodocs
-Modules = [InferOptBenchmarks.Utils]
+Modules = [DecisionFocusedLearningBenchmarks.Utils]
 Public = false
 ```
