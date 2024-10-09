@@ -1,5 +1,5 @@
 @testitem "Portfolio Optimization" begin
-    using InferOptBenchmarks
+    using DecisionFocusedLearningBenchmarks
     using InferOpt
     using Flux
     using Zygote

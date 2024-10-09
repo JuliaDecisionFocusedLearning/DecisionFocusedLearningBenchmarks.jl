@@ -1,5 +1,5 @@
 using Documenter
-using InferOptBenchmarks
+using DecisionFocusedLearningBenchmarks
 using Literate
 
 cp(joinpath(@__DIR__, "..", "README.md"), joinpath(@__DIR__, "src", "index.md"); force=true)
@@ -15,9 +15,9 @@ for file in tutorial_files
 end
 
 makedocs(;
-    modules=[InferOptBenchmarks, InferOptBenchmarks.Warcraft],
+    modules=[DecisionFocusedLearningBenchmarks, DecisionFocusedLearningBenchmarks.Warcraft],
     authors="Members of JuliaDecisionFocusedLearning",
-    sitename="InferOptBenchmarks.jl",
+    sitename="DecisionFocusedLearningBenchmarks.jl",
     format=Documenter.HTML(),
     pages=[
         "Home" => "index.md",
@@ -33,5 +33,6 @@ for file in md_tutorial_files
 end
 
 deploydocs(;
-    repo="github.com/JuliaDecisionFocusedLearning/InferOptBenchmarks.jl", devbranch="main"
+    repo="github.com/JuliaDecisionFocusedLearning/DecisionFocusedLearningBenchmarks.jl",
+    devbranch="main",
 )

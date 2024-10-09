@@ -1,5 +1,5 @@
 @testitem "Subset selection" begin
-    using InferOptBenchmarks
+    using DecisionFocusedLearningBenchmarks
     using InferOpt
     using Flux
     using UnicodePlots

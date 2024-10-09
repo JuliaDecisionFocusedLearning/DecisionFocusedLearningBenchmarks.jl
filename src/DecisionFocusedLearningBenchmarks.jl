@@ -1,4 +1,4 @@
-module InferOptBenchmarks
+module DecisionFocusedLearningBenchmarks
 
 using DataDeps
 using HiGHS
@@ -44,4 +44,4 @@ export FixedSizeShortestPathBenchmark
 export PortfolioOptimizationBenchmark
 export SubsetSelectionBenchmark
 
-end # module InferOptBenchmarks
+end # module DecisionFocusedLearningBenchmarks

@@ -1,6 +1,6 @@
 @testitem "Grid graphs" begin
-    using InferOptBenchmarks.Utils
-    using InferOptBenchmarks.Utils: count_edges, get_path, index_to_coord
+    using DecisionFocusedLearningBenchmarks.Utils
+    using DecisionFocusedLearningBenchmarks.Utils: count_edges, get_path, index_to_coord
     using Graphs
 
     h = 4

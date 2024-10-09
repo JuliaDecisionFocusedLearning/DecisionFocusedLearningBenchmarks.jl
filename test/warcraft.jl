@@ -1,6 +1,6 @@
 @testitem "Warcraft" begin
-    using InferOptBenchmarks
-    using InferOptBenchmarks.Utils: objective_value
+    using DecisionFocusedLearningBenchmarks
+    using DecisionFocusedLearningBenchmarks.Utils: objective_value
 
     b = WarcraftBenchmark()
 
