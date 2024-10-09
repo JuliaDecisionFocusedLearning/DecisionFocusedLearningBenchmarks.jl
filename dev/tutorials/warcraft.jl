@@ -1,13 +1,13 @@
 # # Path-finding on image maps
 
 #=
-In this tutorial, we showcase InferOptBenchmarks.jl capabilities on one of its main benchmarks: the Warcraft benchmark.
+In this tutorial, we showcase DecisionFocusedLearningBenchmarks.jl capabilities on one of its main benchmarks: the Warcraft benchmark.
 This benchmark problem is a simple path-finding problem where the goal is to find the shortest path between the top left and bottom right corners of a given image map.
 The map is represented as a 2D image representing a 12x12 grid, each cell having an unknown travel cost depending on the terrain type.
 =#
 
 # First, let's load the package and create a benchmark object as follows:
-using InferOptBenchmarks
+using DecisionFocusedLearningBenchmarks
 b = WarcraftBenchmark()
 
 # ## Dataset generation
@@ -38,7 +38,7 @@ plot_data(b, sample)
 
 # ## Building a pipeline
 
-# InferOptBenchmarks also provides methods to build an hybrid machine learning and combinatorial optimization pipeline for the benchmark.
+# DecisionFocusedLearningBenchmarks also provides methods to build an hybrid machine learning and combinatorial optimization pipeline for the benchmark.
 # First, the [`generate_statistical_model`](@ref) method generates a machine learning predictor to predict cell weights from the input image:
 model = generate_statistical_model(b)
 # In the case of the Warcraft benchmark, the model is a convolutional neural network built using the Flux.jl package.
