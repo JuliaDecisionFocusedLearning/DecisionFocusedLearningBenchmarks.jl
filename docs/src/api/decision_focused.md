@@ -3,13 +3,13 @@
 ## Public
 
 ```@autodocs
-Modules = [InferOptBenchmarks.FixedSizeShortestPath, InferOptBenchmarks.PortfolioOptimization, InferOptBenchmarks.SubsetSelection]
+Modules = [DecisionFocusedLearningBenchmarks.FixedSizeShortestPath, DecisionFocusedLearningBenchmarks.PortfolioOptimization, DecisionFocusedLearningBenchmarks.SubsetSelection]
 Private = false
 ```
 
 ## Private
 
 ```@autodocs
-Modules = [InferOptBenchmarks.FixedSizeShortestPath, InferOptBenchmarks.PortfolioOptimization, InferOptBenchmarks.SubsetSelection]
+Modules = [DecisionFocusedLearningBenchmarks.FixedSizeShortestPath, DecisionFocusedLearningBenchmarks.PortfolioOptimization, DecisionFocusedLearningBenchmarks.SubsetSelection]
 Public = false
 ```

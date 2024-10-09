@@ -1,6 +1,6 @@
 module FixedSizeShortestPathTest
 
-using InferOptBenchmarks.FixedSizeShortestPath
+using DecisionFocusedLearningBenchmarks.FixedSizeShortestPath
 
 # using Flux
 # using InferOpt

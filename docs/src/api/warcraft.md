@@ -3,13 +3,13 @@
 ## Public
 
 ```@autodocs
-Modules = [InferOptBenchmarks.Warcraft]
+Modules = [DecisionFocusedLearningBenchmarks.Warcraft]
 Private = false
 ```
 
 ## Private
 
 ```@autodocs
-Modules = [InferOptBenchmarks.Warcraft]
+Modules = [DecisionFocusedLearningBenchmarks.Warcraft]
 Public = false
 ```
