@@ -1,9 +1,5 @@
 @testitem "Subset selection" begin
     using DecisionFocusedLearningBenchmarks
-    using InferOpt
-    using Flux
-    using UnicodePlots
-    using Zygote
 
     n = 25
     k = 5

@@ -120,7 +120,7 @@ Initialize a linear model for `bench` using `Flux`.
 """
 function Utils.generate_statistical_model(bench::PortfolioOptimizationBenchmark)
     (; p, d) = bench
-    return Chain(Dense(p, d))
+    return Dense(p, d)
 end
 
 export PortfolioOptimizationBenchmark
