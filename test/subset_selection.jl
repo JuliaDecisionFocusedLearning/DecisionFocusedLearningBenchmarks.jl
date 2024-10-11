@@ -5,34 +5,37 @@
     using UnicodePlots
     using Zygote
 
-    b = SubsetSelectionBenchmark()
+    n = 25
+    k = 5
 
-    dataset = generate_dataset(b, 500)
+    b = SubsetSelectionBenchmark(; n=n, k=k)
+
+    io = IOBuffer()
+    show(io, b)
+    @test String(take!(io)) == "SubsetSelectionBenchmark(n=25, k=5)"
+
+    dataset = generate_dataset(b, 50)
     model = generate_statistical_model(b)
     maximizer = generate_maximizer(b)
 
-    # train_dataset, test_dataset = dataset[1:450], dataset[451:500]
-    # X_train = train_dataset.features
-    # Y_train = train_dataset.solutions
+    for (i, sample) in enumerate(dataset)
+        x = sample.x
+        θ_true = sample.θ
+        y_true = sample.y
+        @test size(x) == (n,)
+        @test length(θ_true) == n
+        @test length(y_true) == n
+        @test isnothing(sample.instance)
+        @test all(y_true .== maximizer(θ_true))
 
-    # perturbed_maximizer = PerturbedAdditive(maximizer; ε=1.0, nb_samples=100)
-    # loss = FenchelYoungLoss(perturbed_maximizer)
+        # Features and true weights should be equal
+        @test all(θ_true .== x)
 
-    # starting_gap = compute_gap(b, test_dataset, model, maximizer)
+        θ = model(x)
+        @test length(θ) == n
 
-    # opt_state = Flux.setup(Adam(0.1), model)
-    # loss_history = Float64[]
-    # for epoch in 1:50
-    #     val, grads = Flux.withgradient(model) do m
-    #         sum(loss(m(x), y) for (x, y) in zip(X_train, Y_train)) / length(train_dataset)
-    #     end
-    #     Flux.update!(opt_state, model, grads[1])
-    #     push!(loss_history, val)
-    # end
-
-    # final_gap = compute_gap(b, test_dataset, model, maximizer)
-
-    # lineplot(loss_history)
-    # @test loss_history[end] < loss_history[1]
-    # @test final_gap < starting_gap / 10
+        y = maximizer(θ)
+        @test length(y) == n
+        @test sum(y) == k
+    end
 end
