@@ -125,13 +125,13 @@ function Utils.generate_dataset(
         [rand(rng, Uniform{type}(1 - ν, 1 + ν), E) for _ in 1:dataset_size]
     end
     costs = [
-        (1 .+ (3 .+ B * zᵢ ./ type(sqrt(p))) .^ deg) .* ξᵢ for (ξᵢ, zᵢ) in zip(ξ, features)
+        -(1 .+ (3 .+ B * zᵢ ./ type(sqrt(p))) .^ deg) .* ξᵢ for (ξᵢ, zᵢ) in zip(ξ, features)
     ]
 
     shortest_path_maximizer = Utils.generate_maximizer(bench)
 
     # Label solutions
-    solutions = shortest_path_maximizer.(.-costs)
+    solutions = shortest_path_maximizer.(costs)
     return [DataSample(; x=x, θ=θ, y=y) for (x, θ, y) in zip(features, costs, solutions)]
 end
 
@@ -143,23 +143,6 @@ Initialize a linear model for `bench` using `Flux`.
 function Utils.generate_statistical_model(bench::FixedSizeShortestPathBenchmark)
     (; p, graph) = bench
     return Chain(Dense(p, ne(graph)))
-end
-
-function objective_value(::FixedSizeShortestPathBenchmark, θ, y)
-    return dot(θ, y)
-end
-
-function Utils.compute_gap(
-    bench::FixedSizeShortestPathBenchmark, model, features, costs, solutions, maximizer
-)
-    res = 0.0
-    for (x, ȳ, θ̄) in zip(features, solutions, costs)
-        θ = model(x)
-        y = maximizer(θ)
-        val = objective_value(bench, θ̄, ȳ)
-        res += (objective_value(bench, θ̄, y) - val) / val
-    end
-    return res / length(features)
 end
 
 export FixedSizeShortestPathBenchmark

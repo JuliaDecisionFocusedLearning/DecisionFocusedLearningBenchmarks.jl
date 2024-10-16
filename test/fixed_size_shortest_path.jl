@@ -1,44 +1,35 @@
-module FixedSizeShortestPathTest
+@testitem "FixedSizeShortestPath" begin
+    using DecisionFocusedLearningBenchmarks.FixedSizeShortestPath
+    using Graphs
 
-using DecisionFocusedLearningBenchmarks.FixedSizeShortestPath
+    p = 5
+    grid_size = (5, 5)
+    A = (grid_size[1] - 1) * grid_size[2] + grid_size[1] * (grid_size[2] - 1)
+    b = FixedSizeShortestPathBenchmark(; p=p, grid_size=grid_size)
 
-# using Flux
-# using InferOpt
-# using ProgressMeter
-# using UnicodePlots
-# using Zygote
+    @test nv(b.graph) == grid_size[1] * grid_size[2]
+    @test ne(b.graph) == A
 
-bench = FixedSizeShortestPathBenchmark()
+    dataset = generate_dataset(b, 50)
+    model = generate_statistical_model(b)
+    maximizer = generate_maximizer(b)
 
-(; features, costs, solutions) = generate_dataset(bench)
+    gap = compute_gap(b, dataset, model, maximizer)
+    @test gap >= 0
 
-model = generate_statistical_model(bench)
-maximizer = generate_maximizer(bench)
-
-# perturbed = PerturbedAdditive(maximizer; nb_samples=10, ε=0.1)
-# fyl = FenchelYoungLoss(perturbed)
-
-# opt_state = Flux.setup(Adam(), model)
-# loss_history = Float64[]
-# gap_history = Float64[]
-# E = 100
-# @showprogress for epoch in 1:E
-#     loss = 0.0
-#     for (x, y) in zip(features, solutions)
-#         val, grads = Flux.withgradient(model) do m
-#             θ = m(x)
-#             fyl(θ, y)
-#         end
-#         loss += val
-#         Flux.update!(opt_state, model, grads[1])
-#     end
-#     push!(loss_history, loss ./ E)
-#     push!(
-#         gap_history, compute_gap(bench, model, features, costs, solutions, maximizer) .* 100
-#     )
-# end
-
-# println(lineplot(loss_history; title="Loss"))
-# println(lineplot(gap_history; title="Gap"))
-
+    for sample in dataset
+        x = sample.x
+        θ_true = sample.θ
+        y_true = sample.y
+        @test all(θ_true .< 0)
+        @test size(x) == (p,)
+        @test length(θ_true) == A
+        @test length(y_true) == A
+        @test isnothing(sample.instance)
+        @test all(y_true .== maximizer(θ_true))
+        θ = model(x)
+        @test length(θ) == length(θ_true)
+        y = maximizer(θ)
+        @test length(y) == length(y_true)
+    end
 end

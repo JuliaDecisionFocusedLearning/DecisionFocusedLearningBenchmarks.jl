@@ -1,6 +1,7 @@
 @testitem "Warcraft" begin
     using DecisionFocusedLearningBenchmarks
     using DecisionFocusedLearningBenchmarks.Utils: objective_value
+    using Plots
 
     b = WarcraftBenchmark()
 
@@ -11,6 +12,11 @@
     model = generate_statistical_model(b)
     bellman_maximizer = generate_maximizer(b; dijkstra=false)
     dijkstra_maximizer = generate_maximizer(b; dijkstra=true)
+
+    figure = plot_data(b, dataset[1])
+    @test figure isa Plots.Plot
+    gap = compute_gap(b, dataset, model, dijkstra_maximizer)
+    @test gap >= 0
 
     for (i, sample) in enumerate(dataset)
         x = sample.x
