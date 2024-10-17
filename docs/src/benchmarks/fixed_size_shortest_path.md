@@ -1,0 +1,3 @@
+# Shortest paths
+
+[`FixedSizeShortestPathBenchmark`](@ref)

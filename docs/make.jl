@@ -21,7 +21,13 @@ makedocs(;
     format=Documenter.HTML(),
     pages=[
         "Home" => "index.md",
-        "Tutorials" => md_tutorial_files,
+        # "Tutorials" => md_tutorial_files,
+        "Benchmark problems list" => [
+            "benchmarks/subset_selection.md",
+            "benchmarks/portfolio_optimization.md",
+            "benchmarks/fixed_size_shortest_path.md",
+            "benchmarks/warcraft.md",
+        ],
         "API reference" =>
             ["api/interface.md", "api/decision_focused.md", "api/warcraft.md"],
     ],

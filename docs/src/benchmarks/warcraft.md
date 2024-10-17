@@ -1,0 +1,3 @@
+# Warcraft
+
+[`WarcraftBenchmark`](@ref)
