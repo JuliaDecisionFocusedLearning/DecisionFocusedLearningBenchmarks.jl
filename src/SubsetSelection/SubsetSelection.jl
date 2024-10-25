@@ -58,13 +58,21 @@ Generate a dataset of labeled instances for the subset selection problem.
 The mapping between features and cost is identity.
 """
 function Utils.generate_dataset(
-    bench::SubsetSelectionBenchmark, dataset_size::Int=10; seed::Int=0
+    bench::SubsetSelectionBenchmark,
+    dataset_size::Int=10;
+    seed::Int=0,
+    identity_mapping=true,
 )
     (; n, k) = bench
     rng = MersenneTwister(seed)
     features = [randn(rng, Float32, n) for _ in 1:dataset_size]
-    costs = copy(features)  # we assume that the cost is the same as the feature
-    solutions = top_k.(features, k)
+    costs = if identity_mapping
+        copy(features)  # we assume that the cost is the same as the feature
+    else
+        mapping = Dense(n => n; bias=false)
+        mapping.(features)
+    end
+    solutions = top_k.(costs, k)
     return [DataSample(; x=x, θ=θ, y=y) for (x, θ, y) in zip(features, costs, solutions)]
 end
 

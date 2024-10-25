@@ -9,9 +9,13 @@ tutorial_dir = joinpath(@__DIR__, "src", "tutorials")
 tutorial_files = readdir(tutorial_dir)
 md_tutorial_files = [split(file, ".")[1] * ".md" for file in tutorial_files]
 
-for file in tutorial_files
-    filepath = joinpath(tutorial_dir, file)
-    Literate.markdown(filepath, md_dir; documenter=true, execute=false)
+include_tutorial = false
+
+if include_tutorial
+    for file in tutorial_files
+        filepath = joinpath(tutorial_dir, file)
+        Literate.markdown(filepath, md_dir; documenter=true, execute=false)
+    end
 end
 
 makedocs(;
@@ -21,7 +25,7 @@ makedocs(;
     format=Documenter.HTML(),
     pages=[
         "Home" => "index.md",
-        # "Tutorials" => md_tutorial_files,
+        "Tutorials" => include_tutorial ? md_tutorial_files : [],
         "Benchmark problems list" => [
             "benchmarks/subset_selection.md",
             "benchmarks/portfolio_optimization.md",
@@ -33,9 +37,11 @@ makedocs(;
     ],
 )
 
-for file in md_tutorial_files
-    filepath = joinpath(md_dir, file)
-    rm(filepath)
+if include_tutorial
+    for file in md_tutorial_files
+        filepath = joinpath(md_dir, file)
+        rm(filepath)
+    end
 end
 
 deploydocs(;
