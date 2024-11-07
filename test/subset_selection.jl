@@ -11,7 +11,7 @@
     @test String(take!(io)) == "SubsetSelectionBenchmark(n=25, k=5)"
 
     dataset = generate_dataset(b, 50)
-    dataset2 = generate_dataset(b, 50; identity_mappinf=false)
+    dataset2 = generate_dataset(b, 50; identity_mapping=false)
     model = generate_statistical_model(b)
     maximizer = generate_maximizer(b)
 
