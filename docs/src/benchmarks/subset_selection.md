@@ -10,4 +10,4 @@ We want to select a subset of ``k`` items that maximizes the sum of the values o
 As input, instead of the items costs, we are given a feature vector, such that an unknown linear mapping between the feature vector and the value of the items exists.
 
 By default, this linear mapping is the identity mapping, i.e., the value of each item is equal to the value of the corresponding feature vector element.
-However, this mapping can be changed by setting the `identity_mapping` parameter to false.
+However, this mapping can be changed by setting the `identity_mapping` parameter to `false`.
