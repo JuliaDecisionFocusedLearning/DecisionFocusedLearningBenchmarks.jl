@@ -24,11 +24,14 @@ include("FixedSizeShortestPath/FixedSizeShortestPath.jl")
 include("PortfolioOptimization/PortfolioOptimization.jl")
 include("SubsetSelection/SubsetSelection.jl")
 
+include("StochasticVehicleScheduling/StochasticVehicleScheduling.jl")
+
 using .Utils
 using .Warcraft
 using .FixedSizeShortestPath
 using .PortfolioOptimization
 using .SubsetSelection
+using .StochasticVehicleScheduling
 
 # Interface
 export AbstractBenchmark, DataSample
@@ -43,5 +46,6 @@ export WarcraftBenchmark
 export FixedSizeShortestPathBenchmark
 export PortfolioOptimizationBenchmark
 export SubsetSelectionBenchmark
+export StochasticVehicleSchedulingBenchmark
 
 end # module DecisionFocusedLearningBenchmarks
