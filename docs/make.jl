@@ -35,6 +35,7 @@ makedocs(;
             "benchmarks/fixed_size_shortest_path.md",
             "benchmarks/warcraft.md",
             "benchmarks/portfolio_optimization.md",
+            "benchmarks/vsp.md",
         ],
         "API reference" =>
             ["api/interface.md", "api/decision_focused.md", "api/warcraft.md"],
