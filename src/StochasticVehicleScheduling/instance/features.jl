@@ -26,48 +26,6 @@ end
 """
 $TYPEDSIGNATURES
 
-Return a `MetaDiGraph` computed from `city`.
-Each vertex represents a task. Vertices are ordered by start time of corresponding task.
-There is an edge from task u to task v the (end time of u + tie distance between u and v <= start time of v).
-Every (u, v) edge has a :travel_time property, corresponding to time istance between u and v.
-"""
-function create_VSP_graph(city::City)
-    # Initialize directed graph
-    nb_vertices = city.nb_tasks + 2
-    graph = SimpleDiGraph(nb_vertices)
-    starting_task = 1
-    end_task = nb_vertices
-    job_tasks = 2:(city.nb_tasks + 1)
-
-    travel_times = [
-        distance(task1.end_point, task2.start_point) for task1 in city.tasks,
-        task2 in city.tasks
-    ]
-
-    # Create existing edges
-    for iorigin in job_tasks
-        # link every task to base
-        add_edge!(graph, starting_task, iorigin)
-        add_edge!(graph, iorigin, end_task)
-
-        for idestination in (iorigin + 1):(city.nb_tasks + 1)
-            travel_time = travel_times[iorigin, idestination]
-            origin_end_time = city.tasks[iorigin].end_time
-            destination_begin_time = city.tasks[idestination].start_time # get_prop(graph, idestination, :task).start_time
-
-            # there is an edge only if we can reach destination from origin before start of task
-            if origin_end_time + travel_time <= destination_begin_time
-                add_edge!(graph, iorigin, idestination)
-            end
-        end
-    end
-
-    return graph
-end
-
-"""
-$TYPEDSIGNATURES
-
 Compute slack for features.
 """
 function compute_slacks(city::City, old_task_index::Int, new_task_index::Int)

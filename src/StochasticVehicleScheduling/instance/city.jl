@@ -70,7 +70,7 @@ $TYPEDSIGNATURES
     and one `destination` task ending at time=end at depot
 - Roll every scenario.
 """
-function create_random_city(;  # TODO: use an rng here
+function create_random_city(;
     αᵥ_low=default_αᵥ_low,
     αᵥ_high=default_αᵥ_high,
     first_begin_time=default_first_begin_time,
@@ -80,10 +80,10 @@ function create_random_city(;  # TODO: use an rng here
     task_μ=default_task_μ,
     task_σ=default_task_σ,
     seed=nothing,
-    rng=MersenneTwister(0),
+    rng=Random.default_rng(),
     city_kwargs...,
 )
-    Random.seed!(rng, seed)
+    isnothing(seed) || Random.seed!(rng, seed)
     city = City(; city_kwargs...)
     init_districts!(city, district_μ, district_σ; rng=rng)
     init_tasks!(
