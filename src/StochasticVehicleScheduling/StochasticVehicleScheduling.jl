@@ -5,6 +5,7 @@ using DocStringExtensions: TYPEDEF, TYPEDFIELDS, TYPEDSIGNATURES
 using Distributions: Distribution, LogNormal, Uniform
 using Graphs: AbstractGraph, SimpleDiGraph, add_edge!, nv, ne, edges, src, dst
 using Printf: @printf
+using Random: Random, AbstractRNG, MersenneTwister
 using SparseArrays: sparse
 using Statistics: quantile, mean
 

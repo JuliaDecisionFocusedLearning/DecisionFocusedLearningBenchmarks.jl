@@ -13,8 +13,8 @@ $TYPEDSIGNATURES
 
 Returns a Point with random x and y, drawn from distrib.
 """
-function draw_random_point(distrib::Distribution) # TODO: use an rng
-    return Point(rand(distrib), rand(distrib))
+function draw_random_point(distrib::Distribution; rng)
+    return Point(rand(rng, distrib), rand(rng, distrib))
 end
 
 """
@@ -49,7 +49,7 @@ function find_first_one(A::AbstractVector)
     return nothing
 end
 
-# Config stuff
+# Config stuff, probably not needed in this package
 # """
 #     recursive_namedtuple(x)
 

@@ -68,9 +68,9 @@ $TYPEDSIGNATURES
 Populate `scenario_start_time` with delays drawn from the `random_delay` distribution of
 the given task for each scenario.
 """
-function roll(task::Task) # TODO: use an rng
+function roll(task::Task, rng::AbstractRNG)
     S = nb_scenarios(task)
-    task.scenario_start_time .= task.start_time .+ rand(task.random_delay, S)
+    task.scenario_start_time .= task.start_time .+ rand(rng, task.random_delay, S)
     return nothing
 end
 

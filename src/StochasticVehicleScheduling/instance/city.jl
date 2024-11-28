@@ -79,23 +79,35 @@ function create_random_city(;  # TODO: use an rng here
     district_σ=default_district_σ,
     task_μ=default_task_μ,
     task_σ=default_task_σ,
+    seed=nothing,
+    rng=MersenneTwister(0),
     city_kwargs...,
 )
+    Random.seed!(rng, seed)
     city = City(; city_kwargs...)
-    init_districts!(city, district_μ, district_σ)
-    init_tasks!(city, αᵥ_low, αᵥ_high, first_begin_time, last_begin_time, task_μ, task_σ)
-    generate_scenarios!(city)
+    init_districts!(city, district_μ, district_σ; rng=rng)
+    init_tasks!(
+        city, αᵥ_low, αᵥ_high, first_begin_time, last_begin_time, task_μ, task_σ; rng=rng
+    )
+    generate_scenarios!(city; rng=rng)
     compute_perturbed_end_times!(city)
     return city
 end
 
-function init_districts!(city::City, district_μ::Distribution, district_σ::Distribution)
+"""
+$TYPEDSIGNATURES
+
+Initialize the districts of the city.
+"""
+function init_districts!(
+    city::City, district_μ::Distribution, district_σ::Distribution; rng::AbstractRNG
+)
     nb_scenarios = size(city.scenario_inter_area_factor, 1)
     nb_district_per_edge = city.width ÷ city.district_width
     for x in 1:nb_district_per_edge
         for y in 1:nb_district_per_edge
-            μ = rand(district_μ)
-            σ = rand(district_σ)
+            μ = rand(rng, district_μ)
+            σ = rand(rng, district_σ)
             city.districts[x, y] = District(;
                 random_delay=LogNormal(μ, σ), nb_scenarios=nb_scenarios
             )
@@ -104,6 +116,11 @@ function init_districts!(city::City, district_μ::Distribution, district_σ::Dis
     return nothing
 end
 
+"""
+$TYPEDSIGNATURES
+
+Draw the tasks of the city.
+"""
 function init_tasks!(
     city::City,
     αᵥ_low::Real,
@@ -111,7 +128,8 @@ function init_tasks!(
     first_begin_time::Real,
     last_begin_time::Real,
     task_μ::Distribution,
-    task_σ::Distribution,
+    task_σ::Distribution;
+    rng::AbstractRNG,
 )
     nb_scenarios = size(city.scenario_inter_area_factor, 1)
 
@@ -120,16 +138,17 @@ function init_tasks!(
     travel_time_multiplier_distribution = Uniform(αᵥ_low, αᵥ_high)
 
     for i_task in 1:(city.nb_tasks)
-        start_point = draw_random_point(point_distribution)
-        end_point = draw_random_point(point_distribution)
+        start_point = draw_random_point(point_distribution; rng=rng)
+        end_point = draw_random_point(point_distribution; rng=rng)
 
-        start_time = rand(start_time_distribution)
+        start_time = rand(rng, start_time_distribution)
         end_time =
             start_time +
-            rand(travel_time_multiplier_distribution) * distance(start_point, end_point)
+            rand(rng, travel_time_multiplier_distribution) *
+            distance(start_point, end_point)
 
-        μ = rand(task_μ)
-        σ = rand(task_σ)
+        μ = rand(rng, task_μ)
+        σ = rand(rng, task_σ)
         random_delay = LogNormal(μ, σ)
 
         city.tasks[i_task + 1] = Task(;
@@ -180,15 +199,20 @@ function get_district(point::Point, city::City)
     trunc(Int, point.y / city.district_width) + 1
 end
 
-function generate_scenarios!(city::City)
+"""
+$TYPEDSIGNATURES
+
+Draw all delay scenarios for the city.
+"""
+function generate_scenarios!(city::City; rng::AbstractRNG)
     # roll all tasks
     for task in city.tasks
-        roll(task)
+        roll(task, rng)
     end
 
     # roll all districts
     for district in city.districts
-        roll(district)
+        roll(district, rng)
     end
 
     # roll inter-district
@@ -196,13 +220,19 @@ function generate_scenarios!(city::City)
     for s in 1:nb_scenarios
         previous_delay = 0.0
         for h in 1:nb_hours
-            previous_delay = (previous_delay + 0.1) * rand(city.random_inter_area_factor) # TODO : study formula
+            previous_delay =
+                (previous_delay + 0.1) * rand(rng, city.random_inter_area_factor)
             city.scenario_inter_area_factor[s, h] = previous_delay
         end
     end
     return nothing
 end
 
+"""
+$TYPEDSIGNATURES
+
+Compute the end times of the tasks for each scenario.
+"""
 function compute_perturbed_end_times!(city::City)
     nb_scenarios = size(city.scenario_inter_area_factor, 1)
 
