@@ -2,6 +2,8 @@ module StochasticVehicleScheduling
 
 using ..Utils
 using DocStringExtensions: TYPEDEF, TYPEDFIELDS, TYPEDSIGNATURES
+using ConstrainedShortestPaths:
+    stochastic_routing_shortest_path, stochastic_routing_shortest_path_with_threshold
 using Distributions: Distribution, LogNormal, Uniform
 using Graphs:
     AbstractGraph,
@@ -16,7 +18,15 @@ using Graphs:
     inneighbors,
     outneighbors
 using JuMP:
-    Model, @variable, @objective, @constraint, optimize!, value, objective_value, set_silent
+    Model,
+    @variable,
+    @objective,
+    @constraint,
+    optimize!,
+    value,
+    objective_value,
+    set_silent,
+    dual
 using Printf: @printf
 using Random: Random, AbstractRNG, MersenneTwister
 using SparseArrays: sparse
@@ -32,6 +42,7 @@ include("instance/instance.jl")
 
 include("solution/solution.jl")
 include("solution/exact_algorithms/mip.jl")
+include("solution/exact_algorithms/column_generation.jl")
 
 """
 $TYPEDFIELDS
@@ -74,6 +85,7 @@ function Utils.generate_statistical_model(bench::StochasticVehicleSchedulingBenc
 
 export StochasticVehicleSchedulingBenchmark
 
-export compact_linearized_mip, compact_mip
+export compact_linearized_mip,
+    compact_mip, column_generation_algorithm, evaluate_solution, is_feasible
 
 end

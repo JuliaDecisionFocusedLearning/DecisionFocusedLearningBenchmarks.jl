@@ -87,7 +87,7 @@ $TYPEDSIGNATURES
 Returns the number of scenarios in instance.
 """
 function get_nb_scenarios(instance::Instance)
-    return size(instance.delays, 2)
+    return size(instance.intrinsic_delays, 2)
 end
 
 """

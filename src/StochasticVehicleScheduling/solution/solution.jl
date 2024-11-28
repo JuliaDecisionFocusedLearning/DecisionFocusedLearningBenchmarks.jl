@@ -1,16 +1,17 @@
 # TODO: only keep value field ?
 """
-    Solution
+$TYPEDEF
 
 Should always be associated with an `Instance`.
 
 # Fields
-- `value::BitVector`: for each graph edge of instance, 1 if selected, else 0
-- `path_value::BitMatrix`: each row represents a vehicle, each column a task.
-    1 if task is done by the vehicle, else 0
+$TYPEDFIELDS
 """
 struct Solution
+    "for each graph edge of instance, 1 if selected, else 0"
     value::BitVector       # for every edge of graph 1 if selected, else 0
+    "each row represents a vehicle, each column a task.
+    1 if task is done by the vehicle, else 0"
     path_value::BitMatrix  # list of vehicles paths
 end
 
@@ -23,7 +24,7 @@ function get_nb_vehicles(solution::Solution)
 end
 
 """
-    get_routes(solution::Solution)
+$TYPEDSIGNATURES
 
 Compute routes of solution.
 """
@@ -42,7 +43,7 @@ function get_routes(solution::Solution)
 end
 
 """
-    Solution(value::BitVector, instance::Instance)
+$TYPEDSIGNATURES
 
 Create a Solution from a BitVector value.
 """
@@ -61,7 +62,7 @@ function Solution(value::BitVector, instance::Instance)
 end
 
 """
-    Solution(value::BitVector, instance::Instance)
+$TYPEDSIGNATURES
 
 Create a Solution from a BitMatrix path value.
 """
@@ -81,7 +82,7 @@ function Solution(path_value::BitMatrix, instance::Instance)
 end
 
 """
-    solution_from_paths(paths, instance::Instance)
+$TYPEDSIGNATURES
 
 Create a Solution from routes.
 """
@@ -103,7 +104,7 @@ function solution_from_paths(paths, instance::Instance)
 end
 
 """
-    solution_from_paths(paths, instance::Instance)
+$TYPEDSIGNATURES
 
 Create a Solution from a JuMP array.
 """
@@ -161,7 +162,7 @@ function basic_path_solution(graph::AbstractGraph)
 end
 
 """
-    basic_solution(graph::AbstractGraph)
+$TYPEDSIGNATURES
 
 Create a solution with one vehicle per task.
 """
@@ -179,13 +180,7 @@ function basic_solution(instance::Instance)
 end
 
 """
-    evaluate_task(
-        i_task::Integer,
-        instance::Instance,
-        old_task_index::Integer,
-        old_delay::Real,
-        scenario::Int,
-    )
+$TYPEDSIGNATURES
 
 Evaluate the total delay of task `i_task` in `scenario`, knowing that current delay from task
 `old_task_index` is `old_delay`.
@@ -197,9 +192,9 @@ function evaluate_task(
     old_delay::Real,
     scenario::Int,
 )
-    (; slacks, delays) = instance
+    (; slacks, intrinsic_delays) = instance
 
-    delay = delays[i_task, scenario]
+    delay = intrinsic_delays[i_task, scenario]
     slack = slacks[old_task_index, i_task][scenario]
 
     return delay + max(old_delay - slack, 0)
@@ -240,7 +235,7 @@ function evaluate_scenario(path_value::BitMatrix, instance::Instance, scenario_i
 end
 
 """
-    evaluate_scenario(solution::Solution, instance::Instance, scenario_index::Int)
+$TYPEDSIGNATURES
 
 Compute total delay of scenario.
 """
@@ -249,7 +244,7 @@ function evaluate_scenario(solution::Solution, instance::Instance, scenario_inde
 end
 
 """
-    evaluate_scenario(path_value::BitMatrix, instance::Instance, scenario_index::Int)
+$TYPEDSIGNATURES
 
 Compute total weighted objective of solution.
 """
@@ -267,7 +262,7 @@ function evaluate_solution(path_value::BitMatrix, instance::Instance)
 end
 
 """
-    evaluate_scenario(path_value::BitMatrix, instance::Instance, scenario_index::Int)
+$TYPEDSIGNATURES
 
 Compute total weighted objective of solution.
 """
@@ -314,7 +309,7 @@ function to_array(path_value::BitMatrix, instance::Instance)
 end
 
 """
-    to_array(solution::Solution, instance::Instance)
+$TYPEDSIGNATURES
 
 Returns a BitMatrix, with value true at each index (i, j) if corresponding edge of graph
 is selected in the solution
@@ -324,11 +319,11 @@ function to_array(solution::Solution, instance::Instance)
 end
 
 """
-    is_admissible(solution::Solution, instance::Instance)
+$TYPEDSIGNATURES
 
 Check if `solution` is an admissible solution of `instance`.
 """
-function is_admissible(solution::Solution, instance::Instance)
+function is_feasible(solution::Solution, instance::Instance)
     graph = instance.graph
     nb_nodes = nv(graph)
     nb_tasks = nb_nodes - 2
