@@ -3,7 +3,20 @@ module StochasticVehicleScheduling
 using ..Utils
 using DocStringExtensions: TYPEDEF, TYPEDFIELDS, TYPEDSIGNATURES
 using Distributions: Distribution, LogNormal, Uniform
-using Graphs: AbstractGraph, SimpleDiGraph, add_edge!, nv, ne, edges, src, dst
+using Graphs:
+    AbstractGraph,
+    SimpleDiGraph,
+    add_edge!,
+    nv,
+    ne,
+    edges,
+    src,
+    dst,
+    has_edge,
+    inneighbors,
+    outneighbors
+using JuMP:
+    Model, @variable, @objective, @constraint, optimize!, value, objective_value, set_silent
 using Printf: @printf
 using Random: Random, AbstractRNG, MersenneTwister
 using SparseArrays: sparse
@@ -16,6 +29,9 @@ include("instance/district.jl")
 include("instance/city.jl")
 include("instance/features.jl")
 include("instance/instance.jl")
+
+include("solution/solution.jl")
+include("solution/exact_algorithms/mip.jl")
 
 """
 $TYPEDFIELDS
@@ -58,6 +74,6 @@ function Utils.generate_statistical_model(bench::StochasticVehicleSchedulingBenc
 
 export StochasticVehicleSchedulingBenchmark
 
-export create_random_city, compute_features, Instance
+export compact_linearized_mip, compact_mip
 
 end

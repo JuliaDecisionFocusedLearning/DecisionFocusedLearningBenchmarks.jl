@@ -14,7 +14,7 @@ struct Instance{G<:AbstractGraph,M1<:AbstractMatrix,M2<:AbstractMatrix,F,C}
     "slack matrix"
     slacks::M1
     "intrinsic delays scenario matrix"
-    delays::M2
+    intrinsic_delays::M2
     "cost of a vehicle"
     vehicle_cost::C
     "cost of one minute delay"
@@ -75,8 +75,10 @@ function Instance(;
     graph = create_VSP_graph(city)
     features = compute_features(city)
     slacks = compute_slacks(city, graph)
-    delays = compute_delays(city)
-    return Instance(graph, features, slacks, delays, city.vehicle_cost, city.delay_cost)
+    intrinsic_delays = compute_delays(city)
+    return Instance(
+        graph, features, slacks, intrinsic_delays, city.vehicle_cost, city.delay_cost
+    )
 end
 
 """
