@@ -22,7 +22,11 @@ end
 Note: If you have Gurobi, use `grb_model` as `model_builder` instead of `glpk_model`.
 """
 function column_generation(
-    instance::Instance; only_relaxation=false, model_builder=highs_model
+    instance::Instance;
+    only_relaxation=false,
+    model_builder=highs_model,
+    bounding,
+    use_convex_resources,
 )
     (; graph, slacks, intrinsic_delays, vehicle_cost, delay_cost) = instance
 
@@ -53,7 +57,12 @@ function column_generation(
         optimize!(model)
         λ_val = value.(λ)
         (; c_star, p_star) = stochastic_routing_shortest_path(
-            graph, slacks, intrinsic_delays, λ_val ./ delay_cost
+            graph,
+            slacks,
+            intrinsic_delays,
+            λ_val ./ delay_cost;
+            bounding,
+            use_convex_resources,
         )
         λ_sum = sum(λ_val[v] for v in job_indices if v in p_star)
         path_cost = delay_cost * c_star + λ_sum + vehicle_cost
@@ -84,7 +93,13 @@ function column_generation(
     threshold = (c_upp - c_low - vehicle_cost) / delay_cost
     λ_val = value.(λ)
     additional_paths, costs = stochastic_routing_shortest_path_with_threshold(
-        graph, slacks, intrinsic_delays, λ_val ./ delay_cost; threshold
+        graph,
+        slacks,
+        intrinsic_delays,
+        λ_val ./ delay_cost;
+        threshold,
+        bounding=true,
+        use_convex_resources=false,
     )
 
     return value.(λ),
@@ -130,11 +145,15 @@ function compute_solution_from_selected_columns(
     optimize!(model)
 
     sol = value.(y)
-    return objective_value(model), sol, paths[[sol[p] for p in paths] .== 1.0]
+    return objective_value(model), sol, paths[isapprox.([sol[p] for p in paths], 1.0)]
 end
 
-function column_generation_algorithm(instance::Instance)
-    _, _, columns, _, _ = column_generation(instance)
+function column_generation_algorithm(
+    instance::Instance; bounding=false, use_convex_resources=false
+)
+    _, _, columns, _, _ = column_generation(
+        instance; bounding=bounding, use_convex_resources=use_convex_resources
+    )
     _, _, sol = compute_solution_from_selected_columns(instance, columns)
     col_solution = solution_from_paths(sol, instance)
     return col_solution

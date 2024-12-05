@@ -355,7 +355,7 @@ function is_feasible(solution::Solution, instance::Instance)
     end
 
     if !all(sum(solution.path_value; dims=1) .== 1)
-        @warn "One task done by more than one vehicle"
+        @warn "One task done by more than one vehicle (or less than once)"
         return false
     end
 
