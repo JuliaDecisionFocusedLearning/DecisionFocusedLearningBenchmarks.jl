@@ -5,6 +5,7 @@ using DocStringExtensions: TYPEDEF, TYPEDFIELDS, TYPEDSIGNATURES
 using ConstrainedShortestPaths:
     stochastic_routing_shortest_path, stochastic_routing_shortest_path_with_threshold
 using Distributions: Distribution, LogNormal, Uniform
+using Flux: Chain, Dense
 using Graphs:
     AbstractGraph,
     SimpleDiGraph,
@@ -44,6 +45,8 @@ include("solution/solution.jl")
 include("solution/exact_algorithms/mip.jl")
 include("solution/exact_algorithms/column_generation.jl")
 
+include("maximizer.jl")
+
 """
 $TYPEDFIELDS
 
@@ -80,8 +83,12 @@ function Utils.generate_dataset(
     ]
 end
 
-function Utils.generate_maximizer(bench::StochasticVehicleSchedulingBenchmark) end
-function Utils.generate_statistical_model(bench::StochasticVehicleSchedulingBenchmark) end
+function Utils.generate_maximizer(bench::StochasticVehicleSchedulingBenchmark)
+    return vsp_maximizer
+end
+function Utils.generate_statistical_model(bench::StochasticVehicleSchedulingBenchmark)
+    return Chain(Dense(20 => 1; bias=false), vec)
+end
 
 export StochasticVehicleSchedulingBenchmark
 
