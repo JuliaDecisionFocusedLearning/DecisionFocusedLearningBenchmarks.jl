@@ -5,7 +5,9 @@ Returns the optimal solution of the Stochastic VSP instance, by solving the asso
 Quadratic constraints are linearized using Mc Cormick linearization.
 Note: If you have Gurobi, use `grb_model` as `model_builder` instead of `highs_model`.
 """
-function compact_linearized_mip(instance::Instance; model_builder=scip_model, silent=true)
+function compact_linearized_mip(
+    instance::Instance, scenario_range=nothing; model_builder=scip_model, silent=true
+)
     (; graph, slacks, intrinsic_delays, vehicle_cost, delay_cost) = instance
     nb_nodes = nv(graph)
     job_indices = 2:(nb_nodes - 1)
@@ -15,7 +17,7 @@ function compact_linearized_mip(instance::Instance; model_builder=scip_model, si
     ε = intrinsic_delays
     Rmax = maximum(sum(ε; dims=1))
     nb_scenarios = size(ε, 2)
-    Ω = 1:nb_scenarios
+    Ω = isnothing(scenario_range) ? (1:nb_scenarios) : scenario_range
 
     # Model definition
     model = model_builder()
@@ -88,7 +90,9 @@ Note: If you have Gurobi, use `grb_model` as `model_builder` instead of `highs_m
 !!! warning
     You need to use a solver that supports quadratic constraints to use this method.
 """
-function compact_mip(instance::Instance; model_builder=scip_model, silent=true)
+function compact_mip(
+    instance::Instance, scenario_range=nothing; model_builder=scip_model, silent=true
+)
     (; graph, slacks, intrinsic_delays, vehicle_cost, delay_cost) = instance
     nb_nodes = nv(graph)
     job_indices = 2:(nb_nodes - 1)
@@ -97,7 +101,7 @@ function compact_mip(instance::Instance; model_builder=scip_model, silent=true)
     # Pre-processing
     ε = intrinsic_delays
     nb_scenarios = size(ε, 2)
-    Ω = 1:nb_scenarios
+    Ω = isnothing(scenario_range) ? (1:nb_scenarios) : scenario_range
 
     # Model definition
     model = model_builder()

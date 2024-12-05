@@ -27,8 +27,17 @@ function column_generation(
     model_builder=highs_model,
     bounding,
     use_convex_resources,
+    scenario_range=nothing,
+    silent=true,
 )
-    (; graph, slacks, intrinsic_delays, vehicle_cost, delay_cost) = instance
+    (; graph, vehicle_cost, delay_cost) = instance
+
+    Ω = isnothing(scenario_range) ? (1:get_nb_scenarios(instance)) : scenario_range
+    intrinsic_delays = instance.intrinsic_delays[:, Ω]
+    slacks = deepcopy(instance.slacks)
+    for edge in edges(graph)
+        slacks[src(edge), dst(edge)] = slacks[src(edge), dst(edge)][Ω]
+    end
 
     nb_nodes = nv(graph)
     job_indices = 2:(nb_nodes - 1)
@@ -66,6 +75,7 @@ function column_generation(
         )
         λ_sum = sum(λ_val[v] for v in job_indices if v in p_star)
         path_cost = delay_cost * c_star + λ_sum + vehicle_cost
+        silent || @info path_cost - λ_sum
         if path_cost - λ_sum > -1e-10
             break
         end
@@ -89,23 +99,24 @@ function column_generation(
         dual.(cons)
     end
 
-    # else, try to close the gap
-    threshold = (c_upp - c_low - vehicle_cost) / delay_cost
-    λ_val = value.(λ)
-    additional_paths, costs = stochastic_routing_shortest_path_with_threshold(
-        graph,
-        slacks,
-        intrinsic_delays,
-        λ_val ./ delay_cost;
-        threshold,
-        bounding=true,
-        use_convex_resources=false,
-    )
+    # @info "hello"
+    # # else, try to close the gap
+    # threshold = (c_upp - c_low - vehicle_cost) / delay_cost
+    # λ_val = value.(λ)
+    # @info "" size(intrinsic_delays) threshold
+    # additional_paths, costs = stochastic_routing_shortest_path_with_threshold(
+    #     graph,
+    #     slacks,
+    #     intrinsic_delays,
+    #     λ_val ./ delay_cost;
+    #     threshold,
+    #     bounding,
+    #     use_convex_resources,
+    # )
+    # @info "done"
 
     return value.(λ),
-    objective_value(model),
-    unique(cat(initial_paths, new_paths, additional_paths; dims=1)),
-    dual.(con),
+    objective_value(model), unique(cat(initial_paths, new_paths; dims=1)), dual.(con),
     dual.(cons)
 end
 
@@ -115,15 +126,27 @@ end
 Note: If you have Gurobi, use `grb_model` as `model_builder` instead od `glpk_model`.
 """
 function compute_solution_from_selected_columns(
-    instance::Instance, paths; bin=true, model_builder=highs_model
+    instance::Instance,
+    paths;
+    bin=true,
+    model_builder=highs_model,
+    scenario_range=nothing,
+    silent=true,
 )
-    (; graph, slacks, intrinsic_delays, vehicle_cost, delay_cost) = instance
+    (; graph, vehicle_cost, delay_cost) = instance
 
     nb_nodes = nv(graph)
     job_indices = 2:(nb_nodes - 1)
 
+    Ω = isnothing(scenario_range) ? (1:get_nb_scenarios(instance)) : scenario_range
+    intrinsic_delays = instance.intrinsic_delays[:, Ω]
+    slacks = deepcopy(instance.slacks)
+    for edge in edges(graph)
+        slacks[src(edge), dst(edge)] = slacks[src(edge), dst(edge)][Ω]
+    end
+
     model = model_builder()
-    set_silent(model)
+    silent && set_silent(model)
 
     if bin
         @variable(model, y[p in paths], Bin)
@@ -149,12 +172,23 @@ function compute_solution_from_selected_columns(
 end
 
 function column_generation_algorithm(
-    instance::Instance; bounding=false, use_convex_resources=false
+    instance::Instance,
+    scenario_range=nothing;
+    bounding=false,
+    use_convex_resources=false,
+    silent=true,
 )
+    Ω = isnothing(scenario_range) ? (1:get_nb_scenarios(instance)) : scenario_range
     _, _, columns, _, _ = column_generation(
-        instance; bounding=bounding, use_convex_resources=use_convex_resources
+        instance;
+        bounding=bounding,
+        use_convex_resources=use_convex_resources,
+        scenario_range=Ω,
+        silent=silent,
     )
-    _, _, sol = compute_solution_from_selected_columns(instance, columns)
+    _, _, sol = compute_solution_from_selected_columns(
+        instance, columns; scenario_range=Ω, silent=silent
+    )
     col_solution = solution_from_paths(sol, instance)
     return col_solution
 end
