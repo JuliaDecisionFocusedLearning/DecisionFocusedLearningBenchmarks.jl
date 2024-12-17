@@ -6,7 +6,7 @@ Quadratic constraints are linearized using Mc Cormick linearization.
 Note: If you have Gurobi, use `grb_model` as `model_builder` instead of `highs_model`.
 """
 function compact_linearized_mip(
-    instance::Instance, scenario_range=nothing; model_builder=scip_model, silent=true
+    instance::Instance; scenario_range=nothing, model_builder=scip_model, silent=true
 )
     (; graph, slacks, intrinsic_delays, vehicle_cost, delay_cost) = instance
     nb_nodes = nv(graph)
@@ -78,7 +78,7 @@ function compact_linearized_mip(
     solution = value.(y)
 
     sol = solution_from_JuMP_array(solution, graph)
-    return objective_value(model), sol
+    return sol
 end
 
 """
@@ -91,7 +91,7 @@ Note: If you have Gurobi, use `grb_model` as `model_builder` instead of `highs_m
     You need to use a solver that supports quadratic constraints to use this method.
 """
 function compact_mip(
-    instance::Instance, scenario_range=nothing; model_builder=scip_model, silent=true
+    instance::Instance; scenario_range=nothing, model_builder=scip_model, silent=true
 )
     (; graph, slacks, intrinsic_delays, vehicle_cost, delay_cost) = instance
     nb_nodes = nv(graph)
@@ -149,5 +149,5 @@ function compact_mip(
     solution = value.(y)
 
     sol = solution_from_JuMP_array(solution, graph)
-    return objective_value(model), sol
+    return sol
 end

@@ -5,8 +5,14 @@
 
     b = StochasticVehicleSchedulingBenchmark(; nb_tasks=25, nb_scenarios=10)
 
-    N = 50
-    dataset = generate_dataset(b, N)
+    N = 10
+    dataset = generate_dataset(b, N; compute_solutions=true, seed=0)
+    mip_dataset = generate_dataset(
+        b, N; compute_solutions=true, seed=0, algorithm=compact_mip
+    )
+    mipl_dataset = generate_dataset(
+        b, N; compute_solutions=true, seed=0, algorithm=compact_linearized_mip
+    )
     @test length(dataset) == N
 
     maximizer = generate_maximizer(b)

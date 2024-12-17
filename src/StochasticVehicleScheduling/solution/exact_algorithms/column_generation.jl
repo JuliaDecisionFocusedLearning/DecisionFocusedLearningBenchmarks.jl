@@ -89,35 +89,8 @@ function column_generation(
     end
 
     c_low = objective_value(model)
-    paths = cat(initial_paths, new_paths; dims=1)
-    c_upp, y, _ = compute_solution_from_selected_columns(instance, paths)
-
-    # If relaxation requested or solution is optimal, return
-    # if c_upp ≈ c_low || only_relaxation
-    #     return value.(λ),
-    #     objective_value(model), cat(initial_paths, new_paths; dims=1), dual.(con),
-    #     dual.(cons)
-    # end
-
-    # @info "hello"
-    # # else, try to close the gap
-    # threshold = (c_upp - c_low - vehicle_cost) / delay_cost
-    # λ_val = value.(λ)
-    # @info "" size(intrinsic_delays) threshold
-    # additional_paths, costs = stochastic_routing_shortest_path_with_threshold(
-    #     graph,
-    #     slacks,
-    #     intrinsic_delays,
-    #     λ_val ./ delay_cost;
-    #     threshold,
-    #     bounding,
-    #     use_convex_resources,
-    # )
-    # @info "done"
-
-    return value.(λ),
-    objective_value(model), unique(cat(initial_paths, new_paths; dims=1)), dual.(con),
-    dual.(cons)
+    columns = unique(cat(initial_paths, new_paths; dims=1))
+    return columns
 end
 
 """
@@ -171,15 +144,20 @@ function compute_solution_from_selected_columns(
     return objective_value(model), sol, paths[isapprox.([sol[p] for p in paths], 1.0)]
 end
 
+"""
+$TYPEDSIGNATURES
+
+Solve input instance using column generation.
+"""
 function column_generation_algorithm(
-    instance::Instance,
-    scenario_range=nothing;
-    bounding=false,
-    use_convex_resources=false,
+    instance::Instance;
+    scenario_range=nothing,
+    bounding=true,
+    use_convex_resources=true,
     silent=true,
 )
     Ω = isnothing(scenario_range) ? (1:get_nb_scenarios(instance)) : scenario_range
-    _, _, columns, _, _ = column_generation(
+    columns = column_generation(
         instance;
         bounding=bounding,
         use_convex_resources=use_convex_resources,

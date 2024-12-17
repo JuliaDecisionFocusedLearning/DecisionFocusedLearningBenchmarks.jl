@@ -66,17 +66,34 @@ end
 $TYPEDSIGNATURES
 
 Create a dataset of `dataset_size` instances for the given `StochasticVehicleSchedulingBenchmark`.
+If you want to also add label solutions in the dataset, set `compute_solutions=true`.
+By default, they will be computed using column generation.
+Note that computing solutions can be time-consuming, especially for large instances.
+You can also use instead `compact_mip` or `compact_linearized_mip` as the algorithm to compute solutions.
+If you want to provide a custom algorithm to compute solutions, you can pass it as the `algorithm` keyword argument.
+If `algorithm` takes keyword arguments, you can pass them as well directly in `kwargs...`.
 """
 function Utils.generate_dataset(
     benchmark::StochasticVehicleSchedulingBenchmark,
     dataset_size::Int;
+    compute_solutions=false,
     seed=nothing,
     rng=MersenneTwister(0),
+    algorithm=column_generation_algorithm,
+    kwargs...,
 )
     (; nb_tasks, nb_scenarios) = benchmark
     Random.seed!(rng, seed)
     instances = [Instance(; nb_tasks, nb_scenarios, rng=rng) for _ in 1:dataset_size]
     features = get_features.(instances)
+    if compute_solutions
+        solutions = [algorithm(instance; kwargs...) for instance in instances]
+        return [
+            DataSample(; x=feature, instance, y=solution) for
+            (instance, feature, solution) in zip(instances, features, solutions)
+        ]
+    end
+    # else
     return [
         DataSample(; x=feature, instance) for
         (instance, feature) in zip(instances, features)
