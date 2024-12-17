@@ -88,5 +88,6 @@ function Utils.generate_statistical_model(bench::SubsetSelectionBenchmark; seed=
 end
 
 export SubsetSelectionBenchmark
+export generate_dataset, generate_maximizer, generate_statistical_model
 
 end

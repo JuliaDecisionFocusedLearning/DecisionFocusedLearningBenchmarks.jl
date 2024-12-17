@@ -90,7 +90,7 @@ function column_generation(
 
     c_low = objective_value(model)
     columns = unique(cat(initial_paths, new_paths; dims=1))
-    return columns
+    return columns, c_low, value.(λ)
 end
 
 """
@@ -155,18 +155,38 @@ function column_generation_algorithm(
     bounding=true,
     use_convex_resources=true,
     silent=true,
+    close_gap=false,
 )
     Ω = isnothing(scenario_range) ? (1:get_nb_scenarios(instance)) : scenario_range
-    columns = column_generation(
+    columns, c_low, λ_val = column_generation(
         instance;
         bounding=bounding,
         use_convex_resources=use_convex_resources,
         scenario_range=Ω,
         silent=silent,
     )
-    _, _, sol = compute_solution_from_selected_columns(
+    c_upp, _, sol = compute_solution_from_selected_columns(
         instance, columns; scenario_range=Ω, silent=silent
     )
+
+    if close_gap && abs(c_upp - c_low) > 1e-6
+        (; vehicle_cost, delay_cost, graph, slacks) = instance
+        intrinsic_delays = instance.intrinsic_delays[:, Ω]
+        slacks = deepcopy(instance.slacks)
+        for edge in edges(graph)
+            slacks[src(edge), dst(edge)] = slacks[src(edge), dst(edge)][Ω]
+        end
+        threshold = (c_upp - c_low - vehicle_cost) / delay_cost
+        additional_paths, _ = stochastic_routing_shortest_path_with_threshold(
+            graph, slacks, intrinsic_delays, λ_val ./ delay_cost; threshold
+        )
+        columns = unique(cat(columns, additional_paths; dims=1))
+
+        _, _, sol = compute_solution_from_selected_columns(
+            instance, columns; scenario_range=Ω, silent=silent
+        )
+    end
+
     col_solution = solution_from_paths(sol, instance)
     return col_solution
 end

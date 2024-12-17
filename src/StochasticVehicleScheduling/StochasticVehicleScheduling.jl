@@ -100,15 +100,22 @@ function Utils.generate_dataset(
     ]
 end
 
+"""
+$TYPEDSIGNATURES
+"""
 function Utils.generate_maximizer(bench::StochasticVehicleSchedulingBenchmark)
     return vsp_maximizer
 end
+
+"""
+$TYPEDSIGNATURES
+"""
 function Utils.generate_statistical_model(bench::StochasticVehicleSchedulingBenchmark)
     return Chain(Dense(20 => 1; bias=false), vec)
 end
 
 export StochasticVehicleSchedulingBenchmark
-
+export generate_dataset, generate_maximizer, generate_statistical_model
 export compact_linearized_mip,
     compact_mip, column_generation_algorithm, evaluate_solution, is_feasible
 

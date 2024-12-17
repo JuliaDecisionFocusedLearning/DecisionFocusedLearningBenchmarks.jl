@@ -124,5 +124,6 @@ function Utils.generate_statistical_model(bench::PortfolioOptimizationBenchmark)
 end
 
 export PortfolioOptimizationBenchmark
+export generate_dataset, generate_maximizer, generate_statistical_model
 
 end
