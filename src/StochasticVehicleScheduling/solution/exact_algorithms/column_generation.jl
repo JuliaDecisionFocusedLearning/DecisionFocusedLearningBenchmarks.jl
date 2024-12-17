@@ -93,11 +93,11 @@ function column_generation(
     c_upp, y, _ = compute_solution_from_selected_columns(instance, paths)
 
     # If relaxation requested or solution is optimal, return
-    if c_upp ≈ c_low || only_relaxation
-        return value.(λ),
-        objective_value(model), cat(initial_paths, new_paths; dims=1), dual.(con),
-        dual.(cons)
-    end
+    # if c_upp ≈ c_low || only_relaxation
+    #     return value.(λ),
+    #     objective_value(model), cat(initial_paths, new_paths; dims=1), dual.(con),
+    #     dual.(cons)
+    # end
 
     # @info "hello"
     # # else, try to close the gap
