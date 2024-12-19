@@ -87,12 +87,14 @@ The keyword argument `θ_true` is used to set the color range of the weights plo
 function Utils.plot_data(
     ::WarcraftBenchmark,
     sample::DataSample;
-    θ_true=sample.θ,
+    θ_true=sample.θ_true,
     θ_title="Weights",
     y_title="Path",
     kwargs...,
 )
-    (; x, y, θ) = sample
+    x = sample.x
+    y = sample.y_true
+    θ = sample.θ_true
     im = dropdims(x; dims=4)
     img = convert_image_for_plot(im)
     p1 = Plots.plot(
