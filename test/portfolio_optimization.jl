@@ -10,9 +10,7 @@
     maximizer = generate_maximizer(b)
 
     for sample in dataset
-        x = sample.x
-        θ_true = sample.θ
-        y_true = sample.y
+        (; x, θ_true, y_true) = sample
         @test size(x) == (p,)
         @test length(θ_true) == d
         @test length(y_true) == d

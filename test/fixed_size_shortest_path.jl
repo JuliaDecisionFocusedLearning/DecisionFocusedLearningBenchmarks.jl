@@ -18,9 +18,7 @@
     @test gap >= 0
 
     for sample in dataset
-        x = sample.x
-        θ_true = sample.θ
-        y_true = sample.y
+        (; x, θ_true, y_true) = sample
         @test all(θ_true .< 0)
         @test size(x) == (p,)
         @test length(θ_true) == A

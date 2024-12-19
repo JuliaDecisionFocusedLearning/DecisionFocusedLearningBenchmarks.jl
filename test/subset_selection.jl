@@ -16,9 +16,7 @@
     maximizer = generate_maximizer(b)
 
     for (i, sample) in enumerate(dataset)
-        x = sample.x
-        θ_true = sample.θ
-        y_true = sample.y
+        (; x, θ_true, y_true) = sample
         @test size(x) == (n,)
         @test length(θ_true) == n
         @test length(y_true) == n
