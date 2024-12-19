@@ -25,10 +25,10 @@ train_dataset, test_dataset = dataset[1:45], dataset[46:50]
 sample = test_dataset[1]
 # `x` correspond to the input features, i.e. the input image (3D array) in the Warcraft benchmark case:
 x = sample.x
-# `θ` correspond to the true unknown terrain weights. We use the opposite of the true weights in order to formulate the optimization problem as a maximization problem:
-θ_true = sample.θ
-# `y` correspond to the optimal shortest path, encoded as a binary matrix:
-y_true = sample.y
+# `θ_true` correspond to the true unknown terrain weights. We use the opposite of the true weights in order to formulate the optimization problem as a maximization problem:
+θ_true = sample.θ_true
+# `y_true` correspond to the optimal shortest path, encoded as a binary matrix:
+y_true = sample.y_true
 # `instance` is not used in this benchmark, therefore set to nothing:
 isnothing(sample.instance)
 
@@ -50,7 +50,7 @@ maximizer = generate_maximizer(b; dijkstra=true)
 # In the case o fthe Warcraft benchmark, the method has an additional keyword argument to chose the algorithm to use: Dijkstra's algorithm or Bellman-Ford algorithm.
 y = maximizer(θ)
 # As we can see, currently the pipeline predicts random noise as cell weights, and therefore the maximizer returns a straight line path.
-plot_data(b, DataSample(; x, θ, y))
+plot_data(b, DataSample(; x, θ_true=θ, y_true=y))
 # We can evaluate the current pipeline performance using the optimality gap metric:
 starting_gap = compute_gap(b, test_dataset, model, maximizer)
 
@@ -70,7 +70,7 @@ opt_state = Flux.setup(Adam(1e-3), model)
 loss_history = Float64[]
 for epoch in 1:50
     val, grads = Flux.withgradient(model) do m
-        sum(loss(m(sample.x), sample.y) for sample in train_dataset) / length(train_dataset)
+        sum(loss(m(x), y_true) for (; x, y_true) in train_dataset) / length(train_dataset)
     end
     Flux.update!(opt_state, model, grads[1])
     push!(loss_history, val)
@@ -85,4 +85,4 @@ final_gap = compute_gap(b, test_dataset, model, maximizer)
 #
 θ = model(x)
 y = maximizer(θ)
-plot_data(b, DataSample(; x, θ, y))
+plot_data(b, DataSample(; x, θ_true=θ, y_true=y))
