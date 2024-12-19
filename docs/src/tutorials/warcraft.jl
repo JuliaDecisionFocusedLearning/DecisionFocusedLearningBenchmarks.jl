@@ -85,4 +85,4 @@ final_gap = compute_gap(b, test_dataset, model, maximizer)
 #
 θ = model(x)
 y = maximizer(θ)
-plot_data(b, DataSample(; x, θ, y))
+plot_data(b, DataSample(; x, θ_true=θ, y_true=y))
