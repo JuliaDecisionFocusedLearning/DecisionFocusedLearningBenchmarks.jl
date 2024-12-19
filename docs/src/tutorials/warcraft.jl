@@ -50,7 +50,7 @@ maximizer = generate_maximizer(b; dijkstra=true)
 # In the case o fthe Warcraft benchmark, the method has an additional keyword argument to chose the algorithm to use: Dijkstra's algorithm or Bellman-Ford algorithm.
 y = maximizer(θ)
 # As we can see, currently the pipeline predicts random noise as cell weights, and therefore the maximizer returns a straight line path.
-plot_data(b, DataSample(; x, θ, y))
+plot_data(b, DataSample(; x, θ_true=θ, y_true=y))
 # We can evaluate the current pipeline performance using the optimality gap metric:
 starting_gap = compute_gap(b, test_dataset, model, maximizer)
 
