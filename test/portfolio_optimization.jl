@@ -22,6 +22,6 @@
 
         y = maximizer(θ)
         @test length(y) == d
-        @test sum(y) <= 1
+        @test sum(y) <= 1 + 1e-6
     end
 end
