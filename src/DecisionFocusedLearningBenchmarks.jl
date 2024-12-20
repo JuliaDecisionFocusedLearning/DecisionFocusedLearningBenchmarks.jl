@@ -28,6 +28,7 @@ include("PortfolioOptimization/PortfolioOptimization.jl")
 
 using .Utils
 using .Argmax
+using .Ranking
 using .SubsetSelection
 using .Warcraft
 using .FixedSizeShortestPath
@@ -43,6 +44,7 @@ export compute_gap
 
 # Export all benchmarks
 export ArgmaxBenchmark
+export RankingBenchmark
 export SubsetSelectionBenchmark
 export WarcraftBenchmark
 export FixedSizeShortestPathBenchmark
