@@ -94,7 +94,7 @@ function column_generation(
 end
 
 """
-    compute_solution_from_selected_columns(instance::Instance, paths[; bin=true])
+$TYPEDSIGNATURES
 
 Note: If you have Gurobi, use `grb_model` as `model_builder` instead od `glpk_model`.
 """
@@ -141,7 +141,9 @@ function compute_solution_from_selected_columns(
     optimize!(model)
 
     sol = value.(y)
-    return objective_value(model), sol, paths[isapprox.([sol[p] for p in paths], 1.0)]
+    return Float64(objective_value(model)),
+    sol,
+    paths[isapprox.([sol[p] for p in paths], 1.0)]
 end
 
 """

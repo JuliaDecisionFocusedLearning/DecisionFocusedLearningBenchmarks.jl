@@ -89,7 +89,7 @@ function Utils.generate_dataset(
     if compute_solutions
         solutions = [algorithm(instance; kwargs...) for instance in instances]
         return [
-            DataSample(; x=feature, instance, y=solution) for
+            DataSample(; x=feature, instance, y_true=solution) for
             (instance, feature, solution) in zip(instances, features, solutions)
         ]
     end
