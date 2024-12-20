@@ -40,7 +40,7 @@ function create_dataset(decompressed_path::String, nb_samples::Int)
     ]
     Y = [BitMatrix(terrain_labels[:, :, i]) for i in 1:N]
     WG = [-terrain_weights[:, :, i] for i in 1:N]
-    return [DataSample(; x, y, θ) for (x, y, θ) in zip(X, Y, WG)]
+    return [DataSample(; x, y_true, θ_true) for (x, y_true, θ_true) in zip(X, Y, WG)]
 end
 
 """

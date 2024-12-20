@@ -23,18 +23,22 @@ end
 
 include("Utils/Utils.jl")
 
+include("Argmax/Argmax.jl")
+include("Ranking/Ranking.jl")
+include("SubsetSelection/SubsetSelection.jl")
 include("Warcraft/Warcraft.jl")
 include("FixedSizeShortestPath/FixedSizeShortestPath.jl")
 include("PortfolioOptimization/PortfolioOptimization.jl")
-include("SubsetSelection/SubsetSelection.jl")
 
 include("StochasticVehicleScheduling/StochasticVehicleScheduling.jl")
 
 using .Utils
+using .Argmax
+using .Ranking
+using .SubsetSelection
 using .Warcraft
 using .FixedSizeShortestPath
 using .PortfolioOptimization
-using .SubsetSelection
 using .StochasticVehicleScheduling
 
 # Interface
@@ -46,10 +50,12 @@ export plot_data
 export compute_gap
 
 # Export all benchmarks
+export ArgmaxBenchmark
+export RankingBenchmark
+export SubsetSelectionBenchmark
 export WarcraftBenchmark
 export FixedSizeShortestPathBenchmark
 export PortfolioOptimizationBenchmark
-export SubsetSelectionBenchmark
 export StochasticVehicleSchedulingBenchmark
 
 end # module DecisionFocusedLearningBenchmarks

@@ -9,10 +9,10 @@ $TYPEDFIELDS
 @kwdef struct DataSample{F,S,C,I}
     "features"
     x::F
-    "costs"
-    θ::C = nothing
-    "solution"
-    y::S = nothing
-    "instance"
+    "target cost parameters (optional)"
+    θ_true::C = nothing
+    "target solution (optional)"
+    y_true::S = nothing
+    "instance object (optional)"
     instance::I = nothing
 end

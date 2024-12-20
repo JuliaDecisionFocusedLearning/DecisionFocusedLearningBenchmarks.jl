@@ -75,8 +75,8 @@ function compute_gap(
 
     for sample in dataset
         x = sample.x
-        θ̄ = sample.θ
-        ȳ = sample.y
+        θ̄ = sample.θ_true
+        ȳ = sample.y_true
         θ = statistical_model(x)
         y = maximizer(θ)
         target_obj = objective_value(bench, θ̄, ȳ)

@@ -73,7 +73,10 @@ function Utils.generate_dataset(
         mapping.(features)
     end
     solutions = top_k.(costs, k)
-    return [DataSample(; x=x, θ=θ, y=y) for (x, θ, y) in zip(features, costs, solutions)]
+    return [
+        DataSample(; x, θ_true, y_true) for
+        (x, θ_true, y_true) in zip(features, costs, solutions)
+    ]
 end
 
 """
