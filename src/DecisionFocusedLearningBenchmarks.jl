@@ -1,10 +1,10 @@
 module DecisionFocusedLearningBenchmarks
 
 using DataDeps
-using HiGHS
-using InferOpt
+using Requires: @require
 
 function __init__()
+    # Register the Warcraft dataset
     ENV["DATADEPS_ALWAYS_ACCEPT"] = "true"
     register(
         DataDep(
@@ -14,6 +14,10 @@ function __init__()
             post_fetch_method=unpack,
         ),
     )
+
+    # Gurobi setup
+    @info "If you have Gurobi installed and want to use it, make sure to `using Gurobi` in order to enable it."
+    @require Gurobi = "2e9cd046-0924-5485-92f1-d5272153d98b" include("gurobi_setup.jl")
     return nothing
 end
 
@@ -26,6 +30,8 @@ include("Warcraft/Warcraft.jl")
 include("FixedSizeShortestPath/FixedSizeShortestPath.jl")
 include("PortfolioOptimization/PortfolioOptimization.jl")
 
+include("StochasticVehicleScheduling/StochasticVehicleScheduling.jl")
+
 using .Utils
 using .Argmax
 using .Ranking
@@ -33,6 +39,7 @@ using .SubsetSelection
 using .Warcraft
 using .FixedSizeShortestPath
 using .PortfolioOptimization
+using .StochasticVehicleScheduling
 
 # Interface
 export AbstractBenchmark, DataSample
@@ -49,5 +56,6 @@ export SubsetSelectionBenchmark
 export WarcraftBenchmark
 export FixedSizeShortestPathBenchmark
 export PortfolioOptimizationBenchmark
+export StochasticVehicleSchedulingBenchmark
 
 end # module DecisionFocusedLearningBenchmarks

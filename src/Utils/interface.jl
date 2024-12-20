@@ -3,10 +3,12 @@ $TYPEDEF
 
 Abstract type interface for a benchmark problem.
 
-The following methods exist for benchmarks:
+The following methods are mandatory for benchmarks:
 - [`generate_dataset`](@ref)
 - [`generate_statistical_model`](@ref)
 - [`generate_maximizer`](@ref)
+
+The following methods are optional:
 - [`plot_data`](@ref)
 - [`objective_value`](@ref)
 - [`compute_gap`](@ref)
@@ -14,7 +16,7 @@ The following methods exist for benchmarks:
 abstract type AbstractBenchmark end
 
 """
-    generate_dataset(::AbstractBenchmark, dataset_size::Int) -> Vector{<:DataSample}
+    generate_dataset(::AbstractBenchmark, dataset_size::Int; kwargs...) -> Vector{<:DataSample}
 
 Generate a `Vector` of [`DataSample`](@ref)  of length `dataset_size` for given benchmark.
 Content of the dataset can be visualized using [`plot_data`](@ref), when it applies.
@@ -22,7 +24,7 @@ Content of the dataset can be visualized using [`plot_data`](@ref), when it appl
 function generate_dataset end
 
 """
-    generate_maximizer(::AbstractBenchmark)
+    generate_maximizer(::AbstractBenchmark; kwargs...)
 
 Generates a maximizer function.
 Returns a callable f: (θ; kwargs...) -> y, where θ is a cost array and y is a solution.
@@ -30,10 +32,10 @@ Returns a callable f: (θ; kwargs...) -> y, where θ is a cost array and y is a 
 function generate_maximizer end
 
 """
-    generate_statistical_model(::AbstractBenchmark)
+    generate_statistical_model(::AbstractBenchmark; kwargs...)
 
 Initializes and return an untrained statistical model of the CO-ML pipeline.
-It's usually a Flux model, that takes a feature matrix x as iinput, and returns a cost array θ as output.
+It's usually a Flux model, that takes a feature matrix x as input, and returns a cost array θ as output.
 """
 function generate_statistical_model end
 
