@@ -46,7 +46,7 @@ export AbstractBenchmark, DataSample
 export generate_dataset
 export generate_statistical_model
 export generate_maximizer
-export plot_data
+export plot_data, plot_instance, plot_solution
 export compute_gap
 
 # Export all benchmarks

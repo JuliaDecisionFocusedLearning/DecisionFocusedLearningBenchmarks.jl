@@ -28,6 +28,7 @@ using JuMP:
     objective_value,
     set_silent,
     dual
+using Plots: Plots, plot, plot!, scatter!, annotate!, text
 using Printf: @printf
 using Random: Random, AbstractRNG, MersenneTwister
 using SparseArrays: sparse
@@ -72,6 +73,7 @@ Note that computing solutions can be time-consuming, especially for large instan
 You can also use instead `compact_mip` or `compact_linearized_mip` as the algorithm to compute solutions.
 If you want to provide a custom algorithm to compute solutions, you can pass it as the `algorithm` keyword argument.
 If `algorithm` takes keyword arguments, you can pass them as well directly in `kwargs...`.
+If `store_city=false`, the coordinates and unnecessary information about instances will not be stored in the dataset.
 """
 function Utils.generate_dataset(
     benchmark::StochasticVehicleSchedulingBenchmark,
@@ -80,11 +82,14 @@ function Utils.generate_dataset(
     seed=nothing,
     rng=MersenneTwister(0),
     algorithm=column_generation_algorithm,
+    store_city=true,
     kwargs...,
 )
     (; nb_tasks, nb_scenarios) = benchmark
     Random.seed!(rng, seed)
-    instances = [Instance(; nb_tasks, nb_scenarios, rng=rng) for _ in 1:dataset_size]
+    instances = [
+        Instance(; nb_tasks, nb_scenarios, rng, store_city) for _ in 1:dataset_size
+    ]
     features = get_features.(instances)
     if compute_solutions
         solutions = [algorithm(instance; kwargs...) for instance in instances]
@@ -114,8 +119,96 @@ function Utils.generate_statistical_model(bench::StochasticVehicleSchedulingBenc
     return Chain(Dense(20 => 1; bias=false), vec)
 end
 
+function plot_instance(
+    ::StochasticVehicleSchedulingBenchmark,
+    sample::DataSample{<:Instance{City}};
+    color_scheme=:lightrainbow,
+    kwargs...,
+)
+    (; tasks, district_width, width) = sample.instance.city
+    ticks = 0:district_width:width
+    max_time = maximum(t.end_time for t in sample.instance.city.tasks[1:(end - 1)])
+    pp = floor(Int, max(max_time))
+    palette = Plots.palette(color_scheme, pp)
+    fig = plot(;
+        xlabel="x",
+        ylabel="y",
+        legend=false,
+        gridlinewidth=3,
+        aspect_ratio=:equal,
+        size=(500, 500),
+        xticks=ticks,
+        yticks=ticks,
+        xlims=(-1, width + 1),
+        ylims=(-1, width + 1),
+    )
+    for (i_task, task) in enumerate(tasks[1:(end - 1)])
+        (; start_point, end_point) = task
+        points = [(start_point.x, start_point.y), (end_point.x, end_point.y)]
+        plot!(fig, points; color=:black)
+        scatter!(
+            fig,
+            points[1];
+            markersize=10,
+            marker=:rect,
+            color=palette[max(floor(Int, task.start_time), 1)],
+        )
+        scatter!(
+            fig,
+            points[2];
+            markersize=10,
+            marker=:rect,
+            color=palette[max(floor(Int, task.end_time), 1)],
+        )
+        annotate!(fig, (points[1]..., text("$(i_task-1)", 10)))
+    end
+    p2 = Plots.heatmap(
+        rand(2, 2); clims=(0, pp), framestyle=:none, c=palette, cbar=true, lims=(-1, -1)
+    )
+    l = Plots.@layout [a{0.99w} b]
+    return plot(fig, p2; layout=l)
+end
+
+function plot_solution(
+    ::StochasticVehicleSchedulingBenchmark, sample::DataSample{<:Instance{City}}; kwargs...
+)
+    (; tasks, district_width, width) = sample.instance.city
+    ticks = 0:district_width:width
+    path_list = compute_path_list(sample.y_true)
+    fig = plot(;
+        xlabel="x",
+        ylabel="y",
+        legend=false,
+        gridlinewidth=3,
+        aspect_ratio=:equal,
+        size=(500, 500),
+        xticks=ticks,
+        yticks=ticks,
+        xlims=(-1, width + 1),
+        ylims=(-1, width + 1),
+    )
+    for path in path_list
+        X = Float64[]
+        Y = Float64[]
+        (; start_point, end_point) = tasks[path[1]]
+        (; x, y) = end_point
+        push!(X, x)
+        push!(Y, y)
+        for task in path[2:end]
+            (; start_point, end_point) = tasks[task]
+            push!(X, start_point.x)
+            push!(Y, start_point.y)
+            push!(X, end_point.x)
+            push!(Y, end_point.y)
+        end
+        plot!(fig, X, Y; marker=:circle)
+    end
+    return fig
+end
+
 export StochasticVehicleSchedulingBenchmark
 export generate_dataset, generate_maximizer, generate_statistical_model
+export plot_instance, plot_solution
 export compact_linearized_mip,
     compact_mip, column_generation_algorithm, evaluate_solution, is_feasible
 

@@ -6,7 +6,7 @@ Instance of the stochastic VSP problem.
 # Fields
 $TYPEDFIELDS
 """
-struct Instance{G<:AbstractGraph,M1<:AbstractMatrix,M2<:AbstractMatrix,F,C}
+struct Instance{CC,G<:AbstractGraph,M1<:AbstractMatrix,M2<:AbstractMatrix,F,C}
     "graph computed from `city` with the `create_VSP_graph(city::City)` method"
     graph::G
     "features matrix computed from `city`"
@@ -19,6 +19,8 @@ struct Instance{G<:AbstractGraph,M1<:AbstractMatrix,M2<:AbstractMatrix,F,C}
     vehicle_cost::C
     "cost of one minute delay"
     delay_cost::C
+    "associated city"
+    city::CC
 end
 
 """
@@ -69,7 +71,11 @@ Constructor for [`Instance`](@ref).
 Build an `Instance` for the stochatsic vehicle scheduling problem, with `nb_tasks` tasks and `nb_scenarios` scenarios.
 """
 function Instance(;
-    nb_tasks::Int, nb_scenarios::Int, rng::AbstractRNG=Random.default_rng(), kwargs...
+    nb_tasks::Int,
+    nb_scenarios::Int,
+    rng::AbstractRNG=Random.default_rng(),
+    store_city=true,
+    kwargs...,
 )
     city = create_random_city(; rng=rng, nb_tasks, nb_scenarios, kwargs...)
     graph = create_VSP_graph(city)
@@ -77,7 +83,13 @@ function Instance(;
     slacks = compute_slacks(city, graph)
     intrinsic_delays = compute_delays(city)
     return Instance(
-        graph, features, slacks, intrinsic_delays, city.vehicle_cost, city.delay_cost
+        graph,
+        features,
+        slacks,
+        intrinsic_delays,
+        city.vehicle_cost,
+        city.delay_cost,
+        store_city ? city : nothing,
     )
 end
 

@@ -46,6 +46,8 @@ Plot a data sample from the dataset created by [`generate_dataset`](@ref).
 Check the specific benchmark documentation of `plot_data` for more details on the arguments.
 """
 function plot_data end
+function plot_instance end
+function plot_solution end
 
 """
     compute_gap(::AbstractBenchmark, dataset::Vector{<:DataSample}, statistical_model, maximizer) -> Float64
