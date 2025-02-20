@@ -88,7 +88,7 @@ function column_generation(
         )
     end
 
-    c_low = objective_value(model)
+    c_low = Float64(objective_value(model))
     columns = unique(cat(initial_paths, new_paths; dims=1))
     return columns, c_low, value.(λ)
 end

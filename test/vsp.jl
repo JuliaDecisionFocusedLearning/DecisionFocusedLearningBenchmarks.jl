@@ -2,6 +2,7 @@
     using DecisionFocusedLearningBenchmarks
     using DecisionFocusedLearningBenchmarks.StochasticVehicleScheduling
     using Graphs
+    using Plots
 
     b = StochasticVehicleSchedulingBenchmark(; nb_tasks=25, nb_scenarios=10)
 
