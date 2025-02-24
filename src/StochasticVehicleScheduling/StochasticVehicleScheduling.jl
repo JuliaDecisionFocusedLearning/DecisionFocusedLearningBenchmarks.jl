@@ -49,7 +49,7 @@ include("solution/exact_algorithms/column_generation.jl")
 include("maximizer.jl")
 
 """
-$TYPEDFIELDS
+$TYPEDEF
 
 Data structure for a stochastic vehicle scheduling benchmark.
 

@@ -54,7 +54,7 @@ function compute_features(city::City)
 
     cumul = [-100, -50, -20, -10, 0, 10, 50, 200, 500]
     nb_features = 2 + 9 + length(cumul)
-    features = zeros(nb_features, ne(graph))
+    features = zeros(Float32, nb_features, ne(graph))
 
     # features indices
     travel_time_index = 1
