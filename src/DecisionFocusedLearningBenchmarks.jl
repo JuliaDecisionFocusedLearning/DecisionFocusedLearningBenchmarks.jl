@@ -38,7 +38,7 @@ using .PortfolioOptimization
 export AbstractBenchmark, DataSample
 export generate_dataset
 export generate_statistical_model
-export generate_maximizer
+export generate_maximizer, maximizer_kwargs
 export plot_data
 export compute_gap
 
