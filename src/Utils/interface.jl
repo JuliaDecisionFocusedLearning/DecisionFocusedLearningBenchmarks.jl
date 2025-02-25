@@ -40,13 +40,25 @@ It's usually a Flux model, that takes a feature matrix x as input, and returns a
 function generate_statistical_model end
 
 """
-    plot_data(::AbstractBenchmark, args...)
+    plot_data(::AbstractBenchmark, ::DataSample; kwargs...)
 
 Plot a data sample from the dataset created by [`generate_dataset`](@ref).
 Check the specific benchmark documentation of `plot_data` for more details on the arguments.
 """
 function plot_data end
+
+"""
+    plot_instance(::AbstractBenchmark, instance; kwargs...)
+
+Plot the instance object of the sample.
+"""
 function plot_instance end
+
+"""
+    plot_solution(::AbstractBenchmark, sample::DataSample, [solution]; kwargs...)
+
+Plot `solution` if given, else plot the target solution in the sample.
+"""
 function plot_solution end
 
 """

@@ -134,12 +134,9 @@ function plot_instance(
     (; tasks, district_width, width) = sample.instance.city
     ticks = 0:district_width:width
     max_time = maximum(t.end_time for t in sample.instance.city.tasks[1:(end - 1)])
-    pp = floor(Int, max(max_time))
-    palette = Plots.palette(color_scheme, pp)
     fig = plot(;
         xlabel="x",
         ylabel="y",
-        legend=false,
         gridlinewidth=3,
         aspect_ratio=:equal,
         size=(500, 500),
@@ -147,32 +144,45 @@ function plot_instance(
         yticks=ticks,
         xlims=(-1, width + 1),
         ylims=(-1, width + 1),
+        clim=(0.0, max_time),
+        label=nothing,
+        colorbar_title="Time",
     )
-    for (i_task, task) in enumerate(tasks[1:(end - 1)])
+    scatter!(
+        fig,
+        [tasks[1].start_point.x],
+        [tasks[1].start_point.y];
+        label=nothing,
+        marker=:rect,
+        markersize=10,
+    )
+    annotate!(fig, (tasks[1].start_point.x, tasks[1].start_point.y, text("0", 10)))
+    for (i_task, task) in enumerate(tasks[2:(end - 1)])
         (; start_point, end_point) = task
         points = [(start_point.x, start_point.y), (end_point.x, end_point.y)]
-        plot!(fig, points; color=:black)
+        plot!(fig, points; color=:black, label=nothing)
         scatter!(
             fig,
             points[1];
             markersize=10,
             marker=:rect,
-            color=palette[max(floor(Int, task.start_time), 1)],
+            marker_z=task.start_time,
+            colormap=:turbo,
+            label=nothing,
         )
         scatter!(
             fig,
             points[2];
             markersize=10,
             marker=:rect,
-            color=palette[max(floor(Int, task.end_time), 1)],
+            marker_z=task.end_time,
+            colormap=:turbo,
+            label=nothing,
+            # color=palette[max(floor(Int, task.end_time), 1)],
         )
-        annotate!(fig, (points[1]..., text("$(i_task-1)", 10)))
+        annotate!(fig, (points[1]..., text("$(i_task)", 10)))
     end
-    p2 = Plots.heatmap(
-        rand(2, 2); clims=(0, pp), framestyle=:none, c=palette, cbar=true, lims=(-1, -1)
-    )
-    l = Plots.@layout [a{0.99w} b]
-    return plot(fig, p2; layout=l)
+    return fig
 end
 
 function plot_solution(
@@ -180,7 +190,8 @@ function plot_solution(
 )
     (; tasks, district_width, width) = sample.instance.city
     ticks = 0:district_width:width
-    path_list = compute_path_list(sample.y_true)
+    solution = Solution(sample.y_true, sample.instance)
+    path_list = compute_path_list(solution)
     fig = plot(;
         xlabel="x",
         ylabel="y",
