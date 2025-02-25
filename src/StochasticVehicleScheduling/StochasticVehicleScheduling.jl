@@ -26,15 +26,7 @@ using Graphs:
     inneighbors,
     outneighbors
 using JuMP:
-    Model,
-    @variable,
-    @objective,
-    @constraint,
-    optimize!,
-    value,
-    objective_value,
-    set_silent,
-    dual
+    JuMP, Model, @variable, @objective, @constraint, optimize!, value, set_silent, dual
 using Plots: Plots, plot, plot!, scatter!, annotate!, text
 using Printf: @printf
 using Random: Random, AbstractRNG, MersenneTwister
@@ -81,7 +73,7 @@ end
 $TYPEDSIGNATURES
 
 Create a dataset of `dataset_size` instances for the given `StochasticVehicleSchedulingBenchmark`.
-If you want to also add label solutions in the dataset, set `compute_solutions=true`.
+If you want to not add label solutions in the dataset, set `compute_solutions=false`.
 By default, they will be computed using column generation.
 Note that computing solutions can be time-consuming, especially for large instances.
 You can also use instead `compact_mip` or `compact_linearized_mip` as the algorithm to compute solutions.
@@ -92,7 +84,7 @@ If `store_city=false`, the coordinates and unnecessary information about instanc
 function Utils.generate_dataset(
     benchmark::StochasticVehicleSchedulingBenchmark,
     dataset_size::Int;
-    compute_solutions=false,
+    compute_solutions=true,
     seed=nothing,
     rng=MersenneTwister(0),
     algorithm=column_generation_algorithm,
@@ -133,6 +125,9 @@ function Utils.generate_statistical_model(bench::StochasticVehicleSchedulingBenc
     return Chain(Dense(20 => 1; bias=false), vec)
 end
 
+"""
+$TYPEDSIGNATURES
+"""
 function plot_instance(
     ::StochasticVehicleSchedulingBenchmark,
     sample::DataSample{<:Instance{City}};
@@ -193,6 +188,9 @@ function plot_instance(
     return fig
 end
 
+"""
+$TYPEDSIGNATURES
+"""
 function plot_solution(
     ::StochasticVehicleSchedulingBenchmark, sample::DataSample{<:Instance{City}}; kwargs...
 )

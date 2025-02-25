@@ -54,6 +54,12 @@ function FixedSizeShortestPathBenchmark(;
     return FixedSizeShortestPathBenchmark(g, grid_size, p, deg, ν)
 end
 
+function Utils.objective_value(
+    ::FixedSizeShortestPathBenchmark, θ::AbstractArray, y::AbstractArray
+)
+    return -dot(θ, y)
+end
+
 """
 $TYPEDSIGNATURES
 

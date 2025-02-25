@@ -46,7 +46,7 @@ function find_first_one(A::AbstractVector)
             return i
         end
     end
-    return nothing
+    return -1
 end
 
 # Config stuff, probably not needed in this package

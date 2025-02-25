@@ -15,32 +15,32 @@ struct Solution
     path_value::BitMatrix  # list of vehicles paths
 end
 
-function get_nb_vehicles(path_value::BitMatrix)
-    return sum(any(path_value; dims=2))
-end
+# function get_nb_vehicles(path_value::BitMatrix)
+#     return sum(any(path_value; dims=2))
+# end
 
-function get_nb_vehicles(solution::Solution)
-    return get_nb_vehicles(solution.path_value)
-end
+# function get_nb_vehicles(solution::Solution)
+#     return get_nb_vehicles(solution.path_value)
+# end
 
-"""
-$TYPEDSIGNATURES
+# """
+# $TYPEDSIGNATURES
 
-Compute routes of solution.
-"""
-function get_routes(solution::Solution)
-    res = Vector{Int}[]
-    for vehicle in 1:get_nb_vehicles(solution)
-        resv = Int[]
-        for (index, value) in enumerate(solution.path_value[vehicle, :])
-            if value
-                push!(resv, index + 1)
-            end
-        end
-        push!(res, resv)
-    end
-    return res
-end
+# Compute routes of solution.
+# """
+# function get_routes(solution::Solution)
+#     res = Vector{Int}[]
+#     for vehicle in 1:get_nb_vehicles(solution)
+#         resv = Int[]
+#         for (index, value) in enumerate(solution.path_value[vehicle, :])
+#             if value
+#                 push!(resv, index + 1)
+#             end
+#         end
+#         push!(res, resv)
+#     end
+#     return res
+# end
 
 """
 $TYPEDSIGNATURES
@@ -152,32 +152,32 @@ function path_solution_from_JuMP_array(x::AbstractArray, graph::AbstractGraph)
     return sol
 end
 
-function basic_path_solution(graph::AbstractGraph)
-    nb_tasks = nv(graph) - 2
-    sol = falses(nb_tasks, nb_tasks)
-    for i_task in 1:nb_tasks
-        sol[i_task, i_task] = true
-    end
-    return sol
-end
+# function basic_path_solution(graph::AbstractGraph)
+#     nb_tasks = nv(graph) - 2
+#     sol = falses(nb_tasks, nb_tasks)
+#     for i_task in 1:nb_tasks
+#         sol[i_task, i_task] = true
+#     end
+#     return sol
+# end
 
-"""
-$TYPEDSIGNATURES
+# """
+# $TYPEDSIGNATURES
 
-Create a solution with one vehicle per task.
-"""
-function basic_solution(instance::Instance)
-    graph = instance.graph
-    value = falses(ne(graph))
+# Create a solution with one vehicle per task.
+# """
+# function basic_solution(instance::Instance)
+#     graph = instance.graph
+#     value = falses(ne(graph))
 
-    for (a, edge) in enumerate(edges(graph))
-        if edge.src == 1 || edge.dst == nv(graph)
-            value[a] = true
-        end
-    end
+#     for (a, edge) in enumerate(edges(graph))
+#         if edge.src == 1 || edge.dst == nv(graph)
+#             value[a] = true
+#         end
+#     end
 
-    return Solution(value, basic_path_solution(graph))
-end
+#     return Solution(value, basic_path_solution(graph))
+# end
 
 """
 $TYPEDSIGNATURES
@@ -290,7 +290,7 @@ function to_array(path_value::BitMatrix, instance::Instance)
         current_task = 1
         while true
             index_shift = find_first_one(@view path_value[i, current_task:end])
-            if isnothing(index_shift)
+            if index_shift === -1
                 mat[current_task, nb_nodes] = true
                 break
             end
@@ -323,7 +323,7 @@ $TYPEDSIGNATURES
 
 Check if `solution` is an admissible solution of `instance`.
 """
-function is_feasible(solution::Solution, instance::Instance)
+function is_feasible(solution::Solution, instance::Instance; verbose=true)
     graph = instance.graph
     nb_nodes = nv(graph)
     nb_tasks = nb_nodes - 2
@@ -339,14 +339,13 @@ function is_feasible(solution::Solution, instance::Instance)
         current_task = 1
         while true
             index_shift = find_first_one(@view solution.path_value[i, current_task:end])
-            if isnothing(index_shift)
+            if index_shift == -1
                 mat[current_task, nb_nodes] = true
                 break
             end
             next_task = current_task + index_shift
             if !has_edge(graph, current_task, next_task)
-                @warn "Flow not respected" current_task next_task
-                @warn "" outneighbors(graph, current_task)
+                verbose && @warn "Flow not respected" current_task next_task
                 return false
             end
             mat[current_task, next_task] = true
@@ -355,7 +354,7 @@ function is_feasible(solution::Solution, instance::Instance)
     end
 
     if !all(sum(solution.path_value; dims=1) .== 1)
-        @warn "One task done by more than one vehicle (or less than once)"
+        verbose && @warn "One task done by more than one vehicle (or less than once)"
         return false
     end
 
@@ -363,13 +362,7 @@ function is_feasible(solution::Solution, instance::Instance)
         s1 = sum(mat[j, i] for j in inneighbors(graph, i))
         s2 = sum(mat[i, j] for j in outneighbors(graph, i))
         if s1 != s2 || s1 != 1
-            @warn "Flow is broken" i s1 s2
-            @warn "" inneighbors(graph, i)
-            @warn "" [mat[j, i] for j in inneighbors(graph, i)]
-            @warn "" outneighbors(graph, i)
-            @warn "" [mat[i, j] for j in outneighbors(graph, i)]
-            @warn "" mat
-            @warn "" solution.path_value
+            verbose && @warn "Flow is broken" i s1 s2
             return false
         end
     end
@@ -380,7 +373,7 @@ end
 function compute_path_list(solution::Solution)
     (; path_value) = solution
     paths = Vector{Int64}[]
-    for v in 1:size(path_value, 1)
+    for v in axes(path_value, 1)
         path = [1]
         for (i, elem) in enumerate(path_value[v, :])
             if elem == 1

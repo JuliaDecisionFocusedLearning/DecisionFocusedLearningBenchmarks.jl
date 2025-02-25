@@ -122,12 +122,22 @@ end
 """
 $TYPEDSIGNATURES
 
+Check if the benchmark is a minimization problem.
+"""
+function is_minimization_problem(::AbstractBenchmark)
+    return true
+end
+
+"""
+$TYPEDSIGNATURES
+
 Default behaviour of `compute_gap` for a benchmark problem where `features`, `solutions` and `costs` are all defined.
 """
 function compute_gap(
     bench::AbstractBenchmark, dataset::Vector{<:DataSample}, statistical_model, maximizer
 )
     res = 0.0
+    check = is_minimization_problem(bench)
 
     for sample in dataset
         target_obj = objective_value(bench, sample)
@@ -135,7 +145,8 @@ function compute_gap(
         θ = statistical_model(x)
         y = maximizer(θ; maximizer_kwargs(bench, sample)...)
         obj = objective_value(bench, sample, y)
-        res += (target_obj - obj) / abs(target_obj)
+        Δ = check ? obj - target_obj : target_obj - obj
+        res += Δ / abs(target_obj)
     end
     return res / length(dataset)
 end

@@ -25,6 +25,10 @@ Does not have any field.
 """
 struct WarcraftBenchmark <: AbstractBenchmark end
 
+function Utils.objective_value(::WarcraftBenchmark, θ::AbstractArray, y::AbstractArray)
+    return -dot(θ, y)
+end
+
 """
 $TYPEDSIGNATURES
 

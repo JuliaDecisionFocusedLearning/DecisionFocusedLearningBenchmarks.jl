@@ -87,9 +87,9 @@ function column_generation(
         )
     end
 
-    c_low = Float64(objective_value(model))
+    c_low = JuMP.objective_value(model)
     columns = unique(cat(initial_paths, new_paths; dims=1))
-    return columns, c_low, value.(λ)
+    return columns, c_low::Float64, value.(λ)
 end
 
 """
@@ -140,7 +140,7 @@ function compute_solution_from_selected_columns(
     optimize!(model)
 
     sol = value.(y)
-    return Float64(objective_value(model)),
+    return JuMP.objective_value(model)::Float64,
     sol,
     paths[isapprox.([sol[p] for p in paths], 1.0)]
 end

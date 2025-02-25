@@ -6,17 +6,11 @@
 
     b = StochasticVehicleSchedulingBenchmark(; nb_tasks=25, nb_scenarios=10)
 
-    N = 10
-    dataset = generate_dataset(b, N; compute_solutions=true, seed=0)
-    mip_dataset = generate_dataset(
-        b, N; compute_solutions=true, seed=0, algorithm=compact_mip
-    )
-    mipl_dataset = generate_dataset(
-        b, N; compute_solutions=true, seed=0, algorithm=compact_linearized_mip
-    )
-    mipl_dataset = generate_dataset(
-        b, N; compute_solutions=true, seed=0, algorithm=local_search
-    )
+    N = 5
+    dataset = generate_dataset(b, N; seed=0)
+    mip_dataset = generate_dataset(b, N; seed=0, algorithm=compact_mip)
+    mipl_dataset = generate_dataset(b, N; seed=0, algorithm=compact_linearized_mip)
+    miplc_dataset = generate_dataset(b, N; seed=0, algorithm=local_search)
     @test length(dataset) == N
 
     figure_1 = plot_instance(b, dataset[1])
@@ -26,6 +20,8 @@
 
     maximizer = generate_maximizer(b)
     model = generate_statistical_model(b)
+
+    gap = compute_gap(b, dataset, model, maximizer)
 
     for sample in dataset
         x = sample.x

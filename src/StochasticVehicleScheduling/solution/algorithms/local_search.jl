@@ -49,7 +49,7 @@ function solve_deterministic_VSP(
 
     solution = solution_from_JuMP_array(value.(x), graph)
 
-    return objective_value(model), solution
+    return JuMP.objective_value(model), solution
 end
 
 """
@@ -74,7 +74,9 @@ function move_one_random_task!(path_value::BitMatrix, graph::AbstractGraph)
         if selected_task > 1
             before = @view path_value[i, 1:(selected_task - 1)]
             if any(before)
-                precedent_task = selected_task - find_first_one(reverse(before))
+                aaa = find_first_one(reverse(before))
+                @assert aaa >= 0
+                precedent_task = selected_task - aaa
                 if !has_edge(graph, precedent_task + 1, selected_task + 1)
                     continue
                 end
@@ -88,9 +90,10 @@ function move_one_random_task!(path_value::BitMatrix, graph::AbstractGraph)
         if selected_task < nb_tasks
             after = @view path_value[i, (selected_task + 1):end]
             if any(after)
-                next_task =
-                    selected_task +
-                    find_first_one(@view path_value[i, (selected_task + 1):end])
+                bbb = find_first_one(@view path_value[i, (selected_task + 1):end])
+                @assert bbb >= 0
+                next_task = selected_task + bbb
+
                 if !has_edge(graph, selected_task + 1, next_task + 1)
                     continue
                 end
@@ -138,7 +141,6 @@ function _local_search(solution::Solution, instance::Instance; nb_it::Integer=10
             candidate_solution = copy(best_solution)
         end
     end
-
     return Solution(best_solution, instance), best_value, history_x, history_y
 end
 
