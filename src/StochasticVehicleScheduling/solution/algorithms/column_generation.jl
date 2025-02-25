@@ -23,7 +23,6 @@ Note: If you have Gurobi, use `grb_model` as `model_builder` instead of `glpk_mo
 """
 function column_generation(
     instance::Instance;
-    only_relaxation=false,
     model_builder=highs_model,
     bounding,
     use_convex_resources,

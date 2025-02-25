@@ -14,6 +14,9 @@
     mipl_dataset = generate_dataset(
         b, N; compute_solutions=true, seed=0, algorithm=compact_linearized_mip
     )
+    mipl_dataset = generate_dataset(
+        b, N; compute_solutions=true, seed=0, algorithm=local_search
+    )
     @test length(dataset) == N
 
     figure_1 = plot_instance(b, dataset[1])

@@ -1,10 +1,17 @@
 module StochasticVehicleScheduling
 
+export StochasticVehicleSchedulingBenchmark
+export generate_dataset, generate_maximizer, generate_statistical_model
+export objective_value
+export plot_instance, plot_solution
+export compact_linearized_mip, compact_mip, column_generation_algorithm, local_search
+export evaluate_solution, is_feasible
+
 using ..Utils
 using DocStringExtensions: TYPEDEF, TYPEDFIELDS, TYPEDSIGNATURES
 using ConstrainedShortestPaths:
     stochastic_routing_shortest_path, stochastic_routing_shortest_path_with_threshold
-using Distributions: Distribution, LogNormal, Uniform
+using Distributions: Distribution, LogNormal, Uniform, DiscreteUniform
 using Flux: Chain, Dense
 using Graphs:
     AbstractGraph,
@@ -43,8 +50,9 @@ include("instance/features.jl")
 include("instance/instance.jl")
 
 include("solution/solution.jl")
-include("solution/exact_algorithms/mip.jl")
-include("solution/exact_algorithms/column_generation.jl")
+include("solution/algorithms/mip.jl")
+include("solution/algorithms/column_generation.jl")
+include("solution/algorithms/local_search.jl")
 
 include("maximizer.jl")
 
@@ -222,12 +230,5 @@ function plot_solution(
     end
     return fig
 end
-
-export StochasticVehicleSchedulingBenchmark
-export generate_dataset, generate_maximizer, generate_statistical_model
-export objective_value
-export plot_instance, plot_solution
-export compact_linearized_mip,
-    compact_mip, column_generation_algorithm, evaluate_solution, is_feasible
 
 end
