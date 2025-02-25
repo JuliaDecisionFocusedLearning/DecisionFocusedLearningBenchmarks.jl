@@ -59,10 +59,52 @@ function compute_gap end
 """
 $TYPEDSIGNATURES
 
+For simple benchmarks where there is no instance object, maximizer does not need any keyword arguments.
+"""
+function maximizer_kwargs(
+    ::AbstractBenchmark, sample::DataSample{F,S,C,Nothing}
+) where {F,S,C}
+    return NamedTuple()
+end
+
+"""
+$TYPEDSIGNATURES
+
+For benchmarks where there is an instance object, maximizer needs the instance object as a keyword argument.
+"""
+function maximizer_kwargs(::AbstractBenchmark, sample::DataSample)
+    return (; instance=sample.instance)
+end
+
+"""
+$TYPEDSIGNATURES
+
 Default behaviour of `objective_value`.
 """
-function objective_value(::AbstractBenchmark, θ̄::AbstractArray, y::AbstractArray)
-    return dot(θ̄, y)
+function objective_value(::AbstractBenchmark, θ::AbstractArray, y::AbstractArray)
+    return dot(θ, y)
+end
+
+"""
+$TYPEDSIGNATURES
+
+Compute the objective value of the target in the sample (needs to exist).
+"""
+function objective_value(
+    bench::AbstractBenchmark, sample::DataSample{F,S,C,I}
+) where {F,S<:AbstractArray,C<:AbstractArray,I}
+    return objective_value(bench, sample.θ_true, sample.y_true)
+end
+
+"""
+$TYPEDSIGNATURES
+
+Compute the objective value of given solution `y`.
+"""
+function objective_value(
+    bench::AbstractBenchmark, sample::DataSample{F,S,C,I}, y::AbstractArray
+) where {F,S,C<:AbstractArray,I}
+    return objective_value(bench, sample.θ_true, y)
 end
 
 """
@@ -76,13 +118,11 @@ function compute_gap(
     res = 0.0
 
     for sample in dataset
+        target_obj = objective_value(bench, sample)
         x = sample.x
-        θ̄ = sample.θ_true
-        ȳ = sample.y_true
         θ = statistical_model(x)
-        y = maximizer(θ)
-        target_obj = objective_value(bench, θ̄, ȳ)
-        obj = objective_value(bench, θ̄, y)
+        y = maximizer(θ; maximizer_kwargs(bench, sample)...)
+        obj = objective_value(bench, sample, y)
         res += (target_obj - obj) / abs(target_obj)
     end
     return res / length(dataset)

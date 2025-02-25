@@ -6,7 +6,9 @@ Data sample data structure.
 # Fields
 $TYPEDFIELDS
 """
-@kwdef struct DataSample{I,F,S,C}
+@kwdef struct DataSample{
+    I,F<:AbstractArray,S<:Union{AbstractArray,Nothing},C<:Union{AbstractArray,Nothing}
+}
     "features"
     x::F
     "target cost parameters (optional)"

@@ -45,7 +45,7 @@ using .StochasticVehicleScheduling
 export AbstractBenchmark, DataSample
 export generate_dataset
 export generate_statistical_model
-export generate_maximizer
+export generate_maximizer, maximizer_kwargs
 export plot_data, plot_instance, plot_solution
 export compute_gap
 
