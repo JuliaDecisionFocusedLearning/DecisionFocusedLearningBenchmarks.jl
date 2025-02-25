@@ -63,6 +63,12 @@ $TYPEDFIELDS
     nb_scenarios::Int = 10
 end
 
+function Utils.objective_value(
+    ::StochasticVehicleSchedulingBenchmark, sample::DataSample, y::BitVector
+)
+    return evaluate_solution(y, sample.instance)
+end
+
 """
 $TYPEDSIGNATURES
 
@@ -92,7 +98,7 @@ function Utils.generate_dataset(
     ]
     features = get_features.(instances)
     if compute_solutions
-        solutions = [algorithm(instance; kwargs...) for instance in instances]
+        solutions = [algorithm(instance; kwargs...).value for instance in instances]
         return [
             DataSample(; x=feature, instance, y_true=solution) for
             (instance, feature, solution) in zip(instances, features, solutions)
@@ -208,6 +214,7 @@ end
 
 export StochasticVehicleSchedulingBenchmark
 export generate_dataset, generate_maximizer, generate_statistical_model
+export objective_value
 export plot_instance, plot_solution
 export compact_linearized_mip,
     compact_mip, column_generation_algorithm, evaluate_solution, is_feasible

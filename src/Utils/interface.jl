@@ -62,7 +62,7 @@ $TYPEDSIGNATURES
 For simple benchmarks where there is no instance object, maximizer does not need any keyword arguments.
 """
 function maximizer_kwargs(
-    ::AbstractBenchmark, sample::DataSample{F,S,C,Nothing}
+    ::AbstractBenchmark, sample::DataSample{Nothing,F,S,C}
 ) where {F,S,C}
     return NamedTuple()
 end
@@ -88,23 +88,23 @@ end
 """
 $TYPEDSIGNATURES
 
-Compute the objective value of the target in the sample (needs to exist).
+Compute the objective value of given solution `y`.
 """
 function objective_value(
-    bench::AbstractBenchmark, sample::DataSample{F,S,C,I}
-) where {F,S<:AbstractArray,C<:AbstractArray,I}
-    return objective_value(bench, sample.θ_true, sample.y_true)
+    bench::AbstractBenchmark, sample::DataSample{I,F,S,C}, y::AbstractArray
+) where {I,F,S,C<:AbstractArray}
+    return objective_value(bench, sample.θ_true, y)
 end
 
 """
 $TYPEDSIGNATURES
 
-Compute the objective value of given solution `y`.
+Compute the objective value of the target in the sample (needs to exist).
 """
 function objective_value(
-    bench::AbstractBenchmark, sample::DataSample{F,S,C,I}, y::AbstractArray
-) where {F,S,C<:AbstractArray,I}
-    return objective_value(bench, sample.θ_true, y)
+    bench::AbstractBenchmark, sample::DataSample{I,F,S,C}
+) where {I,F,S<:AbstractArray,C}
+    return objective_value(bench, sample, sample.y_true)
 end
 
 """
