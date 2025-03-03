@@ -5,7 +5,7 @@ using DocStringExtensions: TYPEDEF, TYPEDFIELDS, TYPEDSIGNATURES
 using Distributions: Uniform, Bernoulli
 using Flux: Chain, Dense
 using Ipopt: Ipopt
-using JuMP: @variable, @objective, @constraint, optimize!, value
+using JuMP: @variable, @objective, @constraint, optimize!, value, Model
 using LinearAlgebra: I
 using Random: MersenneTwister
 
