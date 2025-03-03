@@ -48,12 +48,12 @@ $TYPEDSIGNATURES
 Create a Solution from a BitVector value.
 """
 function Solution(value::BitVector, instance::Instance)
-    graph = instance.graph
+    (; graph) = instance
     nb_tasks = nv(graph)
     is_selected = falses(nb_tasks, nb_tasks)
     for (i, edge) in enumerate(edges(graph))
         if value[i]
-            is_selected[edge.src, edge.dst] = true
+            is_selected[src(edge), dst(edge)] = true
         end
     end
 
@@ -112,7 +112,7 @@ function solution_from_JuMP_array(x::AbstractArray, graph::AbstractGraph)
     sol = falses(ne(graph)) # init
 
     for (a, edge) in enumerate(edges(graph))
-        if x[edge.src, edge.dst] == 1
+        if x[src(edge), dst(edge)] >= 0.5
             sol[a] = true
         end
     end
@@ -131,8 +131,7 @@ function path_solution_from_JuMP_array(x::AbstractArray, graph::AbstractGraph)
         while current_task < nb_tasks
             sol[v_index, current_task - 1] = true
             next_tasks = [
-                i for i in outneighbors(graph, current_task) if
-                isapprox(x[current_task, i], 1; atol=0.1)
+                i for i in outneighbors(graph, current_task) if x[current_task, i] >= 0.5
             ]
             # TODO : there is a more efficient way to search for next task (but more dangerous)
             if length(next_tasks) == 1

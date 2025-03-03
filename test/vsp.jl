@@ -10,7 +10,7 @@
     dataset = generate_dataset(b, N; seed=0)
     mip_dataset = generate_dataset(b, N; seed=0, algorithm=compact_mip)
     mipl_dataset = generate_dataset(b, N; seed=0, algorithm=compact_linearized_mip)
-    miplc_dataset = generate_dataset(b, N; seed=0, algorithm=local_search)
+    local_search_dataset = generate_dataset(b, N; seed=0, algorithm=local_search)
     @test length(dataset) == N
 
     figure_1 = plot_instance(b, dataset[1])
@@ -22,6 +22,14 @@
     model = generate_statistical_model(b)
 
     gap = compute_gap(b, dataset, model, maximizer)
+    gap_mip = compute_gap(b, mip_dataset, model, maximizer)
+    gap_mipl = compute_gap(b, mipl_dataset, model, maximizer)
+    gap_local_search = compute_gap(b, local_search_dataset, model, maximizer)
+
+    @test gap >= 0 && gap_mip >= 0 && gap_mipl >= 0 && gap_local_search >= 0
+    @test gap_mip ≈ gap_mipl rtol = 1e-2
+    @test gap_mip >= gap_local_search
+    @test gap_mip >= gap
 
     for sample in dataset
         x = sample.x

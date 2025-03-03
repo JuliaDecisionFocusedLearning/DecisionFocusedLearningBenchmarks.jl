@@ -2,12 +2,12 @@ module PortfolioOptimization
 
 using ..Utils
 using DocStringExtensions: TYPEDEF, TYPEDFIELDS, TYPEDSIGNATURES
-using Distributions
+using Distributions: Uniform, Bernoulli
 using Flux: Chain, Dense
-using Ipopt
-using JuMP
-using LinearAlgebra
-using Random
+using Ipopt: Ipopt
+using JuMP: @variable, @objective, @constraint, optimize!, value
+using LinearAlgebra: I
+using Random: MersenneTwister
 
 """
 $TYPEDEF
