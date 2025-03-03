@@ -2,7 +2,6 @@ module StochasticVehicleScheduling
 
 export StochasticVehicleSchedulingBenchmark
 export generate_dataset, generate_maximizer, generate_statistical_model
-export objective_value
 export plot_instance, plot_solution
 export compact_linearized_mip, compact_mip, column_generation_algorithm, local_search
 export evaluate_solution, is_feasible

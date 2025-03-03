@@ -29,7 +29,6 @@ include("SubsetSelection/SubsetSelection.jl")
 include("Warcraft/Warcraft.jl")
 include("FixedSizeShortestPath/FixedSizeShortestPath.jl")
 include("PortfolioOptimization/PortfolioOptimization.jl")
-
 include("StochasticVehicleScheduling/StochasticVehicleScheduling.jl")
 
 using .Utils

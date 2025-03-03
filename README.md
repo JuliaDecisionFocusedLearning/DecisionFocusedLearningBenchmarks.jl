@@ -15,5 +15,6 @@ Currently, this package provides the following benchmark problems (many more to 
 - `FixedSizeShortestPathBenchmark`: shortest path problem with on a graph with fixed size.
 - `WarcraftBenchmark`: shortest path problem on image maps
 - `PortfolioOptimizationBenchmark`: portfolio optimization problem.
+- `StochasticVehicleSchedulingBenchmark`: stochastic vehicle scheduling problem.
 
 See the [documentation](https://JuliaDecisionFocusedLearning.github.io/DecisionFocusedLearningBenchmarks.jl/stable/) for more details.
