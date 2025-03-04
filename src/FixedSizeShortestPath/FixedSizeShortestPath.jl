@@ -54,6 +54,12 @@ function FixedSizeShortestPathBenchmark(;
     return FixedSizeShortestPathBenchmark(g, grid_size, p, deg, ν)
 end
 
+function Utils.objective_value(
+    ::FixedSizeShortestPathBenchmark, θ::AbstractArray, y::AbstractArray
+)
+    return -dot(θ, y)
+end
+
 """
 $TYPEDSIGNATURES
 
@@ -149,5 +155,6 @@ function Utils.generate_statistical_model(bench::FixedSizeShortestPathBenchmark)
 end
 
 export FixedSizeShortestPathBenchmark
+export generate_dataset, generate_maximizer, generate_statistical_model
 
 end

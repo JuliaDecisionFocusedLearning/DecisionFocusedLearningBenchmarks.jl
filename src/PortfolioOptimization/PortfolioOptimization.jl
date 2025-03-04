@@ -2,12 +2,12 @@ module PortfolioOptimization
 
 using ..Utils
 using DocStringExtensions: TYPEDEF, TYPEDFIELDS, TYPEDSIGNATURES
-using Distributions
+using Distributions: Uniform, Bernoulli
 using Flux: Chain, Dense
-using Ipopt
-using JuMP
-using LinearAlgebra
-using Random
+using Ipopt: Ipopt
+using JuMP: @variable, @objective, @constraint, optimize!, value, Model, set_silent
+using LinearAlgebra: I
+using Random: MersenneTwister
 
 """
 $TYPEDEF
@@ -127,5 +127,6 @@ function Utils.generate_statistical_model(bench::PortfolioOptimizationBenchmark)
 end
 
 export PortfolioOptimizationBenchmark
+export generate_dataset, generate_maximizer, generate_statistical_model
 
 end
