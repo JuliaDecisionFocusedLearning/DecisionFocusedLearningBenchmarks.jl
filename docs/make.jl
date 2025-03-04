@@ -15,7 +15,7 @@ md_tutorial_files = [split(file, ".")[1] * ".md" for file in tutorial_files]
 benchmark_files = readdir(benchmarks_dir)
 md_benchmark_files = [split(file, ".")[1] * ".md" for file in benchmark_files]
 
-include_tutorial = false
+include_tutorial = true
 
 if include_tutorial
     for file in tutorial_files
