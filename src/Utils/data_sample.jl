@@ -19,20 +19,10 @@ $TYPEDFIELDS
     instance::I = nothing
 end
 
-function _transform(t, sample::DataSample; kwargs...)
-    (; instance, x, θ_true, y_true) = sample
-    return DataSample(; instance, x=StatsBase.transform(t, x; kwargs...), θ_true, y_true)
-end
-
-function _reconstruct(t, sample::DataSample; kwargs...)
-    (; instance, x, θ_true, y_true) = sample
-    return DataSample(; instance, x=StatsBase.reconstruct(t, x; kwargs...), θ_true, y_true)
-end
-
 """
 $TYPEDSIGNATURES
 
-Compute the mean and standard deviation of the features in the dataset.
+Fit the given transform type (`ZScoreTransform` or `UnitRangeTransform`) on the dataset.
 """
 function StatsBase.fit(transform_type, dataset::AbstractVector{<:DataSample}; kwargs...)
     x = hcat([d.x for d in dataset]...)
@@ -51,11 +41,36 @@ function StatsBase.transform(t, dataset::AbstractVector{<:DataSample})
     end
 end
 
-# TODO: reconstruct, transform!, reconstruct!
+"""
+$TYPEDSIGNATURES
 
+Transform the features in the dataset in place.
+"""
+function StatsBase.transform!(t, dataset::AbstractVector{<:DataSample})
+    for d in dataset
+        StatsBase.transform!(t, d.x)
+    end
+end
+
+"""
+$TYPEDSIGNATURES
+
+Reconstruct the features in the dataset.
+"""
 function StatsBase.reconstruct(t, dataset::AbstractVector{<:DataSample})
     return map(dataset) do d
         (; instance, x, θ_true, y_true) = d
         DataSample(; instance, x=StatsBase.reconstruct(t, x), θ_true, y_true)
+    end
+end
+
+"""
+$TYPEDSIGNATURES
+
+Reconstruct the features in the dataset in place.
+"""
+function StatsBase.reconstruct!(t, dataset::AbstractVector{<:DataSample})
+    for d in dataset
+        StatsBase.reconstruct!(t, d.x)
     end
 end

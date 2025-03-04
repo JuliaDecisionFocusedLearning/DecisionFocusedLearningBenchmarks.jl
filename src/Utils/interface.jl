@@ -134,7 +134,10 @@ $TYPEDSIGNATURES
 Default behaviour of `compute_gap` for a benchmark problem where `features`, `solutions` and `costs` are all defined.
 """
 function compute_gap(
-    bench::AbstractBenchmark, dataset::Vector{<:DataSample}, statistical_model, maximizer
+    bench::AbstractBenchmark,
+    dataset::AbstractVector{<:DataSample},
+    statistical_model,
+    maximizer,
 )
     res = 0.0
     check = is_minimization_problem(bench)

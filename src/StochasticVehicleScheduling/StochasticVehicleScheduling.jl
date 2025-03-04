@@ -120,7 +120,10 @@ end
 """
 $TYPEDSIGNATURES
 """
-function Utils.generate_statistical_model(bench::StochasticVehicleSchedulingBenchmark)
+function Utils.generate_statistical_model(
+    ::StochasticVehicleSchedulingBenchmark; seed=nothing
+)
+    Random.seed!(seed)
     return Chain(Dense(20 => 1; bias=false), vec)
 end
 

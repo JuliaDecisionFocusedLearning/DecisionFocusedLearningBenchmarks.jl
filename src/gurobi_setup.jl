@@ -1,3 +1,6 @@
+using DocStringExtensions: TYPEDSIGNATURES
+using JuMP: Model
+
 @info "Creating a GRB_ENV const for AircraftRoutingBase..."
 # Gurobi package setup (see https://github.com/jump-dev/Gurobi.jl/issues/424)
 const GRB_ENV = Ref{Gurobi.Env}()

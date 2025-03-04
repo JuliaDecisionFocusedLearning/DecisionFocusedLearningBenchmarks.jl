@@ -25,6 +25,5 @@ export grid_graph, get_path, path_to_matrix
 export neg_tensor, squeeze_last_dims, average_tensor
 export scip_model, highs_model
 export objective_value
-export compute_normalizer
 
 end
