@@ -19,9 +19,7 @@
     @test gap >= 0
 
     for (i, sample) in enumerate(dataset)
-        x = sample.x
-        θ_true = sample.θ
-        y_true = sample.y
+        (; x, θ_true, y_true) = sample
         @test size(x) == (96, 96, 3, 1)
         @test all(θ_true .<= 0)
         @test isnothing(sample.instance)

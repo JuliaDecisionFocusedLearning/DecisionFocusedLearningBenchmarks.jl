@@ -54,6 +54,12 @@ function FixedSizeShortestPathBenchmark(;
     return FixedSizeShortestPathBenchmark(g, grid_size, p, deg, ν)
 end
 
+function Utils.objective_value(
+    ::FixedSizeShortestPathBenchmark, θ::AbstractArray, y::AbstractArray
+)
+    return -dot(θ, y)
+end
+
 """
 $TYPEDSIGNATURES
 
@@ -132,7 +138,10 @@ function Utils.generate_dataset(
 
     # Label solutions
     solutions = shortest_path_maximizer.(costs)
-    return [DataSample(; x=x, θ=θ, y=y) for (x, θ, y) in zip(features, costs, solutions)]
+    return [
+        DataSample(; x, θ_true, y_true) for
+        (x, θ_true, y_true) in zip(features, costs, solutions)
+    ]
 end
 
 """
@@ -146,5 +155,6 @@ function Utils.generate_statistical_model(bench::FixedSizeShortestPathBenchmark)
 end
 
 export FixedSizeShortestPathBenchmark
+export generate_dataset, generate_maximizer, generate_statistical_model
 
 end
