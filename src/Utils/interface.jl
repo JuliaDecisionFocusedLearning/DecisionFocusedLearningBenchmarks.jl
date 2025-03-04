@@ -137,21 +137,20 @@ function compute_gap(
     bench::AbstractBenchmark,
     dataset::AbstractVector{<:DataSample},
     statistical_model,
-    maximizer;
-    percentage::Bool=false,
+    maximizer,
+    op=mean,
 )
-    res = 0.0
     check = is_minimization_problem(bench)
 
-    for sample in dataset
-        target_obj = objective_value(bench, sample)
-        x = sample.x
-        θ = statistical_model(x)
-        y = maximizer(θ; maximizer_kwargs(bench, sample)...)
-        obj = objective_value(bench, sample, y)
-        Δ = check ? obj - target_obj : target_obj - obj
-        res += Δ / abs(target_obj)
-    end
-    gap = res / length(dataset)
-    return percentage ? gap * 100 : gap
+    return op(
+        map(dataset) do sample
+            target_obj = objective_value(bench, sample)
+            x = sample.x
+            θ = statistical_model(x)
+            y = maximizer(θ; maximizer_kwargs(bench, sample)...)
+            obj = objective_value(bench, sample, y)
+            Δ = check ? obj - target_obj : target_obj - obj
+            return Δ / abs(target_obj)
+        end,
+    )
 end

@@ -8,6 +8,7 @@ using LinearAlgebra: dot
 using SCIP: SCIP
 using SimpleWeightedGraphs: SimpleWeightedDiGraph
 using StatsBase: StatsBase
+using Statistics: mean
 
 include("data_sample.jl")
 include("interface.jl")
