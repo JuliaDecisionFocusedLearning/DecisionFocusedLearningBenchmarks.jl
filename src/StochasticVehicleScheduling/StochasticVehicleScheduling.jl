@@ -111,10 +111,33 @@ function Utils.generate_dataset(
 end
 
 """
+$TYPEDEF
+
+Deterministic vsp maximizer for the [StochasticVehicleSchedulingBenchmark](@ref).
+"""
+struct StochasticVechicleSchedulingMaximizer{M}
+    "mip solver model to use"
+    model_builder::M
+end
+
+"""
 $TYPEDSIGNATURES
 """
-function Utils.generate_maximizer(bench::StochasticVehicleSchedulingBenchmark)
-    return vsp_maximizer
+function Utils.generate_maximizer(
+    bench::StochasticVehicleSchedulingBenchmark; model_builder=highs_model
+)
+    return StochasticVechicleSchedulingMaximizer(model_builder)
+end
+
+"""
+$TYPEDSIGNATURES
+
+Apply the maximizer with the stored model builder.
+"""
+function (maximizer::StochasticVechicleSchedulingMaximizer)(
+    θ::AbstractVector; instance::Instance, kwargs...
+)
+    return vsp_maximizer(θ; instance, model_builder=maximizer.model_builder, kwargs...)
 end
 
 """
