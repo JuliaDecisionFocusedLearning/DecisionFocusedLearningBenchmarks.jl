@@ -3,15 +3,39 @@ module DecisionFocusedLearningBenchmarks
 using DataDeps
 using Requires: @require
 
+function _euro_neurips_unpack(local_filepath)
+    directory = dirname(local_filepath)
+    unpack(local_filepath)
+    # Move instances and delete the rest
+    for filepath in readdir(
+        joinpath(directory, "euro-neurips-vrp-2022-quickstart-main", "instances"); join=true
+    )
+        if endswith(filepath, ".txt")
+            mv(filepath, joinpath(directory, basename(filepath)))
+        end
+    end
+    rm(joinpath(directory, "euro-neurips-vrp-2022-quickstart-main"); recursive=true)
+    return nothing
+end
+
 function __init__()
     # Register the Warcraft dataset
     ENV["DATADEPS_ALWAYS_ACCEPT"] = "true"
     register(
         DataDep(
             "warcraft",
-            "This is the warcraft dataset",
+            "Warcraft shortest path dataset",
             "http://cermics.enpc.fr/~bouvierl/warcraft_TP/data.zip";
             post_fetch_method=unpack,
+        ),
+    )
+
+    register(
+        DataDep(
+            "euro-neurips-2022",
+            "EURO-NeurIPs challenge 2022 dataset",
+            "https://github.com/ortec/euro-neurips-vrp-2022-quickstart/archive/refs/heads/main.zip";
+            post_fetch_method=_euro_neurips_unpack,
         ),
     )
 
@@ -30,6 +54,7 @@ include("Warcraft/Warcraft.jl")
 include("FixedSizeShortestPath/FixedSizeShortestPath.jl")
 include("PortfolioOptimization/PortfolioOptimization.jl")
 include("StochasticVehicleScheduling/StochasticVehicleScheduling.jl")
+include("DynamicVehicleScheduling/DynamicVehicleScheduling.jl")
 
 using .Utils
 using .Argmax
@@ -39,6 +64,7 @@ using .Warcraft
 using .FixedSizeShortestPath
 using .PortfolioOptimization
 using .StochasticVehicleScheduling
+using .DynamicVehicleScheduling
 
 # Interface
 export AbstractBenchmark, DataSample
