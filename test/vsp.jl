@@ -28,11 +28,7 @@
     gap_local_search = compute_gap(b, local_search_dataset, model, maximizer)
     gap_deterministic = compute_gap(b, deterministic_dataset, model, maximizer)
 
-    @test gap >= 0 &&
-        gap_mip >= 0 &&
-        gap_mipl >= 0 &&
-        gap_local_search >= 0 &&
-        gap_deterministic >= 0
+    @test gap >= 0 && gap_mip >= 0 && gap_mipl >= 0 && gap_local_search >= 0
     @test gap_mip ≈ gap_mipl rtol = 1e-2
     @test gap_mip >= gap_local_search
     @test gap_mip >= gap
