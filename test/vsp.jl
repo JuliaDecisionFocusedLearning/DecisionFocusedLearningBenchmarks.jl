@@ -36,7 +36,7 @@
     @test gap_mip ≈ gap_mipl rtol = 1e-2
     @test gap_mip >= gap_local_search
     @test gap_mip >= gap
-    @test gap__local_search >= gap_deterministic
+    @test gap_local_search >= gap_deterministic
 
     for sample in dataset
         x = sample.x
