@@ -3,7 +3,8 @@ module StochasticVehicleScheduling
 export StochasticVehicleSchedulingBenchmark
 export generate_dataset, generate_maximizer, generate_statistical_model
 export plot_instance, plot_solution
-export compact_linearized_mip, compact_mip, column_generation_algorithm, local_search
+export compact_linearized_mip,
+    compact_mip, column_generation_algorithm, local_search, deterministic_mip
 export evaluate_solution, is_feasible
 
 using ..Utils
@@ -44,6 +45,7 @@ include("solution/solution.jl")
 include("solution/algorithms/mip.jl")
 include("solution/algorithms/column_generation.jl")
 include("solution/algorithms/local_search.jl")
+include("solution/algorithms/deterministic_mip.jl")
 
 include("maximizer.jl")
 
