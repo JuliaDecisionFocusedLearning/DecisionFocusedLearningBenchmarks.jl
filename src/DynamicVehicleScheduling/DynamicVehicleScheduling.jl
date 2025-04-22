@@ -3,7 +3,7 @@ module DynamicVehicleScheduling
 using ..Utils
 
 using Base: @kwdef
-using ChainRulesCore
+# using ChainRulesCore
 using DocStringExtensions: TYPEDEF, TYPEDFIELDS, TYPEDSIGNATURES
 using Graphs
 using HiGHS
