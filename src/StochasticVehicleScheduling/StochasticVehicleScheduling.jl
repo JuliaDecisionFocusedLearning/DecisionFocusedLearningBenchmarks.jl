@@ -94,7 +94,7 @@ function Utils.generate_sample(
     instance = Instance(; nb_tasks, nb_scenarios, rng, store_city)
     x = get_features(instance)
     y_true = if compute_solutions
-        algorithm(instance; kwargs...).value  # TODO: modify algorithms to directly return the solution
+        algorithm(instance; kwargs...)
     else
         nothing
     end

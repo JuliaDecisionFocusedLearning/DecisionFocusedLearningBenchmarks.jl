@@ -82,6 +82,11 @@ function Utils.generate_maximizer(bench::PortfolioOptimizationBenchmark)
     return portfolio_maximizer
 end
 
+"""
+$TYPEDSIGNATURES
+
+Generate a labeled sample for the portfolio optimization problem.
+"""
 function Utils.generate_sample(
     bench::PortfolioOptimizationBenchmark, rng::AbstractRNG; type::Type=Float32
 )

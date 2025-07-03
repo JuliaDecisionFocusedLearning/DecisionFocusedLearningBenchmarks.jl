@@ -41,5 +41,5 @@ function deterministic_mip(instance::Instance; model_builder=highs_model, silent
     solution = value.(y)
 
     sol = solution_from_JuMP_array(solution, graph)
-    return sol
+    return sol.value
 end

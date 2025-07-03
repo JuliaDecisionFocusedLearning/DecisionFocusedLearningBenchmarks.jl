@@ -103,6 +103,11 @@ function Utils.generate_maximizer(bench::FixedSizeShortestPathBenchmark; use_dij
     return shortest_path_maximizer
 end
 
+"""
+$TYPEDSIGNATURES
+
+Generate a labeled sample for the fixed size shortest path benchmark.
+"""
 function Utils.generate_sample(
     bench::FixedSizeShortestPathBenchmark, rng::AbstractRNG; type::Type=Float32
 )
