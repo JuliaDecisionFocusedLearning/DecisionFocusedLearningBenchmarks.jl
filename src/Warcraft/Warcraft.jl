@@ -2,7 +2,7 @@ module Warcraft
 
 using ..Utils
 
-using DataDeps
+using DataDeps: @datadep_str
 using DocStringExtensions: TYPEDEF, TYPEDFIELDS, TYPEDSIGNATURES
 using Flux
 using Graphs

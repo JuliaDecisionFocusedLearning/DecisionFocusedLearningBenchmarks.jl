@@ -11,7 +11,11 @@ $TYPEDSIGNATURES
 Apply the policy to the environment.
 """
 function run_policy!(
-    π::AbstractDynamicVSPPolicy, env::DVSPEnv; check_feasibility=true, kwargs...
+    π::AbstractDynamicVSPPolicy,
+    env::DVSPEnv,
+    scenario=env.scenario;
+    check_feasibility=true,
+    kwargs...,
 )
     # reset environment, and initialize variables
     reset!(env)
@@ -19,13 +23,12 @@ function run_policy!(
     epoch_routes = Vector{Vector{Int}}[]
 
     # epoch loop
-    while !is_terminated(env)
-        next_epoch!(env)
+    while !terminated(env)
         state_routes = π(env; kwargs...)
-        check_feasibility && @assert is_feasible(get_state(env), state_routes)
-        env_routes = env_routes_from_state_routes(env, state_routes)
-        push!(epoch_routes, env_routes)
-        local_cost = apply_decision!(env, env_routes)
+        check_feasibility && @assert is_feasible(observe(env), state_routes)
+        # env_routes = env_routes_from_state_routes(env, state_routes)
+        push!(epoch_routes, state_routes)
+        local_cost = act!(env, state_routes, scenario)
         total_cost += local_cost
     end
 

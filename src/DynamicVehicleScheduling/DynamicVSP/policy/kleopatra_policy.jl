@@ -23,31 +23,10 @@ function KleopatraVSPPolicy(prize_predictor; has_2D_features=nothing)
 end
 
 function (π::KleopatraVSPPolicy)(env::DVSPEnv; model_builder=highs_model)
+    state = observe(env)
     (; prize_predictor, has_2D_features) = π
     x = has_2D_features ? compute_2D_features(env) : compute_features(env)
     θ = prize_predictor(x)
-    routes = prize_collecting_vsp(θ; instance=get_state(env), model_builder)
+    routes = prize_collecting_vsp(θ; instance=state, model_builder)
     return routes
 end
-
-# function run_policy!(
-#     π::KleopatraVSP, env::DVSPEnv; check_feasibility=true, model_builder=highs_model
-# )
-#     # reset environment, and initialize variables
-#     reset!(env)
-#     total_cost = 0
-#     epoch_routes = Vector{Vector{Int}}[]
-
-#     # epoch loop
-#     while !is_terminated(env)
-#         next_epoch!(env)
-#         state_routes = π(env; model_builder)
-#         check_feasibility && @assert is_feasible(get_state(env), state_routes)
-#         env_routes = env_routes_from_state_routes(env, state_routes)
-#         push!(epoch_routes, env_routes)
-#         local_cost = apply_decision!(env, env_routes)
-#         total_cost += local_cost
-#     end
-
-#     return total_cost, epoch_routes
-# end

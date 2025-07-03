@@ -32,8 +32,8 @@ function __init__()
 
     register(
         DataDep(
-            "euro-neurips-2022",
-            "EURO-NeurIPs challenge 2022 dataset",
+            "dvrptw",
+            "EURO-NeurIPS challenge 2022 dataset for the dynamic vehicle routing problem with time windows",
             "https://github.com/ortec/euro-neurips-vrp-2022-quickstart/archive/refs/heads/main.zip";
             post_fetch_method=_euro_neurips_unpack,
         ),
@@ -54,7 +54,7 @@ include("Warcraft/Warcraft.jl")
 include("FixedSizeShortestPath/FixedSizeShortestPath.jl")
 include("PortfolioOptimization/PortfolioOptimization.jl")
 include("StochasticVehicleScheduling/StochasticVehicleScheduling.jl")
-# include("DynamicVehicleScheduling/DynamicVehicleScheduling.jl")
+include("DynamicVehicleScheduling/DynamicVehicleScheduling.jl")
 
 using .Utils
 using .Argmax
@@ -64,11 +64,11 @@ using .Warcraft
 using .FixedSizeShortestPath
 using .PortfolioOptimization
 using .StochasticVehicleScheduling
-# using .DynamicVehicleScheduling
+using .DynamicVehicleScheduling
 
 # Interface
 export AbstractBenchmark, AbstractStochasticBenchmark, AbstractDynamicBenchmark, DataSample
-export generate_dataset
+export generate_sample, generate_dataset, generate_scenario
 export generate_statistical_model
 export generate_maximizer, maximizer_kwargs
 export objective_value
@@ -83,5 +83,6 @@ export WarcraftBenchmark
 export FixedSizeShortestPathBenchmark
 export PortfolioOptimizationBenchmark
 export StochasticVehicleSchedulingBenchmark
+export DVSPBenchmark
 
 end # module DecisionFocusedLearningBenchmarks

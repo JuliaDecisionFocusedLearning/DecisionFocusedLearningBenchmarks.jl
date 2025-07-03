@@ -91,5 +91,5 @@ function read_vsp_instance(filepath::String; rounded::Bool=false, normalization=
     start_time ./= normalization
     duration ./= normalization
 
-    return VSPInstance(; coordinate, service_time, start_time, duration)
+    return StaticInstance(; coordinate, service_time, start_time, duration)
 end

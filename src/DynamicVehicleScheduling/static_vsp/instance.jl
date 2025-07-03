@@ -6,7 +6,7 @@ Instance data structure for the (deterministic and static) Vehicle Scheduling Pr
 # Fields
 $TYPEDFIELDS
 """
-@kwdef struct VSPInstance{T}
+@kwdef struct StaticInstance{T}
     "coordinates of the locations. The first one is always the depot."
     coordinate::Vector{Point{T}} = Point{Float64}[]
     "service time at each location"
@@ -17,8 +17,8 @@ $TYPEDFIELDS
     duration::Matrix{T} = zeros(Float64, 0, 0)
 end
 
-function Base.show(io::IO, instance::VSPInstance)
-    N = nb_customers(instance)
+function Base.show(io::IO, instance::StaticInstance)
+    N = customer_count(instance)
     return print(io, "VSPInstance with $N customers")
 end
 
@@ -27,39 +27,39 @@ $TYPEDSIGNATURES
 
 Return the number of locations in `instance` (customers + depot).
 """
-nb_locations(instance::VSPInstance) = length(instance.coordinate)
+location_count(instance::StaticInstance) = length(instance.coordinate)
 
 """
 $TYPEDSIGNATURES
 
 Return the number of customers in `instance` (excluding the depot).
 """
-nb_customers(instance::VSPInstance) = nb_locations(instance) - 1
+customer_count(instance::StaticInstance) = location_count(instance) - 1
 
 """
 $TYPEDSIGNATURES
 
 Get the service time vector.
 """
-service_time(instance::VSPInstance) = instance.service_time
+service_time(instance::StaticInstance) = instance.service_time
 
 """
 $TYPEDSIGNATURES
 
 Get the coordinates vector.
 """
-coordinate(instance::VSPInstance) = instance.coordinate
+coordinate(instance::StaticInstance) = instance.coordinate
 
 """
 $TYPEDSIGNATURES
 
 Get the duration matrix.
 """
-duration(instance::VSPInstance) = instance.duration
+duration(instance::StaticInstance) = instance.duration
 
 """
 $TYPEDSIGNATURES
 
 Get the start time vector.
 """
-start_time(instance::VSPInstance) = instance.start_time
+start_time(instance::StaticInstance) = instance.start_time

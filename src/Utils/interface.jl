@@ -16,28 +16,6 @@ The following methods are optional:
 abstract type AbstractBenchmark end
 
 """
-$TYPEDEF
-
-Abstract type interface for stochastic benchmark problems.
-This type should be used for benchmarks that involve single stage stochastic optimization problems.
-
-It follows the same interface as [`AbstractBenchmark`](@ref), with the addition of the following methods:
-TODO
-"""
-abstract type AbstractStochasticBenchmark <: AbstractBenchmark end
-
-"""
-$TYPEDEF
-
-Abstract type interface for dynamic benchmark problems.
-This type should be used for benchmarks that involve multi-stage stochastic optimization problems.
-
-It follows the same interface as [`AbstractStochasticBenchmark`](@ref), with the addition of the following methods:
-TODO
-"""
-abstract type AbstractDynamicBenchmark <: AbstractStochasticBenchmark end
-
-"""
     generate_sample(::AbstractBenchmark, rng::AbstractRNG; kwargs...) -> DataSample
 
 Generate a single [`DataSample`](@ref) for given benchmark.
@@ -199,3 +177,36 @@ function compute_gap(
         end,
     )
 end
+
+"""
+$TYPEDEF
+
+Abstract type interface for stochastic benchmark problems.
+This type should be used for benchmarks that involve single stage stochastic optimization problems.
+
+It follows the same interface as [`AbstractBenchmark`](@ref), with the addition of the following methods:
+- [`generate_anticipative_solver`](@ref)
+"""
+abstract type AbstractStochasticBenchmark <: AbstractBenchmark end
+
+# only works for exogenous noise
+"""
+    generate_scenario(::AbstractStochasticBenchmark; kwargs...)
+"""
+function generate_scenario_generator end
+
+"""
+    generate_anticipative_solver(::AbstractStochasticBenchmark; kwargs...)
+"""
+function generate_anticipative_solver end
+
+"""
+$TYPEDEF
+
+Abstract type interface for dynamic benchmark problems.
+This type should be used for benchmarks that involve multi-stage stochastic optimization problems.
+
+It follows the same interface as [`AbstractStochasticBenchmark`](@ref), with the addition of the following methods:
+TODO
+"""
+abstract type AbstractDynamicBenchmark <: AbstractStochasticBenchmark end

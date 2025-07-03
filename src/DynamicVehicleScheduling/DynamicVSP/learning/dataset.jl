@@ -2,7 +2,7 @@ function load_VSP_dataset(
     datadir::String; model_builder=highs_model, use_2D_features=false, kwargs...
 )
     instances_files = filtered_readdir(datadir)
-    X = Tuple{Matrix{Float32},VSPState{VSPInstance{Float64}}}[]
+    X = Tuple{Matrix{Float32},DVSPState{VSPInstance{Float64}}}[]
     Y = BitMatrix[]
 
     for (i, f) in enumerate(instances_files)
@@ -26,7 +26,7 @@ function load_VSP_dataset(
                 Y,
                 VSPSolution(
                     state_route_from_env_routes(env, routes);
-                    max_index=nb_locations(state.instance),
+                    max_index=location_count(state.instance),
                 ).edge_matrix,
             )
             # Update the environment

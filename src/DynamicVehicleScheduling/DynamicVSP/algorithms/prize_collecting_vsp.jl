@@ -3,10 +3,10 @@ $TYPEDSIGNATURES
 
 Create the acyclic digraph associated with the given VSP `instance`.
 """
-function create_graph(instance::VSPInstance)
+function create_graph(instance::StaticInstance)
     (; duration, start_time, service_time) = instance
     # Initialize directed graph
-    nb_vertices = nb_locations(instance)
+    nb_vertices = location_count(instance)
     graph = SimpleDiGraph(nb_vertices)
 
     depot = 1  # depot is always index 1
@@ -42,8 +42,8 @@ $TYPEDSIGNATURES
 
 Create the acyclic digraph associated with the given VSP `state`.
 """
-function create_graph(state::VSPState)
-    return create_graph(state.instance)
+function create_graph(state::DVSPState)
+    return create_graph(state.state_instance)
 end
 
 """
@@ -82,9 +82,9 @@ $TYPEDSIGNATURES
 Solve the Prize Collecting Vehicle Scheduling Problem defined by `instance` and prize vector `θ`.
 """
 function prize_collecting_vsp(
-    θ::AbstractVector; instance::VSPState, model_builder=highs_model, kwargs...
+    θ::AbstractVector; instance::DVSPState, model_builder=highs_model, kwargs...
 )
-    (; duration) = instance.instance
+    (; duration) = instance.state_instance
     graph = create_graph(instance)
 
     model = model_builder()
@@ -95,7 +95,7 @@ function prize_collecting_vsp(
 
     @variable(model, y[i=1:nb_nodes, j=1:nb_nodes; has_edge(graph, i, j)] >= 0)
 
-    θ_ext = fill(0.0, nb_locations(instance))  # no prize for must dispatch requests, only hard constraints
+    θ_ext = fill(0.0, location_count(instance))  # no prize for must dispatch requests, only hard constraints
     θ_ext[instance.is_postponable] .= θ
 
     @objective(
@@ -131,7 +131,7 @@ end
 function prize_collecting_vsp_Q(
     θ::AbstractVector,
     vals::AbstractVector;
-    instance::VSPState,
+    instance::DVSPState,
     model_builder=highs_model,
     kwargs...,
 )
@@ -142,7 +142,7 @@ function prize_collecting_vsp_Q(
     nb_nodes = nv(graph)
     job_indices = 2:(nb_nodes)
     @variable(model, y[i=1:nb_nodes, j=1:nb_nodes; has_edge(graph, i, j)] >= 0)
-    θ_ext = fill(0.0, nb_locations(instance.instance))  # no prize for must dispatch requests, only hard constraints
+    θ_ext = fill(0.0, location_count(instance.instance))  # no prize for must dispatch requests, only hard constraints
     θ_ext[instance.is_postponable] .= θ
     # v_ext = fill(0.0, nb_locations(instance.instance))  # no prize for must dispatch requests, only hard constraints
     # v_ext[instance.is_postponable] .= vals
@@ -176,7 +176,7 @@ end
 function my_objective_value(θ, routes; instance)
     (; duration) = instance.instance
     total = 0.0
-    θ_ext = fill(0.0, nb_locations(instance))
+    θ_ext = fill(0.0, location_count(instance))
     θ_ext[instance.is_postponable] .= θ
     for route in routes
         for (u, v) in partition(vcat(1, route), 2, 1)
@@ -189,7 +189,7 @@ end
 function _objective_value(θ, routes; instance)
     (; duration) = instance.instance
     total = 0.0
-    θ_ext = fill(0.0, nb_locations(instance))
+    θ_ext = fill(0.0, location_count(instance))
     θ_ext[instance.is_postponable] .= θ
     mapping = cumsum(instance.is_postponable)
     g = falses(length(θ))

@@ -145,10 +145,7 @@ end
 $TYPEDSIGNATURES
 """
 function plot_instance(
-    ::StochasticVehicleSchedulingBenchmark,
-    sample::DataSample{<:Instance{City}};
-    color_scheme=:lightrainbow,
-    kwargs...,
+    ::StochasticVehicleSchedulingBenchmark, sample::DataSample{<:Instance{City}}; kwargs...
 )
     (; tasks, district_width, width) = sample.instance.city
     ticks = 0:district_width:width
@@ -197,7 +194,6 @@ function plot_instance(
             marker_z=task.end_time,
             colormap=:turbo,
             label=nothing,
-            # color=palette[max(floor(Int, task.end_time), 1)],
         )
         annotate!(fig, (points[1]..., text("$(i_task)", 10)))
     end

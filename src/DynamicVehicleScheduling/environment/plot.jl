@@ -58,7 +58,7 @@ $TYPEDSIGNATURES
 
 Plot the given `routes`` for a VSP `state`.
 """
-function plot_epoch(state::VSPState, routes; kwargs...)
+function plot_epoch(state::DVSPState, routes; kwargs...)
     (; coordinate, start_time) = state.instance
     x_depot = coordinate[1].x
     y_depot = coordinate[1].y

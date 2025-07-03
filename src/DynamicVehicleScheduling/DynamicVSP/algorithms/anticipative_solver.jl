@@ -4,13 +4,14 @@ $TYPEDSIGNATURES
 Retrieve anticipative routes solution from the given MIP solution `y`.
 Outputs a set of routes per epoch.
 """
-function retrieve_routes_anticipative(y::AbstractArray, dvspenv::DVSPEnv)
-    nb_tasks = length(dvspenv.customer_index)
-    (; first_epoch, last_epoch) = dvspenv.config
+function retrieve_routes_anticipative(y::AbstractArray, dvspenv::DVSPEnv, customer_index)
+    nb_tasks = length(customer_index)
+    first_epoch = 1
+    (; last_epoch) = dvspenv.instance
     job_indices = 2:(nb_tasks)
     epoch_indices = first_epoch:last_epoch
 
-    routes = [Vector{Int}[] for t in epoch_indices]
+    routes = [Vector{Int}[] for _ in epoch_indices]
     for t in epoch_indices
         start = [i for i in job_indices if y[1, i, t] ≈ 1]
         for task in start
@@ -39,13 +40,21 @@ $TYPEDSIGNATURES
 Solve the anticipative VSP problem for environment `env`.
 For this, it uses the current environment history, so make sure that the environment is terminated before calling this method.
 """
-function anticipative_solver(env::DVSPEnv; model_builder=highs_model, draw_epochs=true)
-    draw_epochs && draw_all_epochs!(env)
-    (; customer_index, service_time, start_time, request_epoch) = env
-    duration = env.config.static_instance.duration[customer_index, customer_index]
-    (; first_epoch, last_epoch, epoch_duration, Δ_dispatch) = env.config
+function anticipative_solver(
+    env::DVSPEnv, scenario=env.scenario; model_builder=highs_model, reset_env=false
+)
+    reset_env && reset!(env)
+    request_epoch = [0]
+    for (epoch, indices) in enumerate(scenario.indices)
+        request_epoch = vcat(request_epoch, fill(epoch, length(indices)))
+    end
+    customer_index = vcat(1, scenario.indices...)
+    service_time = vcat(0.0, scenario.service_time...)
+    start_time = vcat(0.0, scenario.start_time...)
 
-    @assert first_epoch == 1
+    duration = env.instance.static_instance.duration[customer_index, customer_index]
+    first_epoch = 1
+    (; last_epoch, epoch_duration, Δ_dispatch) = env.instance
 
     model = model_builder()
     set_silent(model)
@@ -80,7 +89,7 @@ function anticipative_solver(env::DVSPEnv; model_builder=highs_model, draw_epoch
         sum(y[j, i, t] for j in 1:nb_nodes, t in epoch_indices) == 1
     )
 
-    # a trip from i can be planned only after request appeared
+    # a trip from i can be planned only after request appeared (release times)
     for i in job_indices, t in epoch_indices, j in 1:nb_nodes
         if t < request_epoch[i]
             @constraint(model, y[i, j, t] <= 0)
@@ -107,5 +116,6 @@ function anticipative_solver(env::DVSPEnv; model_builder=highs_model, draw_epoch
 
     optimize!(model)
 
-    return retrieve_routes_anticipative(value.(y), env)
+    return JuMP.objective_value(model),
+    retrieve_routes_anticipative(value.(y), env, customer_index)
 end

@@ -4,7 +4,7 @@ $TYPEDSIGNATURES
 Plot the given static VSP `instance`.
 """
 function plot_instance(
-    instance::VSPInstance;
+    instance::StaticInstance;
     customer_markersize=4,
     depot_markersize=7,
     alpha_depot=0.8,
