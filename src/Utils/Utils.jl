@@ -5,6 +5,7 @@ using Flux: softplus
 using HiGHS: HiGHS
 using JuMP: Model
 using LinearAlgebra: dot
+using Random: Random, MersenneTwister
 using SCIP: SCIP
 using SimpleWeightedGraphs: SimpleWeightedDiGraph
 using StatsBase: StatsBase
@@ -18,9 +19,9 @@ include("model_builders.jl")
 
 export DataSample
 
-export AbstractBenchmark
-export generate_dataset,
-    generate_statistical_model, generate_maximizer, plot_data, compute_gap
+export AbstractBenchmark, AbstractStochasticBenchmark, AbstractDynamicBenchmark
+export generate_dataset, generate_statistical_model, generate_maximizer, generate_sample
+export plot_data, compute_gap
 export maximizer_kwargs
 export grid_graph, get_path, path_to_matrix
 export neg_tensor, squeeze_last_dims, average_tensor

@@ -61,22 +61,16 @@ end
 """
 $TYPEDSIGNATURES
 
-Generate a dataset of labeled instances for the ranking problem.
+Generate a labeled sample for the ranking problem.
 """
-function Utils.generate_dataset(
-    bench::RankingBenchmark, dataset_size::Int=10; seed::Int=0, noise_std=0.0
+function Utils.generate_sample(
+    bench::RankingBenchmark, rng::AbstractRNG; noise_std::Float32=0.0f0
 )
     (; instance_dim, nb_features, encoder) = bench
-    rng = MersenneTwister(seed)
-    features = [randn(rng, Float32, nb_features, instance_dim) for _ in 1:dataset_size]
-    costs = encoder.(features)
-    noisy_solutions = [
-        ranking(θ .+ noise_std * randn(rng, Float32, instance_dim)) for θ in costs
-    ]
-    return [
-        DataSample(; x, θ_true, y_true) for
-        (x, θ_true, y_true) in zip(features, costs, noisy_solutions)
-    ]
+    features = randn(rng, Float32, nb_features, instance_dim)
+    costs = encoder(features)
+    noisy_solution = ranking(costs .+ noise_std * randn(rng, Float32, instance_dim))
+    return DataSample(; x=features, θ_true=costs, y_true=noisy_solution)
 end
 
 """

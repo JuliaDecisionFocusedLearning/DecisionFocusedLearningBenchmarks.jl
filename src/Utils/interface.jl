@@ -16,12 +16,39 @@ The following methods are optional:
 abstract type AbstractBenchmark end
 
 """
+$TYPEDEF
+"""
+abstract type AbstractStochasticBenchmark <: AbstractBenchmark end
+
+"""
+$TYPEDEF
+"""
+abstract type AbstractDynamicBenchmark <: AbstractStochasticBenchmark end
+
+"""
+    generate_sample(::AbstractBenchmark, rng::AbstractRNG; kwargs...)
+
+Do not always exist, interface to make [`generate_dataset`](@ref) work.
+Either implement this or generate_dataset.
+"""
+function generate_sample end
+
+"""
     generate_dataset(::AbstractBenchmark, dataset_size::Int; kwargs...) -> Vector{<:DataSample}
 
 Generate a `Vector` of [`DataSample`](@ref)  of length `dataset_size` for given benchmark.
 Content of the dataset can be visualized using [`plot_data`](@ref), when it applies.
 """
-function generate_dataset end
+function generate_dataset(
+    bench::AbstractBenchmark,
+    dataset_size::Int;
+    seed=nothing,
+    rng=MersenneTwister(0),
+    kwargs...,
+)
+    Random.seed!(rng, seed)
+    return [generate_sample(bench, rng; kwargs...) for _ in 1:dataset_size]
+end
 
 """
     generate_maximizer(::AbstractBenchmark; kwargs...)

@@ -205,11 +205,11 @@ function _objective_value(θ, routes; instance)
     return -total, g
 end
 
-function ChainRulesCore.rrule(::typeof(my_objective_value), θ, routes; instance)
-    total, g = _objective_value(θ, routes; instance)
-    function pullback(dy)
-        g = g .* dy
-        return NoTangent(), g, NoTangent()
-    end
-    return total, pullback
-end
+# function ChainRulesCore.rrule(::typeof(my_objective_value), θ, routes; instance)
+#     total, g = _objective_value(θ, routes; instance)
+#     function pullback(dy)
+#         g = g .* dy
+#         return NoTangent(), g, NoTangent()
+#     end
+#     return total, pullback
+# end

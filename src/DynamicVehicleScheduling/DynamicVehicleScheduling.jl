@@ -7,7 +7,7 @@ using Base: @kwdef
 using DocStringExtensions: TYPEDEF, TYPEDFIELDS, TYPEDSIGNATURES
 using Graphs
 using HiGHS
-using InferOpt
+# using InferOpt
 using IterTools: partition
 using JSON
 using JuMP

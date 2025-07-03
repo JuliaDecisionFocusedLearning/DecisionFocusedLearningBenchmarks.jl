@@ -54,7 +54,7 @@ include("Warcraft/Warcraft.jl")
 include("FixedSizeShortestPath/FixedSizeShortestPath.jl")
 include("PortfolioOptimization/PortfolioOptimization.jl")
 include("StochasticVehicleScheduling/StochasticVehicleScheduling.jl")
-include("DynamicVehicleScheduling/DynamicVehicleScheduling.jl")
+# include("DynamicVehicleScheduling/DynamicVehicleScheduling.jl")
 
 using .Utils
 using .Argmax
@@ -64,10 +64,10 @@ using .Warcraft
 using .FixedSizeShortestPath
 using .PortfolioOptimization
 using .StochasticVehicleScheduling
-using .DynamicVehicleScheduling
+# using .DynamicVehicleScheduling
 
 # Interface
-export AbstractBenchmark, DataSample
+export AbstractBenchmark, AbstractStochasticBenchmark, AbstractDynamicBenchmark, DataSample
 export generate_dataset
 export generate_statistical_model
 export generate_maximizer, maximizer_kwargs
