@@ -45,3 +45,11 @@ function generate_scenario(
     end
     return Scenario(new_indices, new_service_time, new_start_time)
 end
+
+function generate_scenario(sample::DataSample; kwargs...)
+    return generate_scenario(sample.instance; kwargs...)
+end
+
+function generate_scenario(env::DVSPEnv; kwargs...)
+    return generate_scenario(env.instance; kwargs...)
+end

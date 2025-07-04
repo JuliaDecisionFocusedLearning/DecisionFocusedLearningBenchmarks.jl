@@ -20,7 +20,12 @@ include("model_builders.jl")
 export DataSample
 
 export AbstractBenchmark, AbstractStochasticBenchmark, AbstractDynamicBenchmark
-export generate_dataset, generate_statistical_model, generate_maximizer, generate_sample
+export generate_dataset,
+    generate_statistical_model,
+    generate_maximizer,
+    generate_sample,
+    generate_scenario_generator,
+    generate_anticipative_solver
 export plot_data, compute_gap
 export maximizer_kwargs
 export grid_graph, get_path, path_to_matrix

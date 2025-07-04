@@ -7,10 +7,13 @@ Data sample data structure.
 $TYPEDFIELDS
 """
 @kwdef struct DataSample{
-    I,F<:AbstractArray,S<:Union{AbstractArray,Nothing},C<:Union{AbstractArray,Nothing}
+    I,
+    F<:Union{AbstractArray,Nothing},
+    S<:Union{AbstractArray,Nothing},
+    C<:Union{AbstractArray,Nothing},
 }
     "features"
-    x::F
+    x::F = nothing
     "target cost parameters (optional)"
     θ_true::C = nothing
     "target solution (optional)"
