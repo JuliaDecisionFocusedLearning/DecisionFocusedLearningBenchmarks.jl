@@ -14,8 +14,6 @@ Instance data structure for the dynamic vehicle scheduling problem.
     epoch_duration::T = 1.0
     "last epoch index"
     last_epoch::Int
-    # "seed for customer sampling"
-    # seed::S
 end
 
 function Instance(
@@ -44,9 +42,3 @@ end
 epoch_duration(instance::Instance) = instance.epoch_duration
 last_epoch(instance::Instance) = instance.last_epoch
 max_requests_per_epoch(instance::Instance) = instance.max_requests_per_epoch
-# static_instance(instance::Instance) = instance.static_instance
-
-# duration(instance::Instance) = duration(instance.static_instance)
-# service_time(instance::Instance) = service_time(instance.static_instance)
-# coordinate(instance::Instance) = coordinate(instance.static_instance)
-# start_time(instance::Instance) = start_time(instance.static_instance)

@@ -5,11 +5,10 @@ using ..Utils
 using Base: @kwdef
 using CommonRLInterface: CommonRLInterface, AbstractEnv, reset!, terminated, observe, act!
 using DataDeps: @datadep_str
-# using ChainRulesCore
 using DocStringExtensions: TYPEDEF, TYPEDFIELDS, TYPEDSIGNATURES
 using Graphs
 using HiGHS
-# using InferOpt
+using InferOpt: LinearMaximizer
 using IterTools: partition
 using JSON
 using JuMP
@@ -20,8 +19,6 @@ using Requires: @require
 using Statistics: mean, quantile
 
 include("utils.jl")
-
-include("abstract_policy.jl")
 
 # static vsp stuff
 include("static_vsp/instance.jl")
@@ -41,7 +38,6 @@ include("algorithms/anticipative_solver.jl")
 
 include("learning/features.jl")
 include("learning/2d_features.jl")
-include("learning/dataset.jl")
 
 include("policy/abstract_vsp_policy.jl")
 include("policy/greedy_policy.jl")
@@ -49,12 +45,33 @@ include("policy/lazy_policy.jl")
 include("policy/anticipative_policy.jl")
 include("policy/kleopatra_policy.jl")
 
-struct DVSPBenchmark <: AbstractDynamicBenchmark end
+include("maximizer.jl")
 
-function Utils.generate_sample(b::DVSPBenchmark, rng::AbstractRNG)
-    return DataSample(;
-        instance=Instance(read_vsp_instance(readdir(datadep"dvrptw"; join=true)[1]))
-    )
+"""
+$TYPEDEF
+
+Abstract type for dynamic vehicle scheduling benchmarks.
+"""
+@kwdef struct DVSPBenchmark <: AbstractDynamicBenchmark
+    max_requests_per_epoch::Int = 10
+    Δ_dispatch::Float64 = 1.0
+    epoch_duration::Float64 = 1.0
+end
+
+function Utils.generate_dataset(b::DVSPBenchmark, dataset_size::Int=1)
+    (; max_requests_per_epoch, Δ_dispatch, epoch_duration) = b
+    files = readdir(datadep"dvrptw"; join=true)
+    dataset_size = min(dataset_size, length(files))
+    return [
+        DataSample(;
+            instance=Instance(
+                read_vsp_instance(files[i]);
+                max_requests_per_epoch,
+                Δ_dispatch,
+                epoch_duration,
+            ),
+        ) for i in 1:dataset_size
+    ]
 end
 
 function Utils.generate_scenario_generator(::DVSPBenchmark)
@@ -70,7 +87,7 @@ function Utils.generate_environment(::DVSPBenchmark, instance::Instance; kwargs.
 end
 
 function Utils.generate_maximizer(::DVSPBenchmark)
-    return prize_collecting_vsp
+    return LinearMaximizer(oracle; g, h)
 end
 
 export DVSPBenchmark #, generate_environment # , generate_sample, generate_anticipative_solver

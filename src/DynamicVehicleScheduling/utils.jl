@@ -35,12 +35,3 @@ struct Point{T}
 end
 
 Base.show(io::IO, p::Point) = print(io, "($(p.x), $(p.y))")
-
-# """
-# $TYPEDSIGNATURES
-
-# Readdir all files in `data` with extension `file_extension`.
-# """
-# function filtered_readdir(data, file_extension=".txt"; kwargs...)
-#     return filter(x -> endswith(x, file_extension), readdir(data; kwargs...))
-# end

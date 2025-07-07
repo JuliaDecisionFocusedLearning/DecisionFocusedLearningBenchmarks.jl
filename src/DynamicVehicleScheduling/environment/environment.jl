@@ -45,12 +45,13 @@ $TYPEDSIGNATURES
 Get the planning start time of the environment, i.e. the time at which vehicles routes dispatched in current epoch can depart.
 """
 planning_start_time(env::DVSPEnv) = time(env) + Δ_dispatch(env)
+
 """
 $TYPEDSIGNATURES
 
 Check if the episode is terminated, i.e. if the current epoch is the last one.
 """
-CommonRLInterface.terminated(env::DVSPEnv) = current_epoch(env) >= last_epoch(env)
+CommonRLInterface.terminated(env::DVSPEnv) = current_epoch(env) > last_epoch(env)
 
 """
 $TYPEDSIGNATURES
@@ -69,7 +70,7 @@ remove dispatched customers, advance time, and add new requests to the environme
 function CommonRLInterface.act!(env::DVSPEnv, routes, scenario=env.scenario)
     reward = -apply_routes!(env.state, routes)
     env.state.current_epoch += 1
-    if current_epoch(env) <= last_epoch(env)
+    if !CommonRLInterface.terminated(env)
         add_new_customers!(env.state, env.instance; scenario[current_epoch(env)]...)
     end
     return reward
