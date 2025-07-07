@@ -25,7 +25,9 @@ export generate_dataset,
     generate_maximizer,
     generate_sample,
     generate_scenario_generator,
-    generate_anticipative_solver
+    generate_anticipative_solver,
+    generate_environment,
+    generate_environments
 export plot_data, compute_gap
 export maximizer_kwargs
 export grid_graph, get_path, path_to_matrix

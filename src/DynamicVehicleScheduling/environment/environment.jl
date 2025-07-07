@@ -84,3 +84,7 @@ function CommonRLInterface.act!(env::DVSPEnv, routes, scenario=env.scenario)
     add_new_customers!(env.state, env.instance; scenario[current_epoch(env)]...)
     return reward
 end
+
+function generate_scenario(env::DVSPEnv; kwargs...)
+    return generate_scenario(env.instance; kwargs...)
+end

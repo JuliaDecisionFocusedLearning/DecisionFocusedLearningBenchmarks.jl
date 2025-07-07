@@ -210,3 +210,23 @@ It follows the same interface as [`AbstractStochasticBenchmark`](@ref), with the
 TODO
 """
 abstract type AbstractDynamicBenchmark <: AbstractStochasticBenchmark end
+
+"""
+    generate_environment(::AbstractDynamicBenchmark, instance; kwargs...)
+
+Initialize an environment for the given dynamic benchmark instance.
+"""
+function generate_environment end
+
+"""
+$TYPEDSIGNATURES
+
+Generate a vector of environments for the given dynamic benchmark and dataset.
+"""
+function generate_environments(
+    bench::AbstractDynamicBenchmark, dataset::Vector{<:DataSample}, kwargs...
+)
+    return map(dataset) do sample
+        generate_environment(bench, sample.instance; kwargs...)
+    end
+end

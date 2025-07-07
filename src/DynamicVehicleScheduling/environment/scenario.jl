@@ -49,7 +49,3 @@ end
 function generate_scenario(sample::DataSample; kwargs...)
     return generate_scenario(sample.instance; kwargs...)
 end
-
-function generate_scenario(env::DVSPEnv; kwargs...)
-    return generate_scenario(env.instance; kwargs...)
-end

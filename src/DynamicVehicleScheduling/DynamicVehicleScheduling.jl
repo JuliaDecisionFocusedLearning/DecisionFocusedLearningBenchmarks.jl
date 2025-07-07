@@ -32,8 +32,8 @@ include("static_vsp/plot.jl")
 # dynamic environment
 include("environment/instance.jl")
 include("environment/state.jl")
-include("environment/environment.jl")
 include("environment/scenario.jl")
+include("environment/environment.jl")
 include("environment/plot.jl")
 
 include("DynamicVSP/algorithms/prize_collecting_vsp.jl")
@@ -65,7 +65,11 @@ function Utils.generate_anticipative_solver(::DVSPBenchmark; kwargs...)
     return AnticipativeVSPPolicy(; kwargs...)
 end
 
-export DVSPBenchmark, generate_sample, generate_scenario
+function Utils.generate_environment(::DVSPBenchmark, instance::Instance; kwargs...)
+    return DVSPEnv(instance; kwargs...)
+end
+
+export DVSPBenchmark, generate_environment # , generate_sample, generate_anticipative_solver
 export run_policy!,
     GreedyVSPPolicy, LazyVSPPolicy, KleopatraVSPPolicy, AnticipativeVSPPolicy
 
