@@ -139,9 +139,6 @@ function anticipative_solver(
     dataset = map(1:last_epoch) do epoch
         routes = epoch_routes[epoch]
         epoch_customers = epoch_indices[epoch]
-        # y_true = [
-        #     map(idx -> findfirst(==(idx), epoch_customers), route) for route in routes
-        # ]
 
         y_true =
             VSPSolution(
@@ -182,7 +179,8 @@ function anticipative_solver(
             current_epoch=epoch,
         )
 
-        x = compute_2D_features(state, env.instance)
+        # x = compute_2D_features(state, env.instance)
+        x = compute_features(state, env.instance)
 
         return DataSample(; instance=state, y_true, x)
     end
