@@ -36,12 +36,12 @@ include("environment/scenario.jl")
 include("environment/environment.jl")
 include("environment/plot.jl")
 
-include("DynamicVSP/algorithms/prize_collecting_vsp.jl")
-include("DynamicVSP/algorithms/anticipative_solver.jl")
+include("algorithms/prize_collecting_vsp.jl")
+include("algorithms/anticipative_solver.jl")
 
-include("DynamicVSP/learning/features.jl")
-include("DynamicVSP/learning/2d_features.jl")
-include("DynamicVSP/learning/dataset.jl")
+include("learning/features.jl")
+include("learning/2d_features.jl")
+include("learning/dataset.jl")
 
 include("policy/abstract_vsp_policy.jl")
 include("policy/greedy_policy.jl")
@@ -62,14 +62,18 @@ function Utils.generate_scenario_generator(::DVSPBenchmark)
 end
 
 function Utils.generate_anticipative_solver(::DVSPBenchmark; kwargs...)
-    return AnticipativeVSPPolicy(; kwargs...)
+    return anticipative_solver
 end
 
 function Utils.generate_environment(::DVSPBenchmark, instance::Instance; kwargs...)
     return DVSPEnv(instance; kwargs...)
 end
 
-export DVSPBenchmark, generate_environment # , generate_sample, generate_anticipative_solver
+function Utils.generate_maximizer(::DVSPBenchmark)
+    return prize_collecting_vsp
+end
+
+export DVSPBenchmark #, generate_environment # , generate_sample, generate_anticipative_solver
 export run_policy!,
     GreedyVSPPolicy, LazyVSPPolicy, KleopatraVSPPolicy, AnticipativeVSPPolicy
 

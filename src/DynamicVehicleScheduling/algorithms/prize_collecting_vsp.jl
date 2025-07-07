@@ -127,83 +127,83 @@ function prize_collecting_vsp(
     return retrieve_routes(value.(y), graph)
 end
 
-# ?
-function prize_collecting_vsp_Q(
-    θ::AbstractVector,
-    vals::AbstractVector;
-    instance::DVSPState,
-    model_builder=highs_model,
-    kwargs...,
-)
-    (; duration) = instance.instance
-    graph = create_graph(instance)
-    model = model_builder()
-    set_silent(model)
-    nb_nodes = nv(graph)
-    job_indices = 2:(nb_nodes)
-    @variable(model, y[i=1:nb_nodes, j=1:nb_nodes; has_edge(graph, i, j)] >= 0)
-    θ_ext = fill(0.0, location_count(instance.instance))  # no prize for must dispatch requests, only hard constraints
-    θ_ext[instance.is_postponable] .= θ
-    # v_ext = fill(0.0, nb_locations(instance.instance))  # no prize for must dispatch requests, only hard constraints
-    # v_ext[instance.is_postponable] .= vals
-    @objective(
-        model,
-        Max,
-        sum(
-            (θ_ext[dst(edge)] + vals[dst(edge)] - duration[src(edge), dst(edge)]) *
-            y[src(edge), dst(edge)] for edge in edges(graph)
-        )
-    )
-    @constraint(
-        model,
-        flow[i in 2:nb_nodes],
-        sum(y[j, i] for j in inneighbors(graph, i)) ==
-            sum(y[i, j] for j in outneighbors(graph, i))
-    )
-    @constraint(
-        model, demand[i in job_indices], sum(y[j, i] for j in inneighbors(graph, i)) <= 1
-    )
-    # must dispatch constraints
-    @constraint(
-        model,
-        demand_must_dispatch[i in job_indices; instance.is_must_dispatch[i]],
-        sum(y[j, i] for j in inneighbors(graph, i)) == 1
-    )
-    optimize!(model)
-    return retrieve_routes(value.(y), graph)
-end
+# # ?
+# function prize_collecting_vsp_Q(
+#     θ::AbstractVector,
+#     vals::AbstractVector;
+#     instance::DVSPState,
+#     model_builder=highs_model,
+#     kwargs...,
+# )
+#     (; duration) = instance.instance
+#     graph = create_graph(instance)
+#     model = model_builder()
+#     set_silent(model)
+#     nb_nodes = nv(graph)
+#     job_indices = 2:(nb_nodes)
+#     @variable(model, y[i=1:nb_nodes, j=1:nb_nodes; has_edge(graph, i, j)] >= 0)
+#     θ_ext = fill(0.0, location_count(instance.instance))  # no prize for must dispatch requests, only hard constraints
+#     θ_ext[instance.is_postponable] .= θ
+#     # v_ext = fill(0.0, nb_locations(instance.instance))  # no prize for must dispatch requests, only hard constraints
+#     # v_ext[instance.is_postponable] .= vals
+#     @objective(
+#         model,
+#         Max,
+#         sum(
+#             (θ_ext[dst(edge)] + vals[dst(edge)] - duration[src(edge), dst(edge)]) *
+#             y[src(edge), dst(edge)] for edge in edges(graph)
+#         )
+#     )
+#     @constraint(
+#         model,
+#         flow[i in 2:nb_nodes],
+#         sum(y[j, i] for j in inneighbors(graph, i)) ==
+#             sum(y[i, j] for j in outneighbors(graph, i))
+#     )
+#     @constraint(
+#         model, demand[i in job_indices], sum(y[j, i] for j in inneighbors(graph, i)) <= 1
+#     )
+#     # must dispatch constraints
+#     @constraint(
+#         model,
+#         demand_must_dispatch[i in job_indices; instance.is_must_dispatch[i]],
+#         sum(y[j, i] for j in inneighbors(graph, i)) == 1
+#     )
+#     optimize!(model)
+#     return retrieve_routes(value.(y), graph)
+# end
 
-function my_objective_value(θ, routes; instance)
-    (; duration) = instance.instance
-    total = 0.0
-    θ_ext = fill(0.0, location_count(instance))
-    θ_ext[instance.is_postponable] .= θ
-    for route in routes
-        for (u, v) in partition(vcat(1, route), 2, 1)
-            total += θ_ext[v] - duration[u, v]
-        end
-    end
-    return -total
-end
+# function my_objective_value(θ, routes; instance)
+#     (; duration) = instance.instance
+#     total = 0.0
+#     θ_ext = fill(0.0, location_count(instance))
+#     θ_ext[instance.is_postponable] .= θ
+#     for route in routes
+#         for (u, v) in partition(vcat(1, route), 2, 1)
+#             total += θ_ext[v] - duration[u, v]
+#         end
+#     end
+#     return -total
+# end
 
-function _objective_value(θ, routes; instance)
-    (; duration) = instance.instance
-    total = 0.0
-    θ_ext = fill(0.0, location_count(instance))
-    θ_ext[instance.is_postponable] .= θ
-    mapping = cumsum(instance.is_postponable)
-    g = falses(length(θ))
-    for route in routes
-        for (u, v) in partition(vcat(1, route), 2, 1)
-            total -= duration[u, v]
-            if instance.is_postponable[v]
-                total += θ_ext[v]
-                g[mapping[v]] = 1
-            end
-        end
-    end
-    return -total, g
-end
+# function _objective_value(θ, routes; instance)
+#     (; duration) = instance.instance
+#     total = 0.0
+#     θ_ext = fill(0.0, location_count(instance))
+#     θ_ext[instance.is_postponable] .= θ
+#     mapping = cumsum(instance.is_postponable)
+#     g = falses(length(θ))
+#     for route in routes
+#         for (u, v) in partition(vcat(1, route), 2, 1)
+#             total -= duration[u, v]
+#             if instance.is_postponable[v]
+#                 total += θ_ext[v]
+#                 g[mapping[v]] = 1
+#             end
+#         end
+#     end
+#     return -total, g
+# end
 
 # function ChainRulesCore.rrule(::typeof(my_objective_value), θ, routes; instance)
 #     total, g = _objective_value(θ, routes; instance)

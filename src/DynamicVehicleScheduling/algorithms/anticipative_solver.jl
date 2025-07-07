@@ -116,6 +116,76 @@ function anticipative_solver(
 
     optimize!(model)
 
-    return JuMP.objective_value(model),
-    retrieve_routes_anticipative(value.(y), env, customer_index)
+    obj = JuMP.objective_value(model)
+    epoch_routes = retrieve_routes_anticipative(value.(y), env, customer_index)
+
+    epoch_indices = Vector{Int}[]
+    N = 1
+    indices = [1]
+    for epoch in 1:last_epoch
+        M = length(scenario.indices[epoch])
+        indices = vcat(indices, (N + 1):(N + M))
+        push!(epoch_indices, copy(indices))
+        N = N + M
+        epoch_routes[epoch]
+        dispatched = vcat(epoch_routes[epoch]...)
+        indices = setdiff(indices, dispatched)
+    end
+
+    indices = vcat(1, scenario.indices...)
+    start_time = vcat(0.0, scenario.start_time...)
+    service_time = vcat(0.0, scenario.service_time...)
+
+    dataset = map(1:last_epoch) do epoch
+        routes = epoch_routes[epoch]
+        epoch_customers = epoch_indices[epoch]
+        # y_true = [
+        #     map(idx -> findfirst(==(idx), epoch_customers), route) for route in routes
+        # ]
+
+        y_true =
+            VSPSolution(
+                Vector{Int}[
+                    map(idx -> findfirst(==(idx), epoch_customers), route) for
+                    route in routes
+                ];
+                max_index=length(epoch_customers),
+            ).edge_matrix
+
+        location_indices = indices[epoch_customers]
+        new_coordinates = env.instance.static_instance.coordinate[location_indices]
+        new_start_time = start_time[epoch_customers]
+        new_service_time = service_time[epoch_customers]
+        new_duration = env.instance.static_instance.duration[
+            location_indices, location_indices
+        ]
+        static_instance = StaticInstance(
+            new_coordinates, new_service_time, new_start_time, new_duration
+        )
+
+        is_must_dispatch = falses(length(location_indices))
+        is_postponable = falses(length(location_indices))
+
+        epoch_duration = env.instance.epoch_duration
+        Δ_dispatch = env.instance.Δ_dispatch
+        planning_start_time = (epoch - 1) * epoch_duration + Δ_dispatch
+        is_must_dispatch[2:end] .=
+            planning_start_time .+ epoch_duration .+ @view(new_duration[1, 2:end]) .>
+            new_start_time[2:end]
+        is_postponable[2:end] .= .!is_must_dispatch[2:end]
+
+        state = DVSPState(;
+            state_instance=static_instance,
+            is_must_dispatch,
+            is_postponable,
+            location_indices,
+            current_epoch=epoch,
+        )
+
+        x = compute_2D_features(state, env.instance)
+
+        return DataSample(; instance=state, y_true, x)
+    end
+
+    return obj, dataset
 end

@@ -53,15 +53,6 @@ Check if the episode is terminated, i.e. if the current epoch is the last one.
 CommonRLInterface.terminated(env::DVSPEnv) = current_epoch(env) >= last_epoch(env)
 
 """
-draw new customers in scenario
-"""
-function draw_next_epoch!(env::DVSPEnv, scenario=env.scenario)
-    env.state.current_epoch += 1
-
-    return nothing
-end
-
-"""
 $TYPEDSIGNATURES
 
 Reset the environment to its initial state.
@@ -78,10 +69,9 @@ remove dispatched customers, advance time, and add new requests to the environme
 function CommonRLInterface.act!(env::DVSPEnv, routes, scenario=env.scenario)
     reward = -apply_routes!(env.state, routes)
     env.state.current_epoch += 1
-    if current_epoch(env) > last_epoch(env)
-        return nothing
+    if current_epoch(env) <= last_epoch(env)
+        add_new_customers!(env.state, env.instance; scenario[current_epoch(env)]...)
     end
-    add_new_customers!(env.state, env.instance; scenario[current_epoch(env)]...)
     return reward
 end
 
