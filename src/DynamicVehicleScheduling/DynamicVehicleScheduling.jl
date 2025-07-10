@@ -51,11 +51,19 @@ include("maximizer.jl")
 $TYPEDEF
 
 Abstract type for dynamic vehicle scheduling benchmarks.
+
+# Fields
+$TYPEDFIELDS
 """
 @kwdef struct DVSPBenchmark <: AbstractDynamicBenchmark
+    "todo"
     max_requests_per_epoch::Int = 10
+    "todo"
     Δ_dispatch::Float64 = 1.0
+    "todo"
     epoch_duration::Float64 = 1.0
+    "todo"
+    two_dimensional_features::Bool = false
 end
 
 function Utils.generate_dataset(b::DVSPBenchmark, dataset_size::Int=1)
@@ -74,20 +82,20 @@ function Utils.generate_dataset(b::DVSPBenchmark, dataset_size::Int=1)
     ]
 end
 
-function Utils.generate_scenario_generator(::DVSPBenchmark)
-    return generate_scenario
-end
-
-function Utils.generate_anticipative_solver(::DVSPBenchmark; kwargs...)
-    return anticipative_solver
-end
-
 function Utils.generate_environment(::DVSPBenchmark, instance::Instance; kwargs...)
     return DVSPEnv(instance; kwargs...)
 end
 
 function Utils.generate_maximizer(::DVSPBenchmark)
     return LinearMaximizer(oracle; g, h)
+end
+
+function Utils.generate_scenario_generator(::DVSPBenchmark)
+    return generate_scenario
+end
+
+function Utils.generate_anticipative_solver(b::DVSPBenchmark; kwargs...)
+    return AnticipativeSolver(b.two_dimensional_features)
 end
 
 export DVSPBenchmark #, generate_environment # , generate_sample, generate_anticipative_solver

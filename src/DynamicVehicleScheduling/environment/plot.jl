@@ -1,3 +1,7 @@
+function plot_instance(env::DVSPEnv; kwargs...)
+    return plot_instance(env.instance.static_instance; kwargs...)
+end
+
 # """
 # $TYPEDSIGNATURES
 

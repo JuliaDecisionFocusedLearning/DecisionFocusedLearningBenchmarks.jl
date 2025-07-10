@@ -189,9 +189,11 @@ It follows the same interface as [`AbstractBenchmark`](@ref), with the addition 
 """
 abstract type AbstractStochasticBenchmark <: AbstractBenchmark end
 
+function generate_scenario end
+
 # only works for exogenous noise
 """
-    generate_scenario(::AbstractStochasticBenchmark; kwargs...)
+    generate_scenario_generator(::AbstractStochasticBenchmark; kwargs...)
 """
 function generate_scenario_generator end
 

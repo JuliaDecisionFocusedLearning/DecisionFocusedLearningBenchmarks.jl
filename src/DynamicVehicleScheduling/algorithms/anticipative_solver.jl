@@ -41,7 +41,11 @@ Solve the anticipative VSP problem for environment `env`.
 For this, it uses the current environment history, so make sure that the environment is terminated before calling this method.
 """
 function anticipative_solver(
-    env::DVSPEnv, scenario=env.scenario; model_builder=highs_model, reset_env=false
+    env::DVSPEnv,
+    scenario=env.scenario;
+    model_builder=highs_model,
+    reset_env=false,
+    two_dimensional_features=false,
 )
     reset_env && reset!(env)
     request_epoch = [0]
@@ -180,10 +184,26 @@ function anticipative_solver(
         )
 
         # x = compute_2D_features(state, env.instance)
-        x = compute_features(state, env.instance)
+        x = if two_dimensional_features
+            compute_2D_features(state, env.instance)
+        else
+            compute_features(state, env.instance)
+        end
 
         return DataSample(; instance=state, y_true, x)
     end
 
     return obj, dataset
+end
+
+@kwdef struct AnticipativeSolver
+    is_2D::Bool = false
+end
+
+function (solver::AnticipativeSolver)(env::DVSPEnv, scenario=env.scenario; reset_env=false)
+    if solver.is_2D
+        return anticipative_solver(env, scenario; model_builder=highs_model_2d, reset_env)
+    else
+        return anticipative_solver(env, scenario; model_builder=highs_model, reset_env)
+    end
 end
