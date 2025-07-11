@@ -4,6 +4,7 @@ authors = ["Members of JuliaDecisionFocusedLearning"]
 version = "0.2.2"
 
 [deps]
+Combinatorics = "861a8166-3701-5b0c-9a16-15d98fcdc6aa"
 CommonRLInterface = "d842c3ba-07a1-494f-bbec-f5741b0a3e98"
 ConstrainedShortestPaths = "b3798467-87dc-4d99-943d-35a1bd39e395"
 DataDeps = "124859b0-ceae-595e-8997-d05f6a7a8dfe"
@@ -32,6 +33,7 @@ Statistics = "10745b16-79ce-11e8-11f9-7d13ad32a3b2"
 StatsBase = "2913bbd2-ae8a-5f71-8c99-4fb6c76f3a91"
 
 [compat]
+Combinatorics = "1.0.3"
 CommonRLInterface = "0.3.3"
 ConstrainedShortestPaths = "0.6.0"
 DataDeps = "0.7"

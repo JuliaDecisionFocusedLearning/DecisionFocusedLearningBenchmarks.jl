@@ -55,6 +55,7 @@ include("FixedSizeShortestPath/FixedSizeShortestPath.jl")
 include("PortfolioOptimization/PortfolioOptimization.jl")
 include("StochasticVehicleScheduling/StochasticVehicleScheduling.jl")
 include("DynamicVehicleScheduling/DynamicVehicleScheduling.jl")
+include("DynamicAssortment/DynamicAssortment.jl")
 
 using .Utils
 using .Argmax
@@ -65,6 +66,7 @@ using .FixedSizeShortestPath
 using .PortfolioOptimization
 using .StochasticVehicleScheduling
 using .DynamicVehicleScheduling
+using .DynamicAssortment
 
 # Interface
 export AbstractBenchmark, AbstractStochasticBenchmark, AbstractDynamicBenchmark, DataSample
@@ -87,5 +89,6 @@ export FixedSizeShortestPathBenchmark
 export PortfolioOptimizationBenchmark
 export StochasticVehicleSchedulingBenchmark
 export DVSPBenchmark
+export DynamicAssortmentBenchmark
 
 end # module DecisionFocusedLearningBenchmarks
