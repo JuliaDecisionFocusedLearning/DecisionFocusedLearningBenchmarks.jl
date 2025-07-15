@@ -11,7 +11,7 @@ $TYPEDFIELDS
 """
 @kwdef struct Instance{M}
     "customer choice model"
-    customer_choice_model::M = Chain(Dense([0.3 0.5 0.6 -0.4 -0.8 0.0]), vec)
+    customer_choice_model::M = Chain(Dense([0.3 0.5 0.6 -0.4 -0.8]), vec)
     "number of items"
     N::Int = 20
     "dimension of feature vectors (in addition to hype, satisfaction, and price)"
@@ -22,6 +22,7 @@ $TYPEDFIELDS
     max_steps::Int = 80
     "flags if the environment is endogenous"
     endogenous::Bool = true
+    # start_features?
 end
 
 @kwdef mutable struct Environment{R<:AbstractRNG} <: AbstractEnv
@@ -58,7 +59,7 @@ function Environment(
         seed=seed,
         utility=zeros(instance.N),
         prices=zeros(instance.N + 1),
-        features=zeros(instance.d + 4, instance.N),
+        features=zeros(instance.d + 3, instance.N),
         start_features=zeros(2, instance.N),
         d_features=zeros(2, instance.N),
     )
@@ -75,7 +76,7 @@ function CommonRLInterface.reset!(env::Environment; reset_seed=false, seed=env.s
     (; d, N, customer_choice_model) = env.instance
     features = rand(env.rng, Uniform(1.0, 10.0), (d + 3, N))
     env.prices = vcat(features[end, :], 0.0)
-    features = vcat(features, ones(1, N))
+    # features = vcat(features, ones(1, N)) # TODO
     env.d_features .= 0.0
     env.step = 1
     env.utility .= customer_choice_model(features)
@@ -128,7 +129,7 @@ function step!(env::Environment, item)
         hype_vector = hype_update!(env)
         env.features[3, :] .*= hype_vector
         item != 0 ? env.features[4, item] *= 1.01 : nothing
-        env.features[6, :] .+= 9 / env.instance.max_steps # ??
+        # env.features[6, :] .+= 9 / env.instance.max_steps # ??
     end
     env.d_features = env.features[3:4, :] - old_features[3:4, :] # ! hardcoded everywhere :(
     env.step += 1
@@ -146,13 +147,14 @@ function choice_probabilities(env::Environment, S)
 end
 
 # Purchase decision
-function purchase!(env::Environment, S)
+function CommonRLInterface.act!(env::Environment, S)
     r = env.prices
     probs = choice_probabilities(env, S)
     item = rand(env.rng, Categorical(probs))
+    reward = r[item]
     item == env.instance.N + 1 ? item = 0 : item  # TODO: cleanup this, not really needed and confusing
-    item != 0 ? revenue = r[item] : revenue = 0.0
-    return item, revenue
+    step!(env, item)
+    return reward
 end
 
 # enumerate all possible assortments of size K and return the best one
@@ -199,9 +201,8 @@ function expert_policy(env::Environment, episodes; first_seed=1, use_oracle=fals
             feature_vector = vcat(env.features, env.d_features, delta_features)
             push!(training_instances, (features=feature_vector, S_t=S))
 
-            item, revenue = purchase!(env, S)
-            rev_episode += revenue
-            step!(env, item)
+            reward = CommonRLInterface.act!(env, S)
+            rev_episode += reward
 
             env.step > env.instance.max_steps ? done = true : done = false
         end
@@ -224,48 +225,48 @@ function model_random(features)
 end
 
 # Episode generation
-function generate_episode(env::Environment, model, customer_model, sigma, random_seed)
-    buffer = []
-    start_features, d_features = reset!(env; seed=random_seed)
-    features = copy(start_features)
-    done = false
-    while !done
-        delta_features = features[3:4, :] .- start_features[3:4, :]
-        r = features[5, :]
-        feature_vector = vcat(features, d_features, delta_features)
-        θ = model(feature_vector)
-        η = rand(MersenneTwister(random_seed * env.step), p(θ, sigma), 1)[:, 1]
-        S = DAP_optimization(η; instance=env.instance)
-        θ_0 = customer_model(features)
-        item, revenue = purchase!(env, S)
-        features, d_features = step!(env, features, item)
-        feat_next = vcat(features, d_features, features[3:4, :] .- start_features[3:4, :])
-        push!(
-            buffer,
-            (
-                t=env.step - 1,
-                feat_t=feature_vector,
-                theta=θ,
-                eta=η,
-                S_t=S,
-                a_T=item,
-                rev_t=revenue,
-                ret_t=0.0,
-                feat_next=feat_next,
-            ),
-        )
-        count(!iszero, inventory) < env.instance.K ? break : nothing
-        env.step > env.instance.max_steps ? done = true : done = false
-    end
-    for i in (length(buffer) - 1):-1:1
-        if i == length(buffer) - 1
-            ret = buffer[i].rev_t
-        else
-            ret = buffer[i].rev_t + 0.99 * buffer[i + 1].ret_t
-        end
-        traj = buffer[i]
-        traj_updated = (; traj..., ret_t=ret)
-        buffer[i] = traj_updated
-    end
-    return buffer
-end
+# function generate_episode(env::Environment, model, customer_model, sigma, random_seed)
+#     buffer = []
+#     start_features, d_features = reset!(env; seed=random_seed)
+#     features = copy(start_features)
+#     done = false
+#     while !done
+#         delta_features = features[3:4, :] .- start_features[3:4, :]
+#         r = features[5, :]
+#         feature_vector = vcat(features, d_features, delta_features)
+#         θ = model(feature_vector)
+#         η = rand(MersenneTwister(random_seed * env.step), p(θ, sigma), 1)[:, 1]
+#         S = DAP_optimization(η; instance=env.instance)
+#         θ_0 = customer_model(features)
+#         item, revenue = purchase!(env, S)
+#         features, d_features = step!(env, item)
+#         feat_next = vcat(features, d_features, features[3:4, :] .- start_features[3:4, :])
+#         push!(
+#             buffer,
+#             (
+#                 t=env.step - 1,
+#                 feat_t=feature_vector,
+#                 theta=θ,
+#                 eta=η,
+#                 S_t=S,
+#                 a_T=item,
+#                 rev_t=revenue,
+#                 ret_t=0.0,
+#                 feat_next=feat_next,
+#             ),
+#         )
+#         count(!iszero, inventory) < env.instance.K ? break : nothing
+#         env.step > env.instance.max_steps ? done = true : done = false
+#     end
+#     for i in (length(buffer) - 1):-1:1
+#         if i == length(buffer) - 1
+#             ret = buffer[i].rev_t
+#         else
+#             ret = buffer[i].rev_t + 0.99 * buffer[i + 1].ret_t
+#         end
+#         traj = buffer[i]
+#         traj_updated = (; traj..., ret_t=ret)
+#         buffer[i] = traj_updated
+#     end
+#     return buffer
+# end
