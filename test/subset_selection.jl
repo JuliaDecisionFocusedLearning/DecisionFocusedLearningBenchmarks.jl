@@ -4,14 +4,15 @@
     n = 25
     k = 5
 
-    b = SubsetSelectionBenchmark(; n=n, k=k)
+    b_identity = SubsetSelectionBenchmark(; n=n, k=k)
+    b = SubsetSelectionBenchmark(; n=n, k=k, identity_mapping=false)
 
     io = IOBuffer()
     show(io, b)
     @test String(take!(io)) == "SubsetSelectionBenchmark(n=25, k=5)"
 
-    dataset = generate_dataset(b, 50)
-    dataset2 = generate_dataset(b, 50; identity_mapping=false)
+    dataset = generate_dataset(b_identity, 50)
+    dataset2 = generate_dataset(b, 50)
     model = generate_statistical_model(b)
     maximizer = generate_maximizer(b)
 

@@ -153,5 +153,5 @@ Very simple heuristic, using [`local_search`](@ref)
 function local_search(instance::Instance; num_iterations=1000)
     _, initial_solution = solve_deterministic_VSP(instance)
     sol, _, _, _ = _local_search(initial_solution, instance; nb_it=num_iterations)
-    return sol
+    return sol.value
 end

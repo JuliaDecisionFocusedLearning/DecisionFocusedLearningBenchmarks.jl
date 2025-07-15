@@ -1,10 +1,10 @@
 """
 $TYPEDEF
 
-Abstract type interface for a benchmark problem.
+Abstract type interface for benchmark problems.
 
 The following methods are mandatory for benchmarks:
-- [`generate_dataset`](@ref)
+- [`generate_dataset`](@ref) or [`generate_sample`](@ref)
 - [`generate_statistical_model`](@ref)
 - [`generate_maximizer`](@ref)
 
@@ -16,12 +16,35 @@ The following methods are optional:
 abstract type AbstractBenchmark end
 
 """
+    generate_sample(::AbstractBenchmark, rng::AbstractRNG; kwargs...) -> DataSample
+
+Generate a single [`DataSample`](@ref) for given benchmark.
+This is a low-level function that is used by [`generate_dataset`](@ref) to create
+a dataset of samples. It is not mandatory to implement this method, but it is
+recommended for benchmarks that have a well-defined way to generate individual samples.
+An alternative is to directly implement [`generate_dataset`](@ref) to create a dataset
+without generating individual samples.
+"""
+function generate_sample end
+
+"""
     generate_dataset(::AbstractBenchmark, dataset_size::Int; kwargs...) -> Vector{<:DataSample}
 
-Generate a `Vector` of [`DataSample`](@ref)  of length `dataset_size` for given benchmark.
+Generate a `Vector` of [`DataSample`](@ref) of length `dataset_size` for given benchmark.
 Content of the dataset can be visualized using [`plot_data`](@ref), when it applies.
+
+By default, it uses [`generate_sample`](@ref) to create each sample in the dataset, and passes any keyword arguments to it.
 """
-function generate_dataset end
+function generate_dataset(
+    bench::AbstractBenchmark,
+    dataset_size::Int;
+    seed=nothing,
+    rng=MersenneTwister(0),
+    kwargs...,
+)
+    Random.seed!(rng, seed)
+    return [generate_sample(bench, rng; kwargs...) for _ in 1:dataset_size]
+end
 
 """
     generate_maximizer(::AbstractBenchmark; kwargs...)
@@ -153,4 +176,59 @@ function compute_gap(
             return Δ / abs(target_obj)
         end,
     )
+end
+
+"""
+$TYPEDEF
+
+Abstract type interface for stochastic benchmark problems.
+This type should be used for benchmarks that involve single stage stochastic optimization problems.
+
+It follows the same interface as [`AbstractBenchmark`](@ref), with the addition of the following methods:
+- [`generate_anticipative_solver`](@ref)
+"""
+abstract type AbstractStochasticBenchmark <: AbstractBenchmark end
+
+function generate_scenario end
+
+# only works for exogenous noise
+"""
+    generate_scenario_generator(::AbstractStochasticBenchmark; kwargs...)
+"""
+function generate_scenario_generator end
+
+"""
+    generate_anticipative_solver(::AbstractStochasticBenchmark; kwargs...)
+"""
+function generate_anticipative_solver end
+
+"""
+$TYPEDEF
+
+Abstract type interface for dynamic benchmark problems.
+This type should be used for benchmarks that involve multi-stage stochastic optimization problems.
+
+It follows the same interface as [`AbstractStochasticBenchmark`](@ref), with the addition of the following methods:
+TODO
+"""
+abstract type AbstractDynamicBenchmark <: AbstractStochasticBenchmark end
+
+"""
+    generate_environment(::AbstractDynamicBenchmark, instance; kwargs...)
+
+Initialize an environment for the given dynamic benchmark instance.
+"""
+function generate_environment end
+
+"""
+$TYPEDSIGNATURES
+
+Generate a vector of environments for the given dynamic benchmark and dataset.
+"""
+function generate_environments(
+    bench::AbstractDynamicBenchmark, dataset::Vector{<:DataSample}, kwargs...
+)
+    return map(dataset) do sample
+        generate_environment(bench, sample.instance; kwargs...)
+    end
 end

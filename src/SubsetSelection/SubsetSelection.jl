@@ -17,11 +17,13 @@ without knowing their values, but only observing some features.
 # Fields
 $TYPEDFIELDS
 """
-struct SubsetSelectionBenchmark <: AbstractBenchmark
+struct SubsetSelectionBenchmark{M} <: AbstractBenchmark
     "total number of items"
     n::Int
     "number of items to select"
     k::Int
+    "hidden unknown mapping from features to costs"
+    mapping::M
 end
 
 function Base.show(io::IO, bench::SubsetSelectionBenchmark)
@@ -29,9 +31,14 @@ function Base.show(io::IO, bench::SubsetSelectionBenchmark)
     return print(io, "SubsetSelectionBenchmark(n=$n, k=$k)")
 end
 
-function SubsetSelectionBenchmark(; n::Int=25, k::Int=5)
+function SubsetSelectionBenchmark(; n::Int=25, k::Int=5, identity_mapping::Bool=true)
     @assert n >= k "number of items n must be greater than k"
-    return SubsetSelectionBenchmark(n, k)
+    mapping = if identity_mapping
+        copy
+    else
+        Dense(n => n; bias=false)
+    end
+    return SubsetSelectionBenchmark(n, k, mapping)
 end
 
 function top_k(v::AbstractVector, k::Int)
@@ -54,29 +61,14 @@ end
 """
 $TYPEDSIGNATURES
 
-Generate a dataset of labeled instances for the subset selection problem.
-The mapping between features and cost is identity.
+Generate a labeled instance for the subset selection problem.
 """
-function Utils.generate_dataset(
-    bench::SubsetSelectionBenchmark,
-    dataset_size::Int=10;
-    seed::Int=0,
-    identity_mapping=true,
-)
-    (; n, k) = bench
-    rng = MersenneTwister(seed)
-    features = [randn(rng, Float32, n) for _ in 1:dataset_size]
-    costs = if identity_mapping
-        copy(features)  # we assume that the cost is the same as the feature
-    else
-        mapping = Dense(n => n; bias=false)
-        mapping.(features)
-    end
-    solutions = top_k.(costs, k)
-    return [
-        DataSample(; x, θ_true, y_true) for
-        (x, θ_true, y_true) in zip(features, costs, solutions)
-    ]
+function Utils.generate_sample(bench::SubsetSelectionBenchmark, rng::AbstractRNG)
+    (; n, k, mapping) = bench
+    features = randn(rng, Float32, n)
+    costs = mapping(features)
+    solution = top_k(costs, k)
+    return DataSample(; x=features, θ_true=costs, y_true=solution)
 end
 
 """
