@@ -70,7 +70,9 @@ $TYPEDSIGNATURES
 
 Maximizer for the [`Argmax2DBenchmark`](@ref).
 """
-Utils.generate_maximizer(::Argmax2DBenchmark) = maximizer
+function Utils.generate_maximizer(::Argmax2DBenchmark)
+    return maximizer
+end
 
 """
 $TYPEDSIGNATURES
