@@ -91,7 +91,9 @@ $TYPEDSIGNATURES
 
 Plot the data sample for the [`Argmax2DBenchmark`](@ref).
 """
-function Utils.plot_data(::Argmax2DBenchmark, sample::DataSample; kwargs...)
+function Utils.plot_data(
+    ::Argmax2DBenchmark, sample::DataSample; θ_true=sample.θ_true, kwargs...
+)
     (; instance) = sample
     pl = init_plot()
     plot_polytope!(pl, instance)
