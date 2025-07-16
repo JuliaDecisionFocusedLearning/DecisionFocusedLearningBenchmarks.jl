@@ -36,7 +36,7 @@ end
 """
 $TYPEDSIGNATURES
 
-Custom constructor for [`ArgmaxBenchmark`](@ref).
+Custom constructor for [`Argmax2DBenchmark`](@ref).
 """
 function Argmax2DBenchmark(; nb_features::Int=5, seed=nothing, polytope_vertex_range=[6])
     Random.seed!(seed)
@@ -46,6 +46,11 @@ end
 
 maximizer(θ; instance) = instance[argmax(dot(θ, v) for v in instance)]
 
+"""
+$TYPEDSIGNATURES
+
+Generate a dataset for the [`Argmax2DBenchmark`](@ref).
+"""
 function Utils.generate_dataset(
     bench::Argmax2DBenchmark, dataset_size=10; seed=nothing, rng=MersenneTwister(seed)
 )
@@ -60,8 +65,18 @@ function Utils.generate_dataset(
     end
 end
 
+"""
+$TYPEDSIGNATURES
+
+Maximizer for the [`Argmax2DBenchmark`](@ref).
+"""
 Utils.generate_maximizer(::Argmax2DBenchmark) = maximizer
 
+"""
+$TYPEDSIGNATURES
+
+Generate a statistical model for the [`Argmax2DBenchmark`](@ref).
+"""
 function Utils.generate_statistical_model(
     bench::Argmax2DBenchmark; seed=nothing, rng=MersenneTwister(seed)
 )
@@ -71,9 +86,12 @@ function Utils.generate_statistical_model(
     return model
 end
 
-function Utils.plot_data(
-    ::Argmax2DBenchmark, sample::DataSample; θ_true=sample.θ_true, kwargs...
-)
+"""
+$TYPEDSIGNATURES
+
+Plot the data sample for the [`Argmax2DBenchmark`](@ref).
+"""
+function Utils.plot_data(::Argmax2DBenchmark, sample::DataSample; kwargs...)
     (; instance) = sample
     pl = init_plot()
     plot_polytope!(pl, instance)
