@@ -1,5 +1,6 @@
 @testitem "Argmax2D" begin
     using DecisionFocusedLearningBenchmarks
+    using Plots
 
     nb_features = 5
     b = Argmax2DBenchmark(; nb_features=nb_features)
@@ -11,6 +12,10 @@
     dataset = generate_dataset(b, 50)
     model = generate_statistical_model(b)
     maximizer = generate_maximizer(b)
+
+    # Test plot_data
+    figure = plot_data(b, dataset[1])
+    @test figure isa Plots.Plot
 
     for (i, sample) in enumerate(dataset)
         (; x, θ_true, y_true, instance) = sample
