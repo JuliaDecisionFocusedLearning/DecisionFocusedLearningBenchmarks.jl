@@ -50,18 +50,14 @@ function Utils.generate_dataset(
     bench::Argmax2DBenchmark, dataset_size=10; seed=nothing, rng=MersenneTwister(seed)
 )
     (; nb_features, encoder, polytope_vertex_range) = bench
-    X = [randn(rng, nb_features) for _ in 1:dataset_size]
-    θs = encoder.(X)
-    θs ./= 2 * norm.(θs)
-    instances = [
-        build_polytope(rand(rng, polytope_vertex_range); shift=rand(rng)) for
-        _ in 1:dataset_size
-    ]
-    Y = [maximizer(θ; instance) for (θ, instance) in zip(θs, instances)]
-    return [
-        DataSample(; x, θ_true, y_true, instance) for
-        (x, θ_true, y_true, instance) in zip(X, θs, Y, instances)
-    ]
+    return map(1:dataset_size) do _
+        x = randn(rng, nb_features)
+        θ_true = encoder(x)
+        θ_true ./= 2 * norm(θ_true)
+        instance = build_polytope(rand(rng, polytope_vertex_range); shift=rand(rng))
+        y_true = maximizer(θ_true; instance)
+        return DataSample(; x=x, θ_true=θ_true, y_true=y_true, instance=instance)
+    end
 end
 
 Utils.generate_maximizer(::Argmax2DBenchmark) = maximizer
