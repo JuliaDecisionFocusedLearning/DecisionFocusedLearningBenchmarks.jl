@@ -103,16 +103,13 @@ $TYPEDSIGNATURES
 Plot the data sample for the [`Argmax2DBenchmark`](@ref).
 """
 function Utils.plot_data(
-    ::Argmax2DBenchmark,
+    bench::Argmax2DBenchmark,
     sample::DataSample;
     instance=sample.instance,
     θ=sample.θ_true,
     kwargs...,
 )
-    pl = init_plot()
-    plot_polytope!(pl, instance)
-    plot_objective!(pl, θ)
-    return plot_maximizer!(pl, θ, instance, maximizer)
+    return Utils.plot_data(bench; instance, θ, kwargs...)
 end
 
 export Argmax2DBenchmark
