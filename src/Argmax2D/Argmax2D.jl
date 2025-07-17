@@ -40,11 +40,21 @@ Custom constructor for [`Argmax2DBenchmark`](@ref).
 """
 function Argmax2DBenchmark(; nb_features::Int=5, seed=nothing, polytope_vertex_range=[6])
     Random.seed!(seed)
+<<<<<<< Updated upstream
     model = Chain(Dense(nb_features => 2; bias=false), vec)
     return Argmax2DBenchmark(nb_features, model, polytope_vertex_range)
 end
 
 maximizer(θ; instance) = instance[argmax(dot(θ, v) for v in instance)]
+=======
+    model = Dense(nb_features => 2; bias=false)
+    return Argmax2DBenchmark(nb_features, model, polytope_vertex_range)
+end
+
+Utils.is_minimization_problem(::Argmax2DBenchmark) = false
+
+maximizer(θ; instance, kwargs...) = instance[argmax(dot(θ, v) for v in instance)]
+>>>>>>> Stashed changes
 
 """
 $TYPEDSIGNATURES
@@ -56,7 +66,11 @@ function Utils.generate_dataset(
 )
     (; nb_features, encoder, polytope_vertex_range) = bench
     return map(1:dataset_size) do _
+<<<<<<< Updated upstream
         x = randn(rng, nb_features)
+=======
+        x = randn(rng, Float32, nb_features)
+>>>>>>> Stashed changes
         θ_true = encoder(x)
         θ_true ./= 2 * norm(θ_true)
         instance = build_polytope(rand(rng, polytope_vertex_range); shift=rand(rng))
@@ -84,16 +98,31 @@ function Utils.generate_statistical_model(
 )
     Random.seed!(rng, seed)
     (; nb_features) = bench
+<<<<<<< Updated upstream
     model = Chain(Dense(nb_features => 2; bias=false), vec)
     return model
 end
 
+=======
+    model = Dense(nb_features => 2; bias=false)
+    return model
+end
+
+function Utils.plot_data(::Argmax2DBenchmark; instance, θ, kwargs...)
+    pl = init_plot()
+    plot_polytope!(pl, instance)
+    plot_objective!(pl, θ)
+    return plot_maximizer!(pl, θ, instance, maximizer)
+end
+
+>>>>>>> Stashed changes
 """
 $TYPEDSIGNATURES
 
 Plot the data sample for the [`Argmax2DBenchmark`](@ref).
 """
 function Utils.plot_data(
+<<<<<<< Updated upstream
     ::Argmax2DBenchmark, sample::DataSample; θ_true=sample.θ_true, kwargs...
 )
     (; instance) = sample
@@ -101,6 +130,18 @@ function Utils.plot_data(
     plot_polytope!(pl, instance)
     plot_objective!(pl, θ_true)
     return plot_maximizer!(pl, θ_true, instance, maximizer)
+=======
+    ::Argmax2DBenchmark,
+    sample::DataSample;
+    instance=sample.instance,
+    θ=sample.θ_true,
+    kwargs...,
+)
+    pl = init_plot()
+    plot_polytope!(pl, instance)
+    plot_objective!(pl, θ)
+    return plot_maximizer!(pl, θ, instance, maximizer)
+>>>>>>> Stashed changes
 end
 
 export Argmax2DBenchmark
