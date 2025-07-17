@@ -40,7 +40,9 @@ function ArgmaxBenchmark(; instance_dim::Int=10, nb_features::Int=5, seed=nothin
     return ArgmaxBenchmark(instance_dim, nb_features, model)
 end
 
-Utils.is_minimization_problem(::ArgmaxBenchmark) = false
+function Utils.is_minimization_problem(::ArgmaxBenchmark)
+    return false
+end
 
 """
 $TYPEDSIGNATURES

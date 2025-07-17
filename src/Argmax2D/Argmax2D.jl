@@ -44,7 +44,9 @@ function Argmax2DBenchmark(; nb_features::Int=5, seed=nothing, polytope_vertex_r
     return Argmax2DBenchmark(nb_features, model, polytope_vertex_range)
 end
 
-Utils.is_minimization_problem(::Argmax2DBenchmark) = false
+function Utils.is_minimization_problem(::Argmax2DBenchmark)
+    return false
+end
 
 maximizer(θ; instance, kwargs...) = instance[argmax(dot(θ, v) for v in instance)]
 
