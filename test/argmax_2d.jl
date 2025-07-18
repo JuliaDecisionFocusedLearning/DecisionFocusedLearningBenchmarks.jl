@@ -13,6 +13,9 @@
     model = generate_statistical_model(b)
     maximizer = generate_maximizer(b)
 
+    gap = compute_gap(b, dataset, model, maximizer)
+    @test gap >= 0
+
     # Test plot_data
     figure = plot_data(b, dataset[1])
     @test figure isa Plots.Plot

@@ -40,11 +40,15 @@ Custom constructor for [`Argmax2DBenchmark`](@ref).
 """
 function Argmax2DBenchmark(; nb_features::Int=5, seed=nothing, polytope_vertex_range=[6])
     Random.seed!(seed)
-    model = Chain(Dense(nb_features => 2; bias=false), vec)
+    model = Dense(nb_features => 2; bias=false)
     return Argmax2DBenchmark(nb_features, model, polytope_vertex_range)
 end
 
-maximizer(θ; instance) = instance[argmax(dot(θ, v) for v in instance)]
+function Utils.is_minimization_problem(::Argmax2DBenchmark)
+    return false
+end
+
+maximizer(θ; instance, kwargs...) = instance[argmax(dot(θ, v) for v in instance)]
 
 """
 $TYPEDSIGNATURES
@@ -56,7 +60,7 @@ function Utils.generate_dataset(
 )
     (; nb_features, encoder, polytope_vertex_range) = bench
     return map(1:dataset_size) do _
-        x = randn(rng, nb_features)
+        x = randn(rng, Float32, nb_features)
         θ_true = encoder(x)
         θ_true ./= 2 * norm(θ_true)
         instance = build_polytope(rand(rng, polytope_vertex_range); shift=rand(rng))
@@ -84,8 +88,15 @@ function Utils.generate_statistical_model(
 )
     Random.seed!(rng, seed)
     (; nb_features) = bench
-    model = Chain(Dense(nb_features => 2; bias=false), vec)
+    model = Dense(nb_features => 2; bias=false)
     return model
+end
+
+function Utils.plot_data(::Argmax2DBenchmark; instance, θ, kwargs...)
+    pl = init_plot()
+    plot_polytope!(pl, instance)
+    plot_objective!(pl, θ)
+    return plot_maximizer!(pl, θ, instance, maximizer)
 end
 
 """
@@ -94,13 +105,13 @@ $TYPEDSIGNATURES
 Plot the data sample for the [`Argmax2DBenchmark`](@ref).
 """
 function Utils.plot_data(
-    ::Argmax2DBenchmark, sample::DataSample; θ_true=sample.θ_true, kwargs...
+    bench::Argmax2DBenchmark,
+    sample::DataSample;
+    instance=sample.instance,
+    θ=sample.θ_true,
+    kwargs...,
 )
-    (; instance) = sample
-    pl = init_plot()
-    plot_polytope!(pl, instance)
-    plot_objective!(pl, θ_true)
-    return plot_maximizer!(pl, θ_true, instance, maximizer)
+    return Utils.plot_data(bench; instance, θ, kwargs...)
 end
 
 export Argmax2DBenchmark
