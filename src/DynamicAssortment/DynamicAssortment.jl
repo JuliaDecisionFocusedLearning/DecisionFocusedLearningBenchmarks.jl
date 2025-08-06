@@ -48,6 +48,7 @@ end
 
 include("instance.jl")
 include("environment.jl")
+include("policies.jl")
 
 customer_choice_model(b::DynamicAssortmentBenchmark) = b.customer_choice_model
 item_count(b::DynamicAssortmentBenchmark) = b.N
@@ -56,9 +57,8 @@ assortment_size(b::DynamicAssortmentBenchmark) = b.K
 max_steps(b::DynamicAssortmentBenchmark) = b.max_steps
 
 function Utils.generate_sample(
-    b::DynamicAssortmentBenchmark, rng::AbstractRNG=MersenneTwister(0); seed=nothing
+    b::DynamicAssortmentBenchmark, rng::AbstractRNG=MersenneTwister(0)
 )
-    Random.seed!(rng, seed)
     return DataSample(; instance=Instance(b, rng))
 end
 

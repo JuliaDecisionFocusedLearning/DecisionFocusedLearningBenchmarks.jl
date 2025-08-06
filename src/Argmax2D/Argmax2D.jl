@@ -7,7 +7,7 @@ using Flux: Chain, Dense
 using LaTeXStrings: @L_str
 using LinearAlgebra: dot, norm
 using Plots: Plots
-using Random: Random, MersenneTwister
+using Random: Random, MersenneTwister, AbstractRNG
 
 include("polytope.jl")
 
@@ -53,20 +53,16 @@ maximizer(θ; instance, kwargs...) = instance[argmax(dot(θ, v) for v in instanc
 """
 $TYPEDSIGNATURES
 
-Generate a dataset for the [`Argmax2DBenchmark`](@ref).
+Generate a sample for the [`Argmax2DBenchmark`](@ref).
 """
-function Utils.generate_dataset(
-    bench::Argmax2DBenchmark, dataset_size=10; seed=nothing, rng=MersenneTwister(seed)
-)
+function Utils.generate_sample(bench::Argmax2DBenchmark, rng::AbstractRNG)
     (; nb_features, encoder, polytope_vertex_range) = bench
-    return map(1:dataset_size) do _
-        x = randn(rng, Float32, nb_features)
-        θ_true = encoder(x)
-        θ_true ./= 2 * norm(θ_true)
-        instance = build_polytope(rand(rng, polytope_vertex_range); shift=rand(rng))
-        y_true = maximizer(θ_true; instance)
-        return DataSample(; x=x, θ_true=θ_true, y_true=y_true, instance=instance)
-    end
+    x = randn(rng, Float32, nb_features)
+    θ_true = encoder(x)
+    θ_true ./= 2 * norm(θ_true)
+    instance = build_polytope(rand(rng, polytope_vertex_range); shift=rand(rng))
+    y_true = maximizer(θ_true; instance)
+    return DataSample(; x=x, θ_true=θ_true, y_true=y_true, instance=instance)
 end
 
 """

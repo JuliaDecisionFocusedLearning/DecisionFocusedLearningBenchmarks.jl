@@ -201,9 +201,11 @@ end
 end
 
 function (solver::AnticipativeSolver)(env::DVSPEnv, scenario=env.scenario; reset_env=false)
-    if solver.is_2D
-        return anticipative_solver(env, scenario; model_builder=highs_model_2d, reset_env)
-    else
-        return anticipative_solver(env, scenario; model_builder=highs_model, reset_env)
-    end
+    return anticipative_solver(
+        env,
+        scenario;
+        model_builder=highs_model,
+        reset_env,
+        two_dimensional_features=solver.is_2D,
+    )
 end
