@@ -55,7 +55,7 @@ Abstract type for dynamic vehicle scheduling benchmarks.
 # Fields
 $TYPEDFIELDS
 """
-@kwdef struct DVSPBenchmark <: AbstractDynamicBenchmark
+@kwdef struct DVSPBenchmark <: AbstractDynamicBenchmark{true}
     "todo"
     max_requests_per_epoch::Int = 10
     "todo"

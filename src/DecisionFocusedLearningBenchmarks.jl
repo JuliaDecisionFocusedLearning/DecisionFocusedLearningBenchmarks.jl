@@ -71,10 +71,11 @@ using .DynamicAssortment
 # Interface
 export AbstractBenchmark, AbstractStochasticBenchmark, AbstractDynamicBenchmark, DataSample
 
-export generate_sample, generate_dataset, generate_environments
+export generate_sample, generate_dataset, generate_environments, generate_environment
 export generate_scenario_generator, generate_anticipative_solver
 export generate_statistical_model
 export generate_maximizer, maximizer_kwargs
+export is_exogenous, is_endogenous
 
 export objective_value
 export plot_data, plot_instance, plot_solution

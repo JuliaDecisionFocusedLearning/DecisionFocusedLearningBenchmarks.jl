@@ -39,7 +39,7 @@ function generate_dataset(
     bench::AbstractBenchmark,
     dataset_size::Int;
     seed=nothing,
-    rng=MersenneTwister(0),
+    rng=MersenneTwister(seed),
     kwargs...,
 )
     Random.seed!(rng, seed)
@@ -187,18 +187,21 @@ This type should be used for benchmarks that involve single stage stochastic opt
 It follows the same interface as [`AbstractBenchmark`](@ref), with the addition of the following methods:
 - [`generate_anticipative_solver`](@ref)
 """
-abstract type AbstractStochasticBenchmark <: AbstractBenchmark end
+abstract type AbstractStochasticBenchmark{exogenous} <: AbstractBenchmark end
 
-function generate_scenario end
+is_exogenous(::AbstractStochasticBenchmark{exogenous}) where {exogenous} = exogenous
+is_endogenous(::AbstractStochasticBenchmark{exogenous}) where {exogenous} = !exogenous
 
 # only works for exogenous noise
+function generate_scenario end
+
 """
-    generate_scenario_generator(::AbstractStochasticBenchmark; kwargs...)
+    generate_scenario_generator(::AbstractStochasticBenchmark{true}; kwargs...)
 """
 function generate_scenario_generator end
 
 """
-    generate_anticipative_solver(::AbstractStochasticBenchmark; kwargs...)
+    generate_anticipative_solver(::AbstractStochasticBenchmark{true}; kwargs...)
 """
 function generate_anticipative_solver end
 
@@ -211,7 +214,7 @@ This type should be used for benchmarks that involve multi-stage stochastic opti
 It follows the same interface as [`AbstractStochasticBenchmark`](@ref), with the addition of the following methods:
 TODO
 """
-abstract type AbstractDynamicBenchmark <: AbstractStochasticBenchmark end
+abstract type AbstractDynamicBenchmark{exogenous} <: AbstractStochasticBenchmark{exogenous} end
 
 """
     generate_environment(::AbstractDynamicBenchmark, instance; kwargs...)
@@ -226,7 +229,7 @@ $TYPEDSIGNATURES
 Generate a vector of environments for the given dynamic benchmark and dataset.
 """
 function generate_environments(
-    bench::AbstractDynamicBenchmark, dataset::Vector{<:DataSample}, kwargs...
+    bench::AbstractDynamicBenchmark, dataset::Vector{<:DataSample}; kwargs...
 )
     return map(dataset) do sample
         generate_environment(bench, sample.instance; kwargs...)
