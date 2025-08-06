@@ -48,6 +48,7 @@ end
 include("Utils/Utils.jl")
 
 include("Argmax/Argmax.jl")
+include("Argmax2D/Argmax2D.jl")
 include("Ranking/Ranking.jl")
 include("SubsetSelection/SubsetSelection.jl")
 include("Warcraft/Warcraft.jl")
@@ -59,6 +60,7 @@ include("DynamicAssortment/DynamicAssortment.jl")
 
 using .Utils
 using .Argmax
+using .Argmax2D
 using .Ranking
 using .SubsetSelection
 using .Warcraft
@@ -83,6 +85,7 @@ export compute_gap
 
 # Export all benchmarks
 export ArgmaxBenchmark
+export Argmax2DBenchmark
 export RankingBenchmark
 export SubsetSelectionBenchmark
 export WarcraftBenchmark

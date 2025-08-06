@@ -14,6 +14,9 @@
     model = generate_statistical_model(b)
     maximizer = generate_maximizer(b)
 
+    gap = compute_gap(b, dataset, model, maximizer)
+    @test gap >= 0
+
     for (i, sample) in enumerate(dataset)
         (; x, θ_true, y_true) = sample
         @test size(x) == (nb_features, instance_dim)
