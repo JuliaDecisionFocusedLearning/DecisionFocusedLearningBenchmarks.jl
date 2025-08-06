@@ -55,7 +55,7 @@ Abstract type for dynamic vehicle scheduling benchmarks.
 # Fields
 $TYPEDFIELDS
 """
-@kwdef struct DVSPBenchmark <: AbstractDynamicBenchmark{true}
+@kwdef struct DynamicVehicleSchedulingBenchmark <: AbstractDynamicBenchmark{true}
     "todo"
     max_requests_per_epoch::Int = 10
     "todo"
@@ -66,7 +66,7 @@ $TYPEDFIELDS
     two_dimensional_features::Bool = false
 end
 
-function Utils.generate_dataset(b::DVSPBenchmark, dataset_size::Int=1)
+function Utils.generate_dataset(b::DynamicVehicleSchedulingBenchmark, dataset_size::Int=1)
     (; max_requests_per_epoch, Δ_dispatch, epoch_duration) = b
     files = readdir(datadep"dvrptw"; join=true)
     dataset_size = min(dataset_size, length(files))
@@ -82,23 +82,29 @@ function Utils.generate_dataset(b::DVSPBenchmark, dataset_size::Int=1)
     ]
 end
 
-function Utils.generate_environment(::DVSPBenchmark, instance::Instance; kwargs...)
+function Utils.generate_environment(
+    ::DynamicVehicleSchedulingBenchmark, instance::Instance; kwargs...
+)
     return DVSPEnv(instance; kwargs...)
 end
 
-function Utils.generate_maximizer(::DVSPBenchmark)
+function Utils.generate_maximizer(::DynamicVehicleSchedulingBenchmark)
     return LinearMaximizer(oracle; g, h)
 end
 
-function Utils.generate_scenario_generator(::DVSPBenchmark)
-    return generate_scenario
+function Utils.generate_scenario(b::DynamicVehicleSchedulingBenchmark, args...; kwargs...)
+    return Utils.generate_scenario(args...; kwargs...)
 end
 
-function Utils.generate_anticipative_solver(b::DVSPBenchmark; kwargs...)
-    return AnticipativeSolver(b.two_dimensional_features)
+function Utils.generate_anticipative_solution(
+    b::DynamicVehicleSchedulingBenchmark, args...; kwargs...
+)
+    return anticipative_solver(
+        args...; kwargs..., two_dimensional_features=b.two_dimensional_features
+    )
 end
 
-export DVSPBenchmark #, generate_environment # , generate_sample, generate_anticipative_solver
+export DynamicVehicleSchedulingBenchmark
 export run_policy!,
     GreedyVSPPolicy, LazyVSPPolicy, KleopatraVSPPolicy, AnticipativeVSPPolicy
 

@@ -16,7 +16,7 @@ function Base.getindex(scenario::Scenario, idx::Integer)
     )
 end
 
-function generate_scenario(
+function Utils.generate_scenario(
     instance::Instance; seed=nothing, rng::AbstractRNG=MersenneTwister(seed)
 )
     (; Δ_dispatch, static_instance, last_epoch, epoch_duration, max_requests_per_epoch) =
@@ -46,6 +46,6 @@ function generate_scenario(
     return Scenario(new_indices, new_service_time, new_start_time)
 end
 
-function generate_scenario(sample::DataSample; kwargs...)
-    return generate_scenario(sample.instance; kwargs...)
+function Utils.generate_scenario(sample::DataSample; kwargs...)
+    return Utils.generate_scenario(sample.instance; kwargs...)
 end

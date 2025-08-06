@@ -13,7 +13,7 @@ $TYPEDSIGNATURES
 Constructor for [`DVSPEnv`](@ref).
 """
 function DVSPEnv(instance::Instance; seed=nothing, rng=MersenneTwister(seed))
-    scenario = generate_scenario(instance; rng, seed)
+    scenario = Utils.generate_scenario(instance; rng, seed)
     initial_state = DVSPState(instance; scenario[1]...)
     return DVSPEnv(instance, initial_state, scenario)
 end
@@ -76,6 +76,6 @@ function CommonRLInterface.act!(env::DVSPEnv, routes, scenario=env.scenario)
     return reward
 end
 
-function generate_scenario(env::DVSPEnv; kwargs...)
+function Utils.generate_scenario(env::DVSPEnv; kwargs...)
     return generate_scenario(env.instance; kwargs...)
 end

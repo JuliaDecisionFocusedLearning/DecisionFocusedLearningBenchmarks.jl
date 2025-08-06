@@ -74,9 +74,11 @@ using .DynamicAssortment
 export AbstractBenchmark, AbstractStochasticBenchmark, AbstractDynamicBenchmark, DataSample
 
 export generate_sample, generate_dataset, generate_environments, generate_environment
+export generate_scenario
 export generate_scenario_generator, generate_anticipative_solver
 export generate_statistical_model
 export generate_maximizer, maximizer_kwargs
+export generate_anticipative_solution
 export is_exogenous, is_endogenous
 
 export objective_value
@@ -92,7 +94,7 @@ export WarcraftBenchmark
 export FixedSizeShortestPathBenchmark
 export PortfolioOptimizationBenchmark
 export StochasticVehicleSchedulingBenchmark
-export DVSPBenchmark
+export DynamicVehicleSchedulingBenchmark
 export DynamicAssortmentBenchmark
 
 end # module DecisionFocusedLearningBenchmarks

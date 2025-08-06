@@ -13,5 +13,5 @@ Apply the anticipative policy to the environment.
 function run_policy!(
     ::AnticipativeVSPPolicy, env::DVSPEnv, scenario=env.scenario; model_builder=highs_model
 )
-    return anticipative_solver(env, scenario; model_builder, reset_env=true)
+    return generate_anticipative_solution(env, scenario; model_builder, reset_env=true)
 end

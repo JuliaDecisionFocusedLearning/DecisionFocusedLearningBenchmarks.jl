@@ -192,18 +192,25 @@ abstract type AbstractStochasticBenchmark{exogenous} <: AbstractBenchmark end
 is_exogenous(::AbstractStochasticBenchmark{exogenous}) where {exogenous} = exogenous
 is_endogenous(::AbstractStochasticBenchmark{exogenous}) where {exogenous} = !exogenous
 
-# only works for exogenous noise
+"""
+    generate_anticipative_solver(::AbstractStochasticBenchmark{true}, instance; kwargs...)
+"""
 function generate_scenario end
 
 """
-    generate_scenario_generator(::AbstractStochasticBenchmark{true}; kwargs...)
+    anticipative_policy(::AbstractStochasticBenchmark{true}, instance, scenario; kwargs...)
 """
-function generate_scenario_generator end
+function generate_anticipative_solution end
 
-"""
-    generate_anticipative_solver(::AbstractStochasticBenchmark{true}; kwargs...)
-"""
-function generate_anticipative_solver end
+# """
+#     generate_scenario_generator(::AbstractStochasticBenchmark{true}; kwargs...)
+# """
+# function generate_scenario_generator end
+
+# """
+#     generate_anticipative_solver(::AbstractStochasticBenchmark{true}; kwargs...)
+# """
+# function generate_anticipative_solver end
 
 """
 $TYPEDEF

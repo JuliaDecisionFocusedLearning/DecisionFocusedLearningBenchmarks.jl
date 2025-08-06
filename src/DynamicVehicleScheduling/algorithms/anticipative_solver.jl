@@ -196,16 +196,16 @@ function anticipative_solver(
     return obj, dataset
 end
 
-@kwdef struct AnticipativeSolver
-    is_2D::Bool = false
-end
+# @kwdef struct AnticipativeSolver
+#     is_2D::Bool = false
+# end
 
-function (solver::AnticipativeSolver)(env::DVSPEnv, scenario=env.scenario; reset_env=false)
-    return anticipative_solver(
-        env,
-        scenario;
-        model_builder=highs_model,
-        reset_env,
-        two_dimensional_features=solver.is_2D,
-    )
-end
+# function (solver::AnticipativeSolver)(env::DVSPEnv, scenario=env.scenario; reset_env=false)
+#     return generate_anticipative_decision(
+#         env,
+#         scenario;
+#         model_builder=highs_model,
+#         reset_env,
+#         two_dimensional_features=solver.is_2D,
+#     )
+# end
