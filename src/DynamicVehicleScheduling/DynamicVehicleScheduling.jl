@@ -3,7 +3,6 @@ module DynamicVehicleScheduling
 using ..Utils
 
 using Base: @kwdef
-using CommonRLInterface: CommonRLInterface, AbstractEnv, reset!, terminated, observe, act!
 using DataDeps: @datadep_str
 using DocStringExtensions: TYPEDEF, TYPEDFIELDS, TYPEDSIGNATURES
 using Graphs
@@ -39,11 +38,11 @@ include("algorithms/anticipative_solver.jl")
 include("learning/features.jl")
 include("learning/2d_features.jl")
 
-include("policy/abstract_vsp_policy.jl")
-include("policy/greedy_policy.jl")
-include("policy/lazy_policy.jl")
-include("policy/anticipative_policy.jl")
-include("policy/kleopatra_policy.jl")
+# include("policy/abstract_vsp_policy.jl")
+# include("policy/greedy_policy.jl")
+# include("policy/lazy_policy.jl")
+# include("policy/anticipative_policy.jl")
+# include("policy/kleopatra_policy.jl")
 
 include("maximizer.jl")
 
@@ -56,13 +55,13 @@ Abstract type for dynamic vehicle scheduling benchmarks.
 $TYPEDFIELDS
 """
 @kwdef struct DynamicVehicleSchedulingBenchmark <: AbstractDynamicBenchmark{true}
-    "todo"
+    "maximum number of customers entering the system per epoch"
     max_requests_per_epoch::Int = 10
-    "todo"
+    "time between decision and dispatch of a vehicle"
     Δ_dispatch::Float64 = 1.0
-    "todo"
+    "duration of an epoch"
     epoch_duration::Float64 = 1.0
-    "todo"
+    "whether to use two-dimensional features"
     two_dimensional_features::Bool = false
 end
 
@@ -83,9 +82,10 @@ function Utils.generate_dataset(b::DynamicVehicleSchedulingBenchmark, dataset_si
 end
 
 function Utils.generate_environment(
-    ::DynamicVehicleSchedulingBenchmark, instance::Instance; kwargs...
+    ::DynamicVehicleSchedulingBenchmark, instance::Instance, rng::AbstractRNG
 )
-    return DVSPEnv(instance; kwargs...)
+    seed = rand(rng, 1:typemax(Int))
+    return DVSPEnv(instance; seed)
 end
 
 function Utils.generate_maximizer(::DynamicVehicleSchedulingBenchmark)
@@ -105,7 +105,5 @@ function Utils.generate_anticipative_solution(
 end
 
 export DynamicVehicleSchedulingBenchmark
-export run_policy!,
-    GreedyVSPPolicy, LazyVSPPolicy, KleopatraVSPPolicy, AnticipativeVSPPolicy
 
 end

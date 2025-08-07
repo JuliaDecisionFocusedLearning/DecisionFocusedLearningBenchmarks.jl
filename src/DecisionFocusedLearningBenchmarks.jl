@@ -59,6 +59,26 @@ include("DynamicVehicleScheduling/DynamicVehicleScheduling.jl")
 include("DynamicAssortment/DynamicAssortment.jl")
 
 using .Utils
+
+# Interface
+export AbstractBenchmark, AbstractStochasticBenchmark, AbstractDynamicBenchmark, DataSample
+export AbstractEnv, get_seed, is_terminated, observe, reset!, step!
+
+export Policy, run_policy!
+
+export generate_sample, generate_dataset, generate_environments, generate_environment
+export generate_scenario
+export generate_policies
+export generate_statistical_model
+export generate_maximizer, maximizer_kwargs
+export generate_anticipative_solution
+export is_exogenous, is_endogenous
+
+export objective_value
+export plot_data, plot_instance, plot_solution
+export compute_gap
+
+# Export all benchmarks
 using .Argmax
 using .Argmax2D
 using .Ranking
@@ -70,31 +90,15 @@ using .StochasticVehicleScheduling
 using .DynamicVehicleScheduling
 using .DynamicAssortment
 
-# Interface
-export AbstractBenchmark, AbstractStochasticBenchmark, AbstractDynamicBenchmark, DataSample
-
-export generate_sample, generate_dataset, generate_environments, generate_environment
-export generate_scenario
-export generate_scenario_generator, generate_anticipative_solver
-export generate_statistical_model
-export generate_maximizer, maximizer_kwargs
-export generate_anticipative_solution
-export is_exogenous, is_endogenous
-
-export objective_value
-export plot_data, plot_instance, plot_solution
-export compute_gap
-
-# Export all benchmarks
-export ArgmaxBenchmark
 export Argmax2DBenchmark
-export RankingBenchmark
-export SubsetSelectionBenchmark
-export WarcraftBenchmark
+export ArgmaxBenchmark
+export DynamicAssortmentBenchmark
+export DynamicVehicleSchedulingBenchmark
 export FixedSizeShortestPathBenchmark
 export PortfolioOptimizationBenchmark
+export RankingBenchmark
 export StochasticVehicleSchedulingBenchmark
-export DynamicVehicleSchedulingBenchmark
-export DynamicAssortmentBenchmark
+export SubsetSelectionBenchmark
+export WarcraftBenchmark
 
 end # module DecisionFocusedLearningBenchmarks

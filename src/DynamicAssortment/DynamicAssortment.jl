@@ -2,7 +2,6 @@ module DynamicAssortment
 
 using ..Utils
 
-using CommonRLInterface: CommonRLInterface, AbstractEnv
 using DocStringExtensions: TYPEDEF, TYPEDFIELDS, TYPEDSIGNATURES
 using Distributions: Uniform, Categorical
 using LinearAlgebra: dot
@@ -62,17 +61,35 @@ function Utils.generate_sample(
     return DataSample(; instance=Instance(b, rng))
 end
 
+function Utils.generate_statistical_model(b::DynamicAssortmentBenchmark; seed=nothing)
+    Random.seed!(seed)
+    d = feature_count(b)
+    return Chain(Dense(d + 8 => 5), Dense(5 => 1), vec)
+end
+
 function Utils.generate_maximizer(b::DynamicAssortmentBenchmark)
     return TopKMaximizer(assortment_size(b))
 end
 
 function Utils.generate_environment(
-    ::DynamicAssortmentBenchmark,
-    instance::Instance;
-    seed=nothing,
-    rng::AbstractRNG=MersenneTwister(seed),
+    ::DynamicAssortmentBenchmark, instance::Instance, rng::AbstractRNG
 )
-    return Environment(instance; seed=seed, rng=rng)
+    seed = rand(rng, 1:typemax(Int))
+    return Environment(instance; seed)
+end
+
+function Utils.generate_policies(b::DynamicAssortmentBenchmark)
+    greedy = Policy(
+        "Greedy",
+        "policy that selects the assortment with items with the highest prices",
+        greedy_policy,
+    )
+    expert = Policy(
+        "Expert",
+        "policy that selects the assortment with the highest expected revenue",
+        expert_policy,
+    )
+    return (expert, greedy)
 end
 
 export DynamicAssortmentBenchmark

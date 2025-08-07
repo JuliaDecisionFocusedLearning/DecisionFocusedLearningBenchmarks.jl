@@ -7,7 +7,7 @@ Environment for the dynamic assortment problem.
 $TYPEDFIELDS
 """
 @kwdef mutable struct Environment{I<:Instance,R<:AbstractRNG,S<:Union{Nothing,Int}} <:
-                      AbstractEnv
+                      Utils.AbstractEnvironment
     "associated instance"
     instance::I
     "current step"
@@ -43,23 +43,22 @@ function Environment(instance::Instance; seed=0, rng::AbstractRNG=MersenneTwiste
         features=full_features,
         d_features=zeros(2, N),
     )
-    CommonRLInterface.reset!(env; reset_seed=true)
+    Utils.reset!(env; reset_seed=true)
     return env
 end
 
+Utils.get_seed(env::Environment) = env.seed
 customer_choice_model(b::Environment) = customer_choice_model(b.instance)
 item_count(b::Environment) = item_count(b.instance)
 feature_count(b::Environment) = feature_count(b.instance)
 assortment_size(b::Environment) = assortment_size(b.instance)
 max_steps(b::Environment) = max_steps(b.instance)
 prices(b::Environment) = b.instance.prices
-# features(b::Environment) = b.instance.features
-# starting_hype_and_saturation(b::Environment) = b.instance.starting_hype_and_saturation
 
 ## Basic operations of environment
 
 # Reset the environment
-function CommonRLInterface.reset!(env::Environment; reset_seed=false, seed=env.seed)
+function Utils.reset!(env::Environment; reset_seed=false, seed=env.seed)
     reset_seed && Random.seed!(env.rng, seed)
 
     env.step = 1
@@ -79,18 +78,19 @@ function CommonRLInterface.reset!(env::Environment; reset_seed=false, seed=env.s
     return nothing
 end
 
-function CommonRLInterface.terminated(env::Environment)
+function Utils.is_terminated(env::Environment)
     return env.step > max_steps(env)
 end
 
-function CommonRLInterface.observe(env::Environment)
+function Utils.observe(env::Environment)
     delta_features = env.features[2:3, :] .- env.instance.starting_hype_and_saturation
     return vcat(
         env.features,
         env.d_features,
         delta_features,
         ones(1, item_count(env)) .* (env.step / max_steps(env) * 10),
-    ) #./ 10
+    ) ./ 10,
+    nothing
 end
 
 # Compute the hype vector
@@ -149,9 +149,10 @@ function choice_probabilities(env::Environment, S)
 end
 
 # Purchase decision
-function CommonRLInterface.act!(env::Environment, S)
+function Utils.step!(env::Environment, assortment)
+    @assert !Utils.is_terminated(env) "Environment is terminated, cannot act!"
     r = prices(env)
-    probs = choice_probabilities(env, S)
+    probs = choice_probabilities(env, assortment)
     item = rand(env.rng, Categorical(probs))
     reward = r[item]
     buy_item!(env, item)

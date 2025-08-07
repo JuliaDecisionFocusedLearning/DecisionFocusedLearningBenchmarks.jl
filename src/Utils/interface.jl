@@ -63,6 +63,11 @@ It's usually a Flux model, that takes a feature matrix x as input, and returns a
 function generate_statistical_model end
 
 """
+    generate_policies(::AbstractBenchmark) -> Vector{Policy}
+"""
+function generate_policies end
+
+"""
     plot_data(::AbstractBenchmark, ::DataSample; kwargs...)
 
 Plot a data sample from the dataset created by [`generate_dataset`](@ref).
@@ -202,16 +207,6 @@ function generate_scenario end
 """
 function generate_anticipative_solution end
 
-# """
-#     generate_scenario_generator(::AbstractStochasticBenchmark{true}; kwargs...)
-# """
-# function generate_scenario_generator end
-
-# """
-#     generate_anticipative_solver(::AbstractStochasticBenchmark{true}; kwargs...)
-# """
-# function generate_anticipative_solver end
-
 """
 $TYPEDEF
 
@@ -224,7 +219,7 @@ TODO
 abstract type AbstractDynamicBenchmark{exogenous} <: AbstractStochasticBenchmark{exogenous} end
 
 """
-    generate_environment(::AbstractDynamicBenchmark, instance; kwargs...)
+    generate_environment(::AbstractDynamicBenchmark, instance, rng::AbstractRNG; kwargs...)
 
 Initialize an environment for the given dynamic benchmark instance.
 """
@@ -236,9 +231,14 @@ $TYPEDSIGNATURES
 Generate a vector of environments for the given dynamic benchmark and dataset.
 """
 function generate_environments(
-    bench::AbstractDynamicBenchmark, dataset::Vector{<:DataSample}; kwargs...
+    bench::AbstractDynamicBenchmark,
+    dataset::Vector{<:DataSample};
+    seed=nothing,
+    rng=MersenneTwister(seed),
+    kwargs...,
 )
+    Random.seed!(rng, seed)
     return map(dataset) do sample
-        generate_environment(bench, sample.instance; kwargs...)
+        generate_environment(bench, sample.instance, rng; kwargs...)
     end
 end

@@ -1,4 +1,4 @@
-struct DVSPEnv{S<:DVSPState} <: AbstractEnv
+struct DVSPEnv{S<:DVSPState} <: Utils.AbstractEnvironment
     "associated instance"
     instance::Instance
     "current state"
@@ -28,7 +28,7 @@ $TYPEDSIGNATURES
 
 Get the current state of the environment.
 """
-CommonRLInterface.observe(env::DVSPEnv) = env.state
+Utils.observe(env::DVSPEnv) = nothing, env.state
 
 current_epoch(env::DVSPEnv) = current_epoch(env.state)
 
@@ -51,7 +51,7 @@ $TYPEDSIGNATURES
 
 Check if the episode is terminated, i.e. if the current epoch is the last one.
 """
-CommonRLInterface.terminated(env::DVSPEnv) = current_epoch(env) > last_epoch(env)
+Utils.is_terminated(env::DVSPEnv) = current_epoch(env) > last_epoch(env)
 
 """
 $TYPEDSIGNATURES
@@ -59,7 +59,7 @@ $TYPEDSIGNATURES
 Reset the environment to its initial state.
 Also reset the seed if `reset_seed` is set to true.
 """
-function CommonRLInterface.reset!(env::DVSPEnv, scenario=env.scenario)
+function Utils.reset!(env::DVSPEnv, scenario=env.scenario)
     reset_state!(env.state, env.instance; scenario[1]...)
     return nothing
 end
@@ -67,10 +67,10 @@ end
 """
 remove dispatched customers, advance time, and add new requests to the environment.
 """
-function CommonRLInterface.act!(env::DVSPEnv, routes, scenario=env.scenario)
+function Utils.step!(env::DVSPEnv, routes, scenario=env.scenario)
     reward = -apply_routes!(env.state, routes)
     env.state.current_epoch += 1
-    if !CommonRLInterface.terminated(env)
+    if !Utils.is_terminated(env)
         add_new_customers!(env.state, env.instance; scenario[current_epoch(env)]...)
     end
     return reward
