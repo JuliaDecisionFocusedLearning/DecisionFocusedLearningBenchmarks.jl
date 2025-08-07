@@ -31,12 +31,12 @@ $TYPEDSIGNATURES
 Run the policy on the environment and return the total reward and a dataset of observations.
 By default, the environment is reset before running the policy.
 """
-function run_policy!(policy, env::AbstractEnvironment)
+function run_policy!(policy, env::AbstractEnvironment; kwargs...)
     total_reward = 0.0
     reset!(env; reset_seed=false)
     local labeled_dataset
     while !is_terminated(env)
-        y = policy(env)
+        y = policy(env; kwargs...)
         features, state = observe(env)
         if @isdefined labeled_dataset
             push!(labeled_dataset, DataSample(; x=features, y_true=y, instance=state))
@@ -49,33 +49,35 @@ function run_policy!(policy, env::AbstractEnvironment)
     return total_reward, labeled_dataset
 end
 
-function run_policy!(policy, envs::Vector{<:AbstractEnvironment})
+function run_policy!(policy, envs::Vector{<:AbstractEnvironment}; kwargs...)
     E = length(envs)
     rewards = zeros(Float64, E)
     datasets = map(1:E) do e
-        reward, dataset = run_policy!(policy, envs[e])
+        reward, dataset = run_policy!(policy, envs[e]; kwargs...)
         rewards[e] = reward
         return dataset
     end
     return rewards, vcat(datasets...)
 end
 
-function run_policy!(policy, env::AbstractEnvironment, episodes::Int; seed=get_seed(env))
+function run_policy!(
+    policy, env::AbstractEnvironment, episodes::Int; seed=get_seed(env), kwargs...
+)
     reset!(env; reset_seed=true, seed)
     total_reward = 0.0
     datasets = map(1:episodes) do _i
-        reward, dataset = run_policy!(policy, env)
+        reward, dataset = run_policy!(policy, env; kwargs...)
         total_reward += reward
         return dataset
     end
     return total_reward / episodes, vcat(datasets...)
 end
 
-function run_policy!(policy, envs::Vector{<:AbstractEnvironment}, episodes::Int)
+function run_policy!(policy, envs::Vector{<:AbstractEnvironment}, episodes::Int; kwargs...)
     E = length(envs)
     rewards = zeros(Float64, E)
     datasets = map(1:E) do e
-        reward, dataset = run_policy!(policy, envs[e], episodes)
+        reward, dataset = run_policy!(policy, envs[e], episodes; kwargs...)
         rewards[e] = reward
         return dataset
     end

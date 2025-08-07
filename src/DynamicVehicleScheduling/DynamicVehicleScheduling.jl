@@ -38,6 +38,7 @@ include("algorithms/anticipative_solver.jl")
 include("learning/features.jl")
 include("learning/2d_features.jl")
 
+include("policy.jl")
 # include("policy/abstract_vsp_policy.jl")
 # include("policy/greedy_policy.jl")
 # include("policy/lazy_policy.jl")
@@ -102,6 +103,20 @@ function Utils.generate_anticipative_solution(
     return anticipative_solver(
         args...; kwargs..., two_dimensional_features=b.two_dimensional_features
     )
+end
+
+function Utils.generate_policies(b::DynamicVehicleSchedulingBenchmark)
+    lazy = Policy(
+        "Lazy",
+        "Lazy policy that dispatches vehicles only when they are ready.",
+        lazy_policy,
+    )
+    greedy = Policy(
+        "Greedy",
+        "Greedy policy that dispatches vehicles to the nearest customer.",
+        greedy_policy,
+    )
+    return (lazy, greedy)
 end
 
 export DynamicVehicleSchedulingBenchmark
