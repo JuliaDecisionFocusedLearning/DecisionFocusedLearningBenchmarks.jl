@@ -22,6 +22,23 @@ $TYPEDFIELDS
     instance::I = nothing
 end
 
+function Base.show(io::IO, d::DataSample)
+    fields = String[]
+    if !isnothing(d.x)
+        push!(fields, "x=$(d.x)")
+    end
+    if !isnothing(d.θ_true)
+        push!(fields, "θ_true=$(d.θ_true)")
+    end
+    if !isnothing(d.y_true)
+        push!(fields, "y_true=$(d.y_true)")
+    end
+    if !isnothing(d.instance)
+        push!(fields, "instance=$(d.instance)")
+    end
+    return print(io, "DataSample(", join(fields, ", "), ")")
+end
+
 """
 $TYPEDSIGNATURES
 

@@ -35,7 +35,13 @@ $TYPEDSIGNATURES
 
 Get the current state of the environment.
 """
-Utils.observe(env::DVSPEnv) = nothing, env.state
+function Utils.observe(env::DVSPEnv)
+    if env.instance.two_dimensional_features
+        return compute_2D_features(env.state, env.instance), env.state
+    end
+    # else
+    return compute_features(env.state, env.instance), env.state
+end
 
 current_epoch(env::DVSPEnv) = current_epoch(env.state)
 

@@ -4,15 +4,17 @@ $TYPEDSIGNATURES
 Retrieve anticipative routes solution from the given MIP solution `y`.
 Outputs a set of routes per epoch.
 """
-function retrieve_routes_anticipative(y::AbstractArray, dvspenv::DVSPEnv, customer_index)
+function retrieve_routes_anticipative(
+    y::AbstractArray, dvspenv::DVSPEnv, customer_index, epoch_indices
+)
     nb_tasks = length(customer_index)
-    first_epoch = 1
-    (; last_epoch) = dvspenv.instance
+    # first_epoch = 1
+    # (; last_epoch) = dvspenv.instance
     job_indices = 2:(nb_tasks)
-    epoch_indices = first_epoch:last_epoch
+    # epoch_indices = first_epoch:last_epoch
 
     routes = [Vector{Int}[] for _ in epoch_indices]
-    for t in epoch_indices
+    for (i, t) in enumerate(epoch_indices)
         start = [i for i in job_indices if y[1, i, t] ≈ 1]
         for task in start
             route = Int[]
@@ -28,7 +30,7 @@ function retrieve_routes_anticipative(y::AbstractArray, dvspenv::DVSPEnv, custom
                 end
                 current_task = next_task
             end
-            push!(routes[t], route)
+            push!(routes[i], route)
         end
     end
     return routes
@@ -44,28 +46,33 @@ function anticipative_solver(
     env::DVSPEnv,
     scenario=env.scenario;
     model_builder=highs_model,
-    reset_env=false,
-    two_dimensional_features=false,
+    two_dimensional_features=env.instance.two_dimensional_features,
+    reset_env=true,
+    nb_epochs=typemax(Int),
 )
-    reset_env && reset!(env)
+    reset_env && reset!(env; reset_seed=true)
+
+    start_epoch = current_epoch(env)
+    end_epoch = min(last_epoch(env), start_epoch + nb_epochs - 1)
+    T = start_epoch:end_epoch
+
     request_epoch = [0]
-    for (epoch, indices) in enumerate(scenario.indices)
-        request_epoch = vcat(request_epoch, fill(epoch, length(indices)))
+    for t in T
+        request_epoch = vcat(request_epoch, fill(t, length(scenario.indices[t])))
     end
-    customer_index = vcat(1, scenario.indices...)
-    service_time = vcat(0.0, scenario.service_time...)
-    start_time = vcat(0.0, scenario.start_time...)
+    customer_index = vcat(1, scenario.indices[T]...)
+    service_time = vcat(0.0, scenario.service_time[T]...)
+    start_time = vcat(0.0, scenario.start_time[T]...)
 
     duration = env.instance.static_instance.duration[customer_index, customer_index]
-    first_epoch = 1
-    (; last_epoch, epoch_duration, Δ_dispatch) = env.instance
+    (; epoch_duration, Δ_dispatch) = env.instance
 
     model = model_builder()
     set_silent(model)
 
     nb_nodes = length(customer_index)
     job_indices = 2:nb_nodes
-    epoch_indices = first_epoch:last_epoch
+    epoch_indices = T#first_epoch:last_epoch
 
     @variable(model, y[i=1:nb_nodes, j=1:nb_nodes, t=epoch_indices]; binary=true)
 
@@ -102,7 +109,7 @@ function anticipative_solver(
 
     # a trip from i can be done only before limit date
     for i in job_indices, t in epoch_indices, j in 1:nb_nodes
-        if (t - 1) * epoch_duration + duration[1, i] + Δ_dispatch > start_time[i]  # ! this only works if first_epoch = 1
+        if (t - 1) * epoch_duration + duration[1, i] + Δ_dispatch > start_time[i]
             @constraint(model, y[i, j, t] <= 0)
         end
     end
@@ -121,27 +128,32 @@ function anticipative_solver(
     optimize!(model)
 
     obj = JuMP.objective_value(model)
-    epoch_routes = retrieve_routes_anticipative(value.(y), env, customer_index)
+    epoch_routes = retrieve_routes_anticipative(
+        value.(y), env, customer_index, epoch_indices
+    )
 
     epoch_indices = Vector{Int}[]
     N = 1
     indices = [1]
-    for epoch in 1:last_epoch
+    index = 1
+    for epoch in 1:last_epoch(env)
         M = length(scenario.indices[epoch])
         indices = vcat(indices, (N + 1):(N + M))
         push!(epoch_indices, copy(indices))
         N = N + M
-        epoch_routes[epoch]
-        dispatched = vcat(epoch_routes[epoch]...)
-        indices = setdiff(indices, dispatched)
+        if epoch in T
+            dispatched = vcat(epoch_routes[index]...)
+            index += 1
+            indices = setdiff(indices, dispatched)
+        end
     end
 
     indices = vcat(1, scenario.indices...)
     start_time = vcat(0.0, scenario.start_time...)
     service_time = vcat(0.0, scenario.service_time...)
 
-    dataset = map(1:last_epoch) do epoch
-        routes = epoch_routes[epoch]
+    dataset = map(enumerate(T)) do (i, epoch)
+        routes = epoch_routes[i]
         epoch_customers = epoch_indices[epoch]
 
         y_true =
@@ -170,9 +182,13 @@ function anticipative_solver(
         epoch_duration = env.instance.epoch_duration
         Δ_dispatch = env.instance.Δ_dispatch
         planning_start_time = (epoch - 1) * epoch_duration + Δ_dispatch
-        is_must_dispatch[2:end] .=
-            planning_start_time .+ epoch_duration .+ @view(new_duration[1, 2:end]) .>
-            new_start_time[2:end]
+        if epoch == last_epoch
+            # If we are in the last epoch, all requests must be dispatched
+            is_must_dispatch[2:end] .= true
+        else
+            is_must_dispatch[2:end] .=
+                planning_start_time .+ epoch_duration .+ @view(new_duration[1, 2:end]) .> new_start_time[2:end]
+        end
         is_postponable[2:end] .= .!is_must_dispatch[2:end]
 
         state = DVSPState(;
@@ -183,7 +199,6 @@ function anticipative_solver(
             current_epoch=epoch,
         )
 
-        # x = compute_2D_features(state, env.instance)
         x = if two_dimensional_features
             compute_2D_features(state, env.instance)
         else
@@ -195,17 +210,3 @@ function anticipative_solver(
 
     return obj, dataset
 end
-
-# @kwdef struct AnticipativeSolver
-#     is_2D::Bool = false
-# end
-
-# function (solver::AnticipativeSolver)(env::DVSPEnv, scenario=env.scenario; reset_env=false)
-#     return generate_anticipative_decision(
-#         env,
-#         scenario;
-#         model_builder=highs_model,
-#         reset_env,
-#         two_dimensional_features=solver.is_2D,
-#     )
-# end

@@ -39,9 +39,12 @@ function run_policy!(policy, env::AbstractEnvironment; kwargs...)
         y = policy(env; kwargs...)
         features, state = observe(env)
         if @isdefined labeled_dataset
-            push!(labeled_dataset, DataSample(; x=features, y_true=y, instance=state))
+            push!(
+                labeled_dataset,
+                DataSample(; x=features, y_true=y, instance=deepcopy(state)),
+            )
         else
-            labeled_dataset = [DataSample(; x=features, y_true=y, instance=state)]
+            labeled_dataset = [DataSample(; x=features, y_true=y, instance=deepcopy(state))]
         end
         reward = step!(env, y)
         total_reward += reward

@@ -4,6 +4,7 @@ function greedy_policy(env::DVSPEnv; model_builder=highs_model)
     nb_postponable_requests = sum(is_postponable)
     θ = ones(nb_postponable_requests) * 1e9
     routes = prize_collecting_vsp(θ; instance=state, model_builder)
+    @assert is_feasible(state, routes)
     return routes
 end
 
@@ -12,6 +13,7 @@ function lazy_policy(env::DVSPEnv; model_builder=highs_model)
     nb_postponable_requests = sum(state.is_postponable)
     θ = ones(nb_postponable_requests) * -1e9
     routes = prize_collecting_vsp(θ; instance=state, model_builder)
+    @assert is_feasible(state, routes)
     return routes
 end
 

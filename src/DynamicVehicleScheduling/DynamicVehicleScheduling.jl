@@ -67,7 +67,7 @@ $TYPEDFIELDS
 end
 
 function Utils.generate_dataset(b::DynamicVehicleSchedulingBenchmark, dataset_size::Int=1)
-    (; max_requests_per_epoch, Δ_dispatch, epoch_duration) = b
+    (; max_requests_per_epoch, Δ_dispatch, epoch_duration, two_dimensional_features) = b
     files = readdir(datadep"dvrptw"; join=true)
     dataset_size = min(dataset_size, length(files))
     return [
@@ -77,6 +77,7 @@ function Utils.generate_dataset(b::DynamicVehicleSchedulingBenchmark, dataset_si
                 max_requests_per_epoch,
                 Δ_dispatch,
                 epoch_duration,
+                two_dimensional_features,
             ),
         ) for i in 1:dataset_size
     ]

@@ -16,6 +16,25 @@ State data structure for the Dynamic Vehicle Scheduling Problem.
     is_postponable::BitVector = falses(0)
 end
 
+function Base.show(io::IO, state::DVSPState)
+    return print(
+        io,
+        "DVSPState(",
+        "current_epoch=",
+        state.current_epoch,
+        ", ",
+        "location_indices=",
+        state.location_indices,
+        ", ",
+        "is_must_dispatch=",
+        state.is_must_dispatch,
+        ", ",
+        "is_postponable=",
+        state.is_postponable,
+        ")",
+    )
+end
+
 function reset_state!(
     state::DVSPState, instance::Instance; indices, service_time, start_time
 )
@@ -189,9 +208,14 @@ function add_new_customers!(
     epoch_duration = instance.epoch_duration
     Δ_dispatch = instance.Δ_dispatch
     planning_start_time = (state.current_epoch - 1) * epoch_duration + Δ_dispatch
-    is_must_dispatch[2:end] .=
-        planning_start_time .+ epoch_duration .+ @view(updated_duration[1, 2:end]) .>
-        updated_start_time[2:end]
+    if state.current_epoch == last_epoch(instance)
+        # If we are in the last epoch, all requests must be dispatched
+        is_must_dispatch[2:end] .= true
+    else
+        is_must_dispatch[2:end] .=
+            planning_start_time .+ epoch_duration .+ @view(updated_duration[1, 2:end]) .>
+            updated_start_time[2:end]
+    end
     is_postponable[2:end] .= .!is_must_dispatch[2:end]
 
     state.is_must_dispatch = is_must_dispatch

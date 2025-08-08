@@ -14,6 +14,8 @@ Instance data structure for the dynamic vehicle scheduling problem.
     epoch_duration::T = 1.0
     "last epoch index"
     last_epoch::Int
+    "whether to use two-dimensional features"
+    two_dimensional_features::Bool = false
 end
 
 function Instance(
@@ -21,6 +23,7 @@ function Instance(
     max_requests_per_epoch::Int=10,
     Δ_dispatch::Float64=1.0,
     epoch_duration::Float64=1.0,
+    two_dimensional_features::Bool=false,
 )
     last_epoch = trunc(
         Int,
@@ -35,6 +38,7 @@ function Instance(
         Δ_dispatch=Δ_dispatch,
         epoch_duration=epoch_duration,
         last_epoch=last_epoch,
+        two_dimensional_features=two_dimensional_features,
     )
 end
 
