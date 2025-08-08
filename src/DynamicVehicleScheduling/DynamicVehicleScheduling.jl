@@ -25,27 +25,17 @@ include("static_vsp/parsing.jl")
 include("static_vsp/solution.jl")
 include("static_vsp/plot.jl")
 
-# dynamic environment
-include("environment/instance.jl")
-include("environment/state.jl")
-include("environment/scenario.jl")
-include("environment/environment.jl")
-include("environment/plot.jl")
-
-include("algorithms/prize_collecting_vsp.jl")
-include("algorithms/anticipative_solver.jl")
-
-include("learning/features.jl")
-include("learning/2d_features.jl")
-
-include("policy.jl")
-# include("policy/abstract_vsp_policy.jl")
-# include("policy/greedy_policy.jl")
-# include("policy/lazy_policy.jl")
-# include("policy/anticipative_policy.jl")
-# include("policy/kleopatra_policy.jl")
+include("instance.jl")
+include("state.jl")
+include("scenario.jl")
+include("environment.jl")
+include("plot.jl")
 
 include("maximizer.jl")
+include("anticipative_solver.jl")
+
+include("features.jl")
+include("policy.jl")
 
 """
 $TYPEDEF
@@ -84,7 +74,7 @@ function Utils.generate_dataset(b::DynamicVehicleSchedulingBenchmark, dataset_si
 end
 
 function Utils.generate_environment(
-    ::DynamicVehicleSchedulingBenchmark, instance::Instance, rng::AbstractRNG
+    ::DynamicVehicleSchedulingBenchmark, instance::Instance, rng::AbstractRNG; kwargs...
 )
     seed = rand(rng, 1:typemax(Int))
     return DVSPEnv(instance; seed)

@@ -72,7 +72,7 @@ function Utils.generate_maximizer(b::DynamicAssortmentBenchmark)
 end
 
 function Utils.generate_environment(
-    ::DynamicAssortmentBenchmark, instance::Instance, rng::AbstractRNG
+    ::DynamicAssortmentBenchmark, instance::Instance, rng::AbstractRNG; kwargs...
 )
     seed = rand(rng, 1:typemax(Int))
     return Environment(instance; seed)

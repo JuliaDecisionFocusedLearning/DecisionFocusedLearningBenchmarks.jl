@@ -19,23 +19,3 @@ function greedy_policy(env::Environment)
     maximizer = generate_maximizer(env.instance.config)
     return maximizer(prices(env))
 end
-
-function run_policy(env::Environment, episodes::Int; first_seed=1, policy=expert_policy)
-    dataset = []
-    rev_global = Float64[]
-    for i in 1:episodes
-        rev_episode = 0.0
-        CommonRLInterface.reset!(env; seed=first_seed - 1 + i, reset_seed=true)
-        training_instances = []
-        while !CommonRLInterface.terminated(env)
-            S = policy(env)
-            features = CommonRLInterface.observe(env)
-            push!(training_instances, DataSample(; x=features, y_true=S))
-            reward = CommonRLInterface.act!(env, S)
-            rev_episode += reward
-        end
-        push!(rev_global, rev_episode)
-        push!(dataset, training_instances)
-    end
-    return mean(rev_global), rev_global, dataset
-end

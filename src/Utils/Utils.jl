@@ -24,7 +24,7 @@ export DataSample, Policy
 export run_policy!
 export TopKMaximizer
 
-export AbstractEnv, get_seed, is_terminated, observe, reset!, step!
+export AbstractEnvironment, get_seed, is_terminated, observe, reset!, step!
 
 export AbstractBenchmark, AbstractStochasticBenchmark, AbstractDynamicBenchmark
 export generate_sample, generate_dataset
