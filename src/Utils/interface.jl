@@ -190,7 +190,7 @@ Abstract type interface for stochastic benchmark problems.
 This type should be used for benchmarks that involve single stage stochastic optimization problems.
 
 It follows the same interface as [`AbstractBenchmark`](@ref), with the addition of the following methods:
-- [`generate_anticipative_solver`](@ref)
+- TODO
 """
 abstract type AbstractStochasticBenchmark{exogenous} <: AbstractBenchmark end
 
@@ -198,12 +198,12 @@ is_exogenous(::AbstractStochasticBenchmark{exogenous}) where {exogenous} = exoge
 is_endogenous(::AbstractStochasticBenchmark{exogenous}) where {exogenous} = !exogenous
 
 """
-    generate_anticipative_solver(::AbstractStochasticBenchmark{true}, instance; kwargs...)
+    generate_scenario(::AbstractStochasticBenchmark{true}, instance; kwargs...)
 """
 function generate_scenario end
 
 """
-    anticipative_policy(::AbstractStochasticBenchmark{true}, instance, scenario; kwargs...)
+    generate_anticipative_solution(::AbstractStochasticBenchmark{true}, instance, scenario; kwargs...)
 """
 function generate_anticipative_solution end
 
