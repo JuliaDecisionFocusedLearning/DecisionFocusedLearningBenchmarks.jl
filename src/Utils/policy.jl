@@ -70,7 +70,7 @@ Evaluate the policy on the environment and return the total reward and a dataset
 By default, the environment is reset before running the policy.
 """
 function evaluate_policy!(
-    policy, env::AbstractEnvironment, episodes::Int=1; seed=get_seed(env), kwargs...
+    policy, env::AbstractEnvironment, episodes::Int; seed=get_seed(env), kwargs...
 )
     reset!(env; reset_rng=true, seed)
     total_reward = 0.0

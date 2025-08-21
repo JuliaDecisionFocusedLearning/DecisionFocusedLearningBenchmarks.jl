@@ -91,7 +91,7 @@ function Utils.generate_sample(
     bench::PortfolioOptimizationBenchmark, rng::AbstractRNG; type::Type=Float32
 )
     (; d, p, deg, ν, L, f) = bench
-    features = randn(rng, type, p, d)
+    features = randn(rng, type, p)
     B = rand(rng, Bernoulli(0.5), d, p)
     c̄ = (0.05 / type(sqrt(p)) .* B * features .+ 0.1^(1 / deg)) .^ deg
     costs = c̄ .+ L * f .+ 0.01 * ν * randn(rng, type, d)
@@ -99,7 +99,7 @@ function Utils.generate_sample(
     maximizer = Utils.generate_maximizer(bench)
     solution = maximizer(costs)
 
-    return DataSample(; x=features, θ_true=c̄, y_true=solution)
+    return DataSample(; x=features, θ_true=costs, y_true=solution)
 end
 
 """
