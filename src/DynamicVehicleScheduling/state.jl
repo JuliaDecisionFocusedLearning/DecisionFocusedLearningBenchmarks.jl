@@ -121,7 +121,7 @@ $TYPEDSIGNATURES
 
 Check if the given routes are feasible.
 Routes should be given with global indexation.
-Use [`env_routes_from_state_routes`](@ref) if needed to convert the indices beforehand.
+Use `env_routes_from_state_routes` if needed to convert the indices beforehand.
 """
 function is_feasible(state::DVSPState, routes::Vector{Vector{Int}}; verbose::Bool=false)
     (; is_must_dispatch, state_instance) = state
