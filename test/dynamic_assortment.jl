@@ -1,4 +1,4 @@
-@testitem "DVSP" begin
+@testitem "dynamic Assortment" begin
     using DecisionFocusedLearningBenchmarks
     using Statistics: mean
 
@@ -18,8 +18,15 @@
     expert = policies[1]
     greedy = policies[2]
 
-    r_expert, _ = evaluate_policy!(expert, environments)
+    r_expert, d = evaluate_policy!(expert, environments)
     r_greedy, _ = evaluate_policy!(greedy, environments)
 
     @test mean(r_expert) >= mean(r_greedy)
+
+    model = generate_statistical_model(b)
+    maximizer = generate_maximizer(b)
+    sample = d[1]
+    x = sample.x
+    θ = model(x)
+    y = maximizer(θ)
 end
