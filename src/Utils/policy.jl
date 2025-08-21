@@ -31,9 +31,9 @@ $TYPEDSIGNATURES
 Run the policy on the environment and return the total reward and a dataset of observations.
 By default, the environment is reset before running the policy.
 """
-function run_policy!(policy, env::AbstractEnvironment; kwargs...)
+function evaluate_policy!(policy, env::AbstractEnvironment; kwargs...)
     total_reward = 0.0
-    reset!(env; reset_seed=false)
+    reset!(env; reset_rng=false)
     local labeled_dataset
     while !is_terminated(env)
         y = policy(env; kwargs...)
@@ -52,35 +52,49 @@ function run_policy!(policy, env::AbstractEnvironment; kwargs...)
     return total_reward, labeled_dataset
 end
 
-function run_policy!(policy, envs::Vector{<:AbstractEnvironment}; kwargs...)
-    E = length(envs)
-    rewards = zeros(Float64, E)
-    datasets = map(1:E) do e
-        reward, dataset = run_policy!(policy, envs[e]; kwargs...)
-        rewards[e] = reward
-        return dataset
-    end
-    return rewards, vcat(datasets...)
-end
+# function evaluate_policy!(policy, envs::Vector{<:AbstractEnvironment}; kwargs...)
+#     E = length(envs)
+#     rewards = zeros(Float64, E)
+#     datasets = map(1:E) do e
+#         reward, dataset = evaluate_policy!(policy, envs[e]; kwargs...)
+#         rewards[e] = reward
+#         return dataset
+#     end
+#     return rewards, vcat(datasets...)
+# end
 
-function run_policy!(
-    policy, env::AbstractEnvironment, episodes::Int; seed=get_seed(env), kwargs...
+"""
+$TYPEDSIGNATURES
+
+Evaluate the policy on the environment and return the total reward and a dataset of observations.
+By default, the environment is reset before running the policy.
+"""
+function evaluate_policy!(
+    policy, env::AbstractEnvironment, episodes::Int=1; seed=get_seed(env), kwargs...
 )
-    reset!(env; reset_seed=true, seed)
+    reset!(env; reset_rng=true, seed)
     total_reward = 0.0
     datasets = map(1:episodes) do _i
-        reward, dataset = run_policy!(policy, env; kwargs...)
+        reward, dataset = evaluate_policy!(policy, env; kwargs...)
         total_reward += reward
         return dataset
     end
     return total_reward / episodes, vcat(datasets...)
 end
 
-function run_policy!(policy, envs::Vector{<:AbstractEnvironment}, episodes::Int; kwargs...)
+"""
+$TYPEDSIGNATURES
+
+Run the policy on the environments and return the total rewards and a dataset of observations.
+By default, the environments are reset before running the policy.
+"""
+function evaluate_policy!(
+    policy, envs::Vector{<:AbstractEnvironment}, episodes::Int=1; kwargs...
+)
     E = length(envs)
     rewards = zeros(Float64, E)
     datasets = map(1:E) do e
-        reward, dataset = run_policy!(policy, envs[e], episodes; kwargs...)
+        reward, dataset = evaluate_policy!(policy, envs[e], episodes; kwargs...)
         rewards[e] = reward
         return dataset
     end

@@ -34,10 +34,10 @@ This function should return a tuple of two elements:
 function observe end
 
 """
-    reset!(env::AbstractEnvironment; reset_seed::Bool, seed=get_seed(env)) --> Nothing
+    reset!(env::AbstractEnvironment; reset_rng::Bool, seed=get_seed(env)) --> Nothing
 
 Reset the environment to its initial state.
-If `reset_seed` is true, the random number generator is reset to the given `seed`.
+If `reset_rng` is true, the random number generator is reset to the given `seed`.
 """
 function reset! end
 

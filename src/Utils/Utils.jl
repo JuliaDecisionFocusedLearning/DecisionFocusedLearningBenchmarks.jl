@@ -21,7 +21,7 @@ include("misc.jl")
 include("model_builders.jl")
 
 export DataSample, Policy
-export run_policy!
+export evaluate_policy!
 export TopKMaximizer
 
 export AbstractEnvironment, get_seed, is_terminated, observe, reset!, step!

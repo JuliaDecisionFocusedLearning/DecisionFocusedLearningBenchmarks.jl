@@ -70,10 +70,10 @@ Utils.is_terminated(env::DVSPEnv) = current_epoch(env) > last_epoch(env)
 $TYPEDSIGNATURES
 
 Reset the environment to its initial state.
-Also reset the seed if `reset_seed` is set to true.
+Also reset the rng to `seed` if `reset_rng` is set to true.
 """
-function Utils.reset!(env::DVSPEnv; seed=get_seed(env), reset_seed=false)
-    if reset_seed
+function Utils.reset!(env::DVSPEnv; seed=get_seed(env), reset_rng=false)
+    if reset_rng
         Random.seed!(env.rng, seed)
     end
     env.scenario = Utils.generate_scenario(env; rng=env.rng)

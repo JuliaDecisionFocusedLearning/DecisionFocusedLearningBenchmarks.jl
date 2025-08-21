@@ -43,7 +43,7 @@ function Environment(instance::Instance; seed=0, rng::AbstractRNG=MersenneTwiste
         features=full_features,
         d_features=zeros(2, N),
     )
-    Utils.reset!(env; reset_seed=true)
+    Utils.reset!(env; reset_rng=true)
     return env
 end
 
@@ -58,8 +58,8 @@ prices(b::Environment) = b.instance.prices
 ## Basic operations of environment
 
 # Reset the environment
-function Utils.reset!(env::Environment; reset_seed=false, seed=env.seed)
-    reset_seed && Random.seed!(env.rng, seed)
+function Utils.reset!(env::Environment; reset_rng=false, seed=env.seed)
+    reset_rng && Random.seed!(env.rng, seed)
 
     env.step = 1
 

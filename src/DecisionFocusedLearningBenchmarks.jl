@@ -3,22 +3,22 @@ module DecisionFocusedLearningBenchmarks
 using DataDeps
 using Requires: @require
 
-function _euro_neurips_unpack(local_filepath)
-    directory = dirname(local_filepath)
-    unpack(local_filepath)
-    # Move instances and delete the rest
-    for filepath in readdir(
-        joinpath(directory, "euro-neurips-vrp-2022-quickstart-main", "instances"); join=true
-    )
-        if endswith(filepath, ".txt")
-            mv(filepath, joinpath(directory, basename(filepath)))
-        end
-    end
-    rm(joinpath(directory, "euro-neurips-vrp-2022-quickstart-main"); recursive=true)
-    return nothing
-end
-
 function __init__()
+    function _euro_neurips_unpack(local_filepath)
+        directory = dirname(local_filepath)
+        unpack(local_filepath)
+        # Move instances and delete the rest
+        for filepath in readdir(
+            joinpath(directory, "euro-neurips-vrp-2022-quickstart-main", "instances");
+            join=true,
+        )
+            if endswith(filepath, ".txt")
+                mv(filepath, joinpath(directory, basename(filepath)))
+            end
+        end
+        rm(joinpath(directory, "euro-neurips-vrp-2022-quickstart-main"); recursive=true)
+        return nothing
+    end
     # Register the Warcraft dataset
     ENV["DATADEPS_ALWAYS_ACCEPT"] = "true"
     register(
@@ -64,7 +64,7 @@ using .Utils
 export AbstractBenchmark, AbstractStochasticBenchmark, AbstractDynamicBenchmark, DataSample
 export AbstractEnvironment, get_seed, is_terminated, observe, reset!, step!
 
-export Policy, run_policy!
+export Policy, evaluate_policy!
 
 export generate_sample, generate_dataset, generate_environments, generate_environment
 export generate_scenario

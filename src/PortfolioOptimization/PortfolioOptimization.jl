@@ -105,40 +105,6 @@ end
 """
 $TYPEDSIGNATURES
 
-Generate a dataset of labeled instances for the portfolio optimization problem.
-"""
-function Utils.generate_dataset(
-    bench::PortfolioOptimizationBenchmark,
-    dataset_size::Int=10;
-    seed::Int=0,
-    type::Type=Float32,
-)
-    (; d, p, deg, ν, L, f) = bench
-    rng = MersenneTwister(seed)
-
-    # Features
-    features = [randn(rng, type, p) for _ in 1:dataset_size]
-
-    # True weights
-    B = rand(rng, Bernoulli(0.5), d, p)
-    c̄ = [
-        (0.05 / type(sqrt(p)) .* B * features[i] .+ 0.1^(1 / deg)) .^ deg for
-        i in 1:dataset_size
-    ]
-    costs = [c̄ᵢ .+ L * f .+ 0.01 .* ν .* randn(rng, type, d) for c̄ᵢ in c̄]
-
-    maximizer = Utils.generate_maximizer(bench)
-    solutions = maximizer.(costs)
-
-    return [
-        DataSample(; x, θ_true, y_true) for
-        (x, θ_true, y_true) in zip(features, costs, solutions)
-    ]
-end
-
-"""
-$TYPEDSIGNATURES
-
 Initialize a linear model for `bench` using `Flux`.
 """
 function Utils.generate_statistical_model(bench::PortfolioOptimizationBenchmark)

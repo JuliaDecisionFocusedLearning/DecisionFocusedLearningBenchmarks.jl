@@ -1,3 +1,7 @@
+```@meta
+CollapsedDocStrings = true
+```
+
 # Dynamic Vehicle Scheduling
 
 ## Public

@@ -49,8 +49,9 @@ function anticipative_solver(
     two_dimensional_features=env.instance.two_dimensional_features,
     reset_env=true,
     nb_epochs=typemax(Int),
+    seed=get_seed(env),
 )
-    reset_env && reset!(env; reset_seed=true)
+    reset_env && reset!(env; reset_rng=true, seed)
 
     start_epoch = current_epoch(env)
     end_epoch = min(last_epoch(env), start_epoch + nb_epochs - 1)
