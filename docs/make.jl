@@ -12,8 +12,8 @@ api_dir = joinpath(@__DIR__, "src", "api")
 api_files = map(x -> joinpath("api", x), readdir(api_dir))
 tutorial_files = readdir(tutorial_dir)
 md_tutorial_files = [split(file, ".")[1] * ".md" for file in tutorial_files]
-benchmark_files = readdir(benchmarks_dir)
-md_benchmark_files = [split(file, ".")[1] * ".md" for file in benchmark_files]
+benchmark_files = [joinpath("benchmarks", e) for e in readdir(benchmarks_dir)]
+# md_benchmark_files = [split(file, ".")[1] * ".md" for file in benchmark_files]
 
 include_tutorial = true
 
@@ -25,20 +25,14 @@ if include_tutorial
 end
 
 makedocs(;
-    modules=[DecisionFocusedLearningBenchmarks, DecisionFocusedLearningBenchmarks.Warcraft],
+    modules=[DecisionFocusedLearningBenchmarks],
     authors="Members of JuliaDecisionFocusedLearning",
     sitename="DecisionFocusedLearningBenchmarks.jl",
-    format=Documenter.HTML(),
+    format=Documenter.HTML(; size_threshold=typemax(Int)),
     pages=[
         "Home" => "index.md",
         "Tutorials" => include_tutorial ? md_tutorial_files : [],
-        "Benchmark problems list" => [
-            "benchmarks/subset_selection.md",
-            "benchmarks/fixed_size_shortest_path.md",
-            "benchmarks/warcraft.md",
-            "benchmarks/portfolio_optimization.md",
-            "benchmarks/vsp.md",
-        ],
+        "Benchmark problems list" => benchmark_files,
         "API reference" => api_files,
     ],
 )

@@ -73,43 +73,32 @@ end
 """
 $TYPEDSIGNATURES
 
-Create a dataset of `dataset_size` instances for the given `StochasticVehicleSchedulingBenchmark`.
-If you want to not add label solutions in the dataset, set `compute_solutions=false`.
+Generate a sample for the given `StochasticVehicleSchedulingBenchmark`.
+If you want to not add label solutions in the sample, set `compute_solutions=false`.
 By default, they will be computed using column generation.
 Note that computing solutions can be time-consuming, especially for large instances.
 You can also use instead `compact_mip` or `compact_linearized_mip` as the algorithm to compute solutions.
 If you want to provide a custom algorithm to compute solutions, you can pass it as the `algorithm` keyword argument.
 If `algorithm` takes keyword arguments, you can pass them as well directly in `kwargs...`.
-If `store_city=false`, the coordinates and unnecessary information about instances will not be stored in the dataset.
+If `store_city=false`, the coordinates and unnecessary information about instances will not be stored in the sample.
 """
-function Utils.generate_dataset(
+function Utils.generate_sample(
     benchmark::StochasticVehicleSchedulingBenchmark,
-    dataset_size::Int;
-    compute_solutions=true,
-    seed=nothing,
-    rng=MersenneTwister(0),
-    algorithm=column_generation_algorithm,
+    rng::AbstractRNG;
     store_city=true,
+    compute_solutions=true,
+    algorithm=column_generation_algorithm,
     kwargs...,
 )
     (; nb_tasks, nb_scenarios) = benchmark
-    Random.seed!(rng, seed)
-    instances = [
-        Instance(; nb_tasks, nb_scenarios, rng, store_city) for _ in 1:dataset_size
-    ]
-    features = get_features.(instances)
-    if compute_solutions
-        solutions = [algorithm(instance; kwargs...).value for instance in instances]
-        return [
-            DataSample(; x=feature, instance, y_true=solution) for
-            (instance, feature, solution) in zip(instances, features, solutions)
-        ]
+    instance = Instance(; nb_tasks, nb_scenarios, rng, store_city)
+    x = get_features(instance)
+    y_true = if compute_solutions
+        algorithm(instance; kwargs...)
+    else
+        nothing
     end
-    # else
-    return [
-        DataSample(; x=feature, instance) for
-        (instance, feature) in zip(instances, features)
-    ]
+    return DataSample(; x, instance, y_true)
 end
 
 """
@@ -126,7 +115,7 @@ end
 $TYPEDSIGNATURES
 """
 function Utils.generate_maximizer(
-    bench::StochasticVehicleSchedulingBenchmark; model_builder=highs_model
+    ::StochasticVehicleSchedulingBenchmark; model_builder=highs_model
 )
     return StochasticVechicleSchedulingMaximizer(model_builder)
 end
@@ -156,10 +145,7 @@ end
 $TYPEDSIGNATURES
 """
 function plot_instance(
-    ::StochasticVehicleSchedulingBenchmark,
-    sample::DataSample{<:Instance{City}};
-    color_scheme=:lightrainbow,
-    kwargs...,
+    ::StochasticVehicleSchedulingBenchmark, sample::DataSample{<:Instance{City}}; kwargs...
 )
     (; tasks, district_width, width) = sample.instance.city
     ticks = 0:district_width:width
@@ -208,7 +194,6 @@ function plot_instance(
             marker_z=task.end_time,
             colormap=:turbo,
             label=nothing,
-            # color=palette[max(floor(Int, task.end_time), 1)],
         )
         annotate!(fig, (points[1]..., text("$(i_task)", 10)))
     end

@@ -7,16 +7,36 @@ Data sample data structure.
 $TYPEDFIELDS
 """
 @kwdef struct DataSample{
-    I,F<:AbstractArray,S<:Union{AbstractArray,Nothing},C<:Union{AbstractArray,Nothing}
+    I,
+    F<:Union{AbstractArray,Nothing},
+    S<:Union{AbstractArray,Nothing},
+    C<:Union{AbstractArray,Nothing},
 }
     "features"
-    x::F
+    x::F = nothing
     "target cost parameters (optional)"
     θ_true::C = nothing
     "target solution (optional)"
     y_true::S = nothing
     "instance object (optional)"
     instance::I = nothing
+end
+
+function Base.show(io::IO, d::DataSample)
+    fields = String[]
+    if !isnothing(d.x)
+        push!(fields, "x=$(d.x)")
+    end
+    if !isnothing(d.θ_true)
+        push!(fields, "θ_true=$(d.θ_true)")
+    end
+    if !isnothing(d.y_true)
+        push!(fields, "y_true=$(d.y_true)")
+    end
+    if !isnothing(d.instance)
+        push!(fields, "instance=$(d.instance)")
+    end
+    return print(io, "DataSample(", join(fields, ", "), ")")
 end
 
 """

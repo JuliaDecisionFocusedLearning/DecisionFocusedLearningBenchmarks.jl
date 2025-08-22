@@ -1,10 +1,10 @@
 """
 $TYPEDEF
 
-Abstract type interface for a benchmark problem.
+Abstract type interface for benchmark problems.
 
 The following methods are mandatory for benchmarks:
-- [`generate_dataset`](@ref)
+- [`generate_dataset`](@ref) or [`generate_sample`](@ref)
 - [`generate_statistical_model`](@ref)
 - [`generate_maximizer`](@ref)
 
@@ -16,12 +16,35 @@ The following methods are optional:
 abstract type AbstractBenchmark end
 
 """
+    generate_sample(::AbstractBenchmark, rng::AbstractRNG; kwargs...) -> DataSample
+
+Generate a single [`DataSample`](@ref) for given benchmark.
+This is a low-level function that is used by [`generate_dataset`](@ref) to create
+a dataset of samples. It is not mandatory to implement this method, but it is
+recommended for benchmarks that have a well-defined way to generate individual samples.
+An alternative is to directly implement [`generate_dataset`](@ref) to create a dataset
+without generating individual samples.
+"""
+function generate_sample end
+
+"""
     generate_dataset(::AbstractBenchmark, dataset_size::Int; kwargs...) -> Vector{<:DataSample}
 
-Generate a `Vector` of [`DataSample`](@ref)  of length `dataset_size` for given benchmark.
+Generate a `Vector` of [`DataSample`](@ref) of length `dataset_size` for given benchmark.
 Content of the dataset can be visualized using [`plot_data`](@ref), when it applies.
+
+By default, it uses [`generate_sample`](@ref) to create each sample in the dataset, and passes any keyword arguments to it.
 """
-function generate_dataset end
+function generate_dataset(
+    bench::AbstractBenchmark,
+    dataset_size::Int;
+    seed=nothing,
+    rng=MersenneTwister(seed),
+    kwargs...,
+)
+    Random.seed!(rng, seed)
+    return [generate_sample(bench, rng; kwargs...) for _ in 1:dataset_size]
+end
 
 """
     generate_maximizer(::AbstractBenchmark; kwargs...)
@@ -38,6 +61,11 @@ Initializes and return an untrained statistical model of the CO-ML pipeline.
 It's usually a Flux model, that takes a feature matrix x as input, and returns a cost array θ as output.
 """
 function generate_statistical_model end
+
+"""
+    generate_policies(::AbstractBenchmark) -> Vector{Policy}
+"""
+function generate_policies end
 
 """
     plot_data(::AbstractBenchmark, ::DataSample; kwargs...)
@@ -153,4 +181,64 @@ function compute_gap(
             return Δ / abs(target_obj)
         end,
     )
+end
+
+"""
+$TYPEDEF
+
+Abstract type interface for stochastic benchmark problems.
+This type should be used for benchmarks that involve single stage stochastic optimization problems.
+
+It follows the same interface as [`AbstractBenchmark`](@ref), with the addition of the following methods:
+- TODO
+"""
+abstract type AbstractStochasticBenchmark{exogenous} <: AbstractBenchmark end
+
+is_exogenous(::AbstractStochasticBenchmark{exogenous}) where {exogenous} = exogenous
+is_endogenous(::AbstractStochasticBenchmark{exogenous}) where {exogenous} = !exogenous
+
+"""
+    generate_scenario(::AbstractStochasticBenchmark{true}, instance; kwargs...)
+"""
+function generate_scenario end
+
+"""
+    generate_anticipative_solution(::AbstractStochasticBenchmark{true}, instance, scenario; kwargs...)
+"""
+function generate_anticipative_solution end
+
+"""
+$TYPEDEF
+
+Abstract type interface for dynamic benchmark problems.
+This type should be used for benchmarks that involve multi-stage stochastic optimization problems.
+
+It follows the same interface as [`AbstractStochasticBenchmark`](@ref), with the addition of the following methods:
+TODO
+"""
+abstract type AbstractDynamicBenchmark{exogenous} <: AbstractStochasticBenchmark{exogenous} end
+
+"""
+    generate_environment(::AbstractDynamicBenchmark, instance, rng::AbstractRNG; kwargs...)
+
+Initialize an environment for the given dynamic benchmark instance.
+"""
+function generate_environment end
+
+"""
+$TYPEDSIGNATURES
+
+Generate a vector of environments for the given dynamic benchmark and dataset.
+"""
+function generate_environments(
+    bench::AbstractDynamicBenchmark,
+    dataset::Vector{<:DataSample};
+    seed=nothing,
+    rng=MersenneTwister(seed),
+    kwargs...,
+)
+    Random.seed!(rng, seed)
+    return map(dataset) do sample
+        generate_environment(bench, sample.instance, rng; kwargs...)
+    end
 end

@@ -7,7 +7,7 @@ using Flux: Chain, Dense
 using Ipopt: Ipopt
 using JuMP: @variable, @objective, @constraint, optimize!, value, Model, set_silent
 using LinearAlgebra: I
-using Random: MersenneTwister
+using Random: AbstractRNG, MersenneTwister
 
 """
 $TYPEDEF
@@ -85,35 +85,21 @@ end
 """
 $TYPEDSIGNATURES
 
-Generate a dataset of labeled instances for the portfolio optimization problem.
+Generate a labeled sample for the portfolio optimization problem.
 """
-function Utils.generate_dataset(
-    bench::PortfolioOptimizationBenchmark,
-    dataset_size::Int=10;
-    seed::Int=0,
-    type::Type=Float32,
+function Utils.generate_sample(
+    bench::PortfolioOptimizationBenchmark, rng::AbstractRNG; type::Type=Float32
 )
     (; d, p, deg, ν, L, f) = bench
-    rng = MersenneTwister(seed)
-
-    # Features
-    features = [randn(rng, type, p) for _ in 1:dataset_size]
-
-    # True weights
+    features = randn(rng, type, p)
     B = rand(rng, Bernoulli(0.5), d, p)
-    c̄ = [
-        (0.05 / type(sqrt(p)) .* B * features[i] .+ 0.1^(1 / deg)) .^ deg for
-        i in 1:dataset_size
-    ]
-    costs = [c̄ᵢ .+ L * f .+ 0.01 .* ν .* randn(rng, type, d) for c̄ᵢ in c̄]
+    c̄ = (0.05 / type(sqrt(p)) .* B * features .+ 0.1^(1 / deg)) .^ deg
+    costs = c̄ .+ L * f .+ 0.01 * ν * randn(rng, type, d)
 
     maximizer = Utils.generate_maximizer(bench)
-    solutions = maximizer.(costs)
+    solution = maximizer(costs)
 
-    return [
-        DataSample(; x, θ_true, y_true) for
-        (x, θ_true, y_true) in zip(features, costs, solutions)
-    ]
+    return DataSample(; x=features, θ_true=costs, y_true=solution)
 end
 
 """

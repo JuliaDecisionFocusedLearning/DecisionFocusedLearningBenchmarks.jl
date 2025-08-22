@@ -189,5 +189,5 @@ function column_generation_algorithm(
     end
 
     col_solution = solution_from_paths(sol, instance)
-    return col_solution
+    return col_solution.value
 end

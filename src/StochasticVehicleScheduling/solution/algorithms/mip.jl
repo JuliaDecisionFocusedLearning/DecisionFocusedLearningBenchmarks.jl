@@ -78,7 +78,7 @@ function compact_linearized_mip(
     solution = value.(y)
 
     sol = solution_from_JuMP_array(solution, graph)
-    return sol
+    return sol.value
 end
 
 """
@@ -149,5 +149,5 @@ function compact_mip(
     solution = value.(y)
 
     sol = solution_from_JuMP_array(solution, graph)
-    return sol
+    return sol.value
 end

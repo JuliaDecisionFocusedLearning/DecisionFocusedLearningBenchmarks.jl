@@ -106,42 +106,26 @@ end
 """
 $TYPEDSIGNATURES
 
-Generate dataset for the shortest path problem.
+Generate a labeled sample for the fixed size shortest path benchmark.
 """
-function Utils.generate_dataset(
-    bench::FixedSizeShortestPathBenchmark,
-    dataset_size::Int=10;
-    seed::Int=0,
-    type::Type=Float32,
+function Utils.generate_sample(
+    bench::FixedSizeShortestPathBenchmark, rng::AbstractRNG; type::Type=Float32
 )
-    # Set seed
-    rng = MersenneTwister(seed)
     (; graph, p, deg, ν) = bench
-
+    features = randn(rng, Float32, bench.p)
     E = Graphs.ne(graph)
-
-    # Features
-    features = [randn(rng, type, p) for _ in 1:dataset_size]
-
     # True weights
     B = rand(rng, Bernoulli(0.5), E, p)
     ξ = if ν == 0.0
-        [ones(type, E) for _ in 1:dataset_size]
+        ones(type, E)
     else
-        [rand(rng, Uniform{type}(1 - ν, 1 + ν), E) for _ in 1:dataset_size]
+        rand(rng, Uniform{type}(1 - ν, 1 + ν), E)
     end
-    costs = [
-        -(1 .+ (3 .+ B * zᵢ ./ type(sqrt(p))) .^ deg) .* ξᵢ for (ξᵢ, zᵢ) in zip(ξ, features)
-    ]
+    costs = -(1 .+ (3 .+ B * features ./ type(sqrt(p))) .^ deg) .* ξ
 
-    shortest_path_maximizer = Utils.generate_maximizer(bench)
-
-    # Label solutions
-    solutions = shortest_path_maximizer.(costs)
-    return [
-        DataSample(; x, θ_true, y_true) for
-        (x, θ_true, y_true) in zip(features, costs, solutions)
-    ]
+    maximizer = Utils.generate_maximizer(bench)
+    solution = maximizer(costs)
+    return DataSample(; x=features, θ_true=costs, y_true=solution)
 end
 
 """
