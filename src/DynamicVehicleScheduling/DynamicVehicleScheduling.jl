@@ -5,6 +5,7 @@ using ..Utils
 using Base: @kwdef
 using DataDeps: @datadep_str
 using DocStringExtensions: TYPEDEF, TYPEDFIELDS, TYPEDSIGNATURES
+using Flux: Chain, Dense
 using Graphs
 using HiGHS
 using InferOpt: LinearMaximizer
@@ -108,6 +109,10 @@ function Utils.generate_policies(b::DynamicVehicleSchedulingBenchmark)
         greedy_policy,
     )
     return (lazy, greedy)
+end
+
+function Utils.generate_statistical_model(b::DynamicVehicleSchedulingBenchmark)
+    return Chain(Dense((b.two_dimensional_features ? 2 : 14) => 1), vec)
 end
 
 export DynamicVehicleSchedulingBenchmark

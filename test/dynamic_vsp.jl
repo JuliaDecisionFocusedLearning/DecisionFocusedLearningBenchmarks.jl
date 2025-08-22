@@ -3,6 +3,7 @@
     using Statistics: mean
 
     b = DynamicVehicleSchedulingBenchmark(; two_dimensional_features=true)
+    b2 = DynamicVehicleSchedulingBenchmark(; two_dimensional_features=false)
 
     @test is_exogenous(b)
     @test !is_endogenous(b)
@@ -28,4 +29,21 @@
     instance = dataset[1].instance
     scenario = generate_scenario(b, instance)
     v, y = generate_anticipative_solution(b, env, scenario; nb_epochs=2, reset_env=true)
+
+    maximizer = generate_maximizer(b)
+
+    x, instance = observe(env)
+    model = generate_statistical_model(b)
+    θ = model(x)
+    y = maximizer(θ; instance)
+
+    dataset2 = generate_dataset(b2, 10)
+    environments2 = generate_environments(b2, dataset2; seed=0)
+    env2 = environments2[1]
+    x2, instance2 = observe(env2)
+    model2 = generate_statistical_model(b2)
+    θ2 = model2(x2)
+    y2 = maximizer(θ2; instance=instance2)
+    @test size(x, 1) == 2
+    @test size(x2, 1) == 14
 end
