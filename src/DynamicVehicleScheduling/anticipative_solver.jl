@@ -56,6 +56,7 @@ function anticipative_solver(
     start_epoch = current_epoch(env)
     end_epoch = min(last_epoch(env), start_epoch + nb_epochs - 1)
     T = start_epoch:end_epoch
+    @info T
 
     request_epoch = [0]
     for t in T
@@ -69,11 +70,11 @@ function anticipative_solver(
     (; epoch_duration, Δ_dispatch) = env.instance
 
     model = model_builder()
-    set_silent(model)
+    # set_silent(model)
 
     nb_nodes = length(customer_index)
     job_indices = 2:nb_nodes
-    epoch_indices = T#first_epoch:last_epoch
+    epoch_indices = T
 
     @variable(model, y[i = 1:nb_nodes, j = 1:nb_nodes, t = epoch_indices]; binary=true)
 
@@ -127,6 +128,11 @@ function anticipative_solver(
     end
 
     optimize!(model)
+
+    @info "Objective value: $(JuMP.objective_value(model))"
+    @info termination_status(model)
+    y_val = value.(y)
+    @info sum(y_val[j, 2, t] for j in 1:nb_nodes, t in epoch_indices)
 
     obj = JuMP.objective_value(model)
     epoch_routes = retrieve_routes_anticipative(
