@@ -14,7 +14,9 @@ end
 
 @testitem "JuliaFormatter" begin
     using JuliaFormatter
-    JuliaFormatter.format(DecisionFocusedLearningBenchmarks; verbose=false, overwrite=false)
+    @test JuliaFormatter.format(
+        DecisionFocusedLearningBenchmarks; verbose=false, overwrite=false
+    )
 end
 
 @testitem "Documenter" begin

@@ -1,3 +1,0 @@
-# Dynamic Assortment
-
-[`DynamicAssortmentBenchmark`](@ref).

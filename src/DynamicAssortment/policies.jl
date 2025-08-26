@@ -1,3 +1,8 @@
+"""
+$TYPEDSIGNATURES
+
+Expert policy that computes the optimal assortment by enumerating all possible assortments.
+"""
 function expert_policy(env::Environment)
     N = item_count(env)
     K = assortment_size(env)
@@ -15,7 +20,12 @@ function expert_policy(env::Environment)
     return best_S
 end
 
+"""
+$TYPEDSIGNATURES
+
+Greedy policy that selects the assortment containing items with the highest prices.
+"""
 function greedy_policy(env::Environment)
     maximizer = generate_maximizer(env.instance.config)
-    return maximizer(prices(env))
+    return maximizer(prices(env)[1:item_count(env)])
 end
