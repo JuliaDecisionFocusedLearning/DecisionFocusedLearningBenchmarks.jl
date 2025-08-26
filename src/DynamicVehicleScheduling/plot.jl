@@ -17,7 +17,7 @@ function plot_state(
     postponable_color=:lightblue,
     show_axis_labels=true,
     markerstrokewidth=0.5,
-    kwargs...
+    kwargs...,
 )
     # Get coordinates from the state instance
     coordinates = coordinate(state)
@@ -29,8 +29,7 @@ function plot_state(
 
     # Create the plot
     plot_args = Dict(
-        :legend => :topleft,
-        :title => "DVSP State - Epoch $(state.current_epoch)"
+        :legend => :topleft, :title => "DVSP State - Epoch $(state.current_epoch)"
     )
 
     if show_axis_labels
@@ -109,7 +108,7 @@ function plot_routes(
     route_linewidth=3,  # Increased from 2 to 3
     route_alpha=0.7,
     show_route_labels=true,
-    kwargs...
+    kwargs...,
 )
     # Start with the basic state plot
     fig = plot_state(state; kwargs...)
@@ -144,11 +143,11 @@ function plot_routes(
                 fig,
                 route_x,
                 route_y;
-                color=color,
+                # color=color,
                 linewidth=route_linewidth,
                 alpha=1.0,  # Make routes fully opaque
                 label=label,
-                linestyle=:solid
+                linestyle=:solid,
             )
         end
     end
@@ -162,11 +161,7 @@ $TYPEDSIGNATURES
 Plot a given DVSPState with routes overlaid. This version accepts routes as a single
 vector where routes are separated by depot visits (index 1).
 """
-function plot_routes(
-    state::DVSPState,
-    routes::Vector{Int};
-    kwargs...
-)
+function plot_routes(state::DVSPState, routes::Vector{Int}; kwargs...)
     # Convert single route vector to vector of route vectors
     route_vectors = Vector{Int}[]
     current_route = Int[]
@@ -196,11 +191,7 @@ $TYPEDSIGNATURES
 Plot a given DVSPState with routes overlaid. This version accepts routes as a BitMatrix
 where entry (i,j) = true indicates an edge from location i to location j.
 """
-function plot_routes(
-    state::DVSPState,
-    routes::BitMatrix;
-    kwargs...
-)
+function plot_routes(state::DVSPState, routes::BitMatrix; kwargs...)
     # Convert BitMatrix to vector of route vectors
     n_locations = size(routes, 1)
     route_vectors = Vector{Int}[]
@@ -267,7 +258,7 @@ function plot_epochs(
     tickfontsize=10,
     show_axis_labels=false,
     show_colorbar=false,
-    kwargs...
+    kwargs...,
 )
     n_epochs = length(data_samples)
 
@@ -296,7 +287,7 @@ function plot_epochs(
 
     xlims = (
         minimum(p.x for p in all_coordinates) - margin,
-        maximum(p.x for p in all_coordinates) + margin
+        maximum(p.x for p in all_coordinates) + margin,
     )
 
     # Add extra margin at the top for legend space
@@ -338,39 +329,44 @@ function plot_epochs(
                 guidefontsize=guidefontsize,
                 tickfontsize=tickfontsize,
                 legend=false,
-                kwargs...
+                kwargs...,
             )
         else
             # Plot with or without routes
             if plot_routes_flag && !isnothing(sample.y_true)
-                fig = plot_routes(state, sample.y_true;
-                                xlims=xlims,
-                                ylims=ylims,
-                                clims=clims,
-                                colorbar=false,
-                                title="Epoch $(state.current_epoch)",
-                                titlefontsize=titlefontsize,
-                                guidefontsize=guidefontsize,
-                                legendfontsize=legendfontsize,
-                                tickfontsize=tickfontsize,
-                                show_axis_labels=show_axis_labels,
-                                markerstrokewidth=0.5,
-                                show_route_labels=false,
-                                kwargs...)
+                fig = plot_routes(
+                    state,
+                    sample.y_true;
+                    xlims=xlims,
+                    ylims=ylims,
+                    clims=clims,
+                    colorbar=false,
+                    title="Epoch $(state.current_epoch)",
+                    titlefontsize=titlefontsize,
+                    guidefontsize=guidefontsize,
+                    legendfontsize=legendfontsize,
+                    tickfontsize=tickfontsize,
+                    show_axis_labels=show_axis_labels,
+                    markerstrokewidth=0.5,
+                    show_route_labels=false,
+                    kwargs...,
+                )
             else
-                fig = plot_state(state;
-                               xlims=xlims,
-                               ylims=ylims,
-                               clims=clims,
-                               colorbar=false,
-                               title="Epoch $(state.current_epoch)",
-                               titlefontsize=titlefontsize,
-                               guidefontsize=guidefontsize,
-                               legendfontsize=legendfontsize,
-                               tickfontsize=tickfontsize,
-                               show_axis_labels=show_axis_labels,
-                               markerstrokewidth=0.5,
-                               kwargs...)
+                fig = plot_state(
+                    state;
+                    xlims=xlims,
+                    ylims=ylims,
+                    clims=clims,
+                    colorbar=false,
+                    title="Epoch $(state.current_epoch)",
+                    titlefontsize=titlefontsize,
+                    guidefontsize=guidefontsize,
+                    legendfontsize=legendfontsize,
+                    tickfontsize=tickfontsize,
+                    show_axis_labels=show_axis_labels,
+                    markerstrokewidth=0.5,
+                    kwargs...,
+                )
             end
         end
 
@@ -386,11 +382,18 @@ function plot_epochs(
 
     # Combine plots in a grid layout with optional shared colorbar
     if show_colorbar
-        combined_plot = plot(plots..., layout=(rows, cols), size=figsize,
-                            link=:both, colorbar=:right, clims=clims)
+        combined_plot = plot(
+            plots...;
+            layout=(rows, cols),
+            size=figsize,
+            link=:both,
+            colorbar=:right,
+            clims=clims,
+        )
     else
-        combined_plot = plot(plots..., layout=(rows, cols), size=figsize,
-                            link=:both, clims=clims)
+        combined_plot = plot(
+            plots...; layout=(rows, cols), size=figsize, link=:both, clims=clims
+        )
     end
 
     return combined_plot
@@ -402,9 +405,7 @@ $TYPEDSIGNATURES
 Plot multiple epochs side by side, optionally filtering to specific epoch indices.
 """
 function plot_epochs(
-    data_samples::Vector{<:DataSample},
-    epoch_indices::Vector{Int};
-    kwargs...
+    data_samples::Vector{<:DataSample}, epoch_indices::Vector{Int}; kwargs...
 )
     filtered_samples = data_samples[epoch_indices]
     return plot_epochs(filtered_samples; kwargs...)
@@ -428,7 +429,7 @@ function animate_epochs(
     legendfontsize=12,
     tickfontsize=11,
     show_axis_labels=true,
-    kwargs...
+    kwargs...,
 )
     n_epochs = length(data_samples)
 
@@ -451,7 +452,7 @@ function animate_epochs(
 
     xlims = (
         minimum(p.x for p in all_coordinates) - margin,
-        maximum(p.x for p in all_coordinates) + margin
+        maximum(p.x for p in all_coordinates) + margin,
     )
 
     # Add extra margin at the top for legend space
@@ -522,50 +523,54 @@ function animate_epochs(
                 tickfontsize=tickfontsize,
                 legend=false,
                 size=figsize,
-                kwargs...
+                kwargs...,
             )
         else
             if frame_type == :routes
                 # Show state with routes
-                plot_routes(state, sample.y_true;
-                           xlims=xlims,
-                           ylims=ylims,
-                           clims=clims,
-                           title="Epoch $(state.current_epoch) - Routes Dispatched",
-                           titlefontsize=titlefontsize,
-                           guidefontsize=guidefontsize,
-                           legendfontsize=legendfontsize,
-                           tickfontsize=tickfontsize,
-                           show_axis_labels=show_axis_labels,
-                           markerstrokewidth=0.5,
-                           show_route_labels=false,
-                           size=figsize,
-                           kwargs...)
+                plot_routes(
+                    state,
+                    sample.y_true;
+                    xlims=xlims,
+                    ylims=ylims,
+                    clims=clims,
+                    title="Epoch $(state.current_epoch) - Routes Dispatched",
+                    titlefontsize=titlefontsize,
+                    guidefontsize=guidefontsize,
+                    legendfontsize=legendfontsize,
+                    tickfontsize=tickfontsize,
+                    show_axis_labels=show_axis_labels,
+                    markerstrokewidth=0.5,
+                    show_route_labels=false,
+                    size=figsize,
+                    kwargs...,
+                )
             else # frame_type == :state
                 # Show state only
-                plot_state(state;
-                          xlims=xlims,
-                          ylims=ylims,
-                          clims=clims,
-                          title="Epoch $(state.current_epoch) - Available Requests",
-                          titlefontsize=titlefontsize,
-                          guidefontsize=guidefontsize,
-                          legendfontsize=legendfontsize,
-                          tickfontsize=tickfontsize,
-                          show_axis_labels=show_axis_labels,
-                          markerstrokewidth=0.5,
-                          size=figsize,
-                          kwargs...)
+                plot_state(
+                    state;
+                    xlims=xlims,
+                    ylims=ylims,
+                    clims=clims,
+                    title="Epoch $(state.current_epoch) - Available Requests",
+                    titlefontsize=titlefontsize,
+                    guidefontsize=guidefontsize,
+                    legendfontsize=legendfontsize,
+                    tickfontsize=tickfontsize,
+                    show_axis_labels=show_axis_labels,
+                    markerstrokewidth=0.5,
+                    size=figsize,
+                    kwargs...,
+                )
             end
         end
     end
 
     # Save as GIF
-    gif(anim, filename, fps=fps)
+    gif(anim, filename; fps=fps)
 
     return anim
 end
-
 
 # """
 # $TYPEDSIGNATURES
