@@ -54,7 +54,9 @@ function DynamicAssortmentBenchmark(;
     d=2,
     K=4,
     max_steps=80,
-    customer_choice_model=Chain(Dense(hcat([-0.8 0.6 -0.4], reshape([0.3 + 0.2 * (i - 1) for i in 1:d], 1, d))), vec),
+    customer_choice_model=Chain(
+        Dense(hcat([-0.8 0.6 -0.4], reshape([0.3 + 0.2 * (i - 1) for i in 1:d], 1, d))), vec
+    ),
     exogenous=false,
 )
     return DynamicAssortmentBenchmark{exogenous,typeof(customer_choice_model)}(

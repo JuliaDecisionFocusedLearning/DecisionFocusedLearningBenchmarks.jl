@@ -37,7 +37,7 @@ end
     # Test instance structure
     @test length(instance.prices) == 6  # N items + 1 no-purchase action
     @test instance.prices[end] == 0.0  # No-purchase action has price 0
-    @test all(1.0 ≤ p ≤ 10.0 for p in instance.prices[1:end-1])  # Prices in [1, 10]
+    @test all(1.0 ≤ p ≤ 10.0 for p in instance.prices[1:(end - 1)])  # Prices in [1, 10]
 
     @test size(instance.features) == (3, 5)  # (d, N)
     @test all(1.0 ≤ f ≤ 10.0 for f in instance.features)  # Features in [1, 10]
@@ -67,7 +67,7 @@ end
 
     # Test features structure: [prices; hype_saturation; static_features]
     @test size(env.features) == (5, 5)  # (1 + 2 + d, N) = (1 + 2 + 2, 5)
-    @test env.features[1, :] == instance.prices[1:end-1]  # First row is prices (excluding no-purchase)
+    @test env.features[1, :] == instance.prices[1:(end - 1)]  # First row is prices (excluding no-purchase)
 
     # Test utility computation
     @test length(env.utility) == 5  # One utility per item
@@ -100,9 +100,9 @@ end
 
     # Features should be reset to initial values
     expected_features = vcat(
-        reshape(instance.prices[1:end-1], 1, :),
+        reshape(instance.prices[1:(end - 1)], 1, :),
         instance.starting_hype_and_saturation,
-        instance.features
+        instance.features,
     )
     @test env.features ≈ expected_features
 end
@@ -208,7 +208,7 @@ end
     end
 
     # Test termination
-    for _ in 1:(DAP.max_steps(env)-1)
+    for _ in 1:(DAP.max_steps(env) - 1)
         if !is_terminated(env)
             step!(env, assortment)
         end
