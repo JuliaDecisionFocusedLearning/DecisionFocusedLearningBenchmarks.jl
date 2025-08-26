@@ -7,6 +7,8 @@ const GRB_ENV = Ref{Gurobi.Env}()
 GRB_ENV[] = Gurobi.Env()
 export GRB_ENV
 
+@info "You can now use `grb_model()` as a model builder in JuMP."
+
 """
 $TYPEDSIGNATURES
 

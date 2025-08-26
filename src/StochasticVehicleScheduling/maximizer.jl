@@ -14,7 +14,7 @@ function vsp_maximizer(
     nb_nodes = nv(graph)
     job_indices = 2:(nb_nodes - 1)
 
-    @variable(model, y[i=1:nb_nodes, j=1:nb_nodes; has_edge(graph, i, j)], Bin)
+    @variable(model, y[i = 1:nb_nodes, j = 1:nb_nodes; has_edge(graph, i, j)], Bin)
 
     @objective(
         model,

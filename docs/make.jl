@@ -13,9 +13,8 @@ api_files = map(x -> joinpath("api", x), readdir(api_dir))
 tutorial_files = readdir(tutorial_dir)
 md_tutorial_files = [split(file, ".")[1] * ".md" for file in tutorial_files]
 benchmark_files = [joinpath("benchmarks", e) for e in readdir(benchmarks_dir)]
-# md_benchmark_files = [split(file, ".")[1] * ".md" for file in benchmark_files]
 
-include_tutorial = true
+include_tutorial = false
 
 if include_tutorial
     for file in tutorial_files
@@ -33,7 +32,7 @@ makedocs(;
         "Home" => "index.md",
         "Tutorials" => include_tutorial ? md_tutorial_files : [],
         "Benchmark problems list" => benchmark_files,
-        "API reference" => api_files,
+        "API reference" => "api/api.md",
     ],
 )
 
