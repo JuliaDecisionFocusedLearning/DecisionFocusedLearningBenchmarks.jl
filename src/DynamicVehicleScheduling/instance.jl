@@ -31,7 +31,7 @@ function Instance(
             maximum(static_instance.start_time) - minimum(static_instance.duration[1, :]) -
             Δ_dispatch
         ) / epoch_duration,
-    )
+    ) - 1
     return Instance(;
         static_instance=static_instance,
         max_requests_per_epoch=max_requests_per_epoch,

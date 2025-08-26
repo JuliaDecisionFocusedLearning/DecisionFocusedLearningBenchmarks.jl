@@ -51,12 +51,13 @@ function anticipative_solver(
     nb_epochs=typemax(Int),
     seed=get_seed(env),
 )
-    reset_env && reset!(env; reset_rng=true, seed)
+    if reset_env
+        reset!(env; reset_rng=true, seed)
+    end
 
     start_epoch = current_epoch(env)
     end_epoch = min(last_epoch(env), start_epoch + nb_epochs - 1)
     T = start_epoch:end_epoch
-    @info T
 
     request_epoch = [0]
     for t in T
@@ -70,7 +71,7 @@ function anticipative_solver(
     (; epoch_duration, Δ_dispatch) = env.instance
 
     model = model_builder()
-    # set_silent(model)
+    set_silent(model)
 
     nb_nodes = length(customer_index)
     job_indices = 2:nb_nodes
@@ -129,11 +130,44 @@ function anticipative_solver(
 
     optimize!(model)
 
-    @info "Objective value: $(JuMP.objective_value(model))"
-    @info termination_status(model)
-    y_val = value.(y)
-    @info sum(y_val[j, 2, t] for j in 1:nb_nodes, t in epoch_indices)
+    # Debug infeasibility
+    if termination_status(model) == JuMP.MOI.INFEASIBLE
+        @warn "Model is infeasible! Let's debug..."
+        @info "Number of nodes: $nb_nodes"
+        @info "Number of job indices: $(length(job_indices))"
+        @info "Epoch indices: $epoch_indices"
+        @info "Request epochs: $request_epoch"
+        @info "Start times: $start_time"
+        @info "Service times: $service_time"
+        @info "Epoch duration: $epoch_duration, Δ_dispatch: $Δ_dispatch"
 
+        # Check if any job can be scheduled in any epoch
+        for i in job_indices
+            can_schedule = false
+            for t in epoch_indices
+                # Check release constraint
+                if t >= request_epoch[i]
+                    # Check time limit constraint
+                    travel_time = duration[1, i]
+                    arrival_time = (t - 1) * epoch_duration + Δ_dispatch + travel_time
+                    if arrival_time <= start_time[i]
+                        can_schedule = true
+                        @info "Job $i can be scheduled in epoch $t (arrival: $arrival_time <= deadline: $(start_time[i]))"
+                        break
+                    else
+                        @info "Job $i cannot be scheduled in epoch $t: arrival $arrival_time > deadline $(start_time[i])"
+                    end
+                else
+                    @info "Job $i cannot be scheduled in epoch $t: request epoch $(request_epoch[i]) > epoch $t"
+                end
+            end
+            if !can_schedule
+                @warn "Job $i cannot be scheduled in any epoch! Request epoch: $(request_epoch[i]), start time: $(start_time[i]), travel time: $(duration[1, i]), release index $(customer_index[i])"
+                @warn "  Epochs available: $epoch_indices"
+                @warn "  Epoch duration: $epoch_duration, Δ_dispatch: $Δ_dispatch"
+            end
+        end
+    end
     obj = JuMP.objective_value(model)
     epoch_routes = retrieve_routes_anticipative(
         value.(y), env, customer_index, epoch_indices

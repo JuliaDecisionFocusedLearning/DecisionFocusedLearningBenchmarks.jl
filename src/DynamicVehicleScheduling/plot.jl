@@ -476,11 +476,38 @@ function animate_epochs(
         (0.0, 1.0)
     end
 
-    # Create animation with alternating state and route frames
-    anim = @animate for frame_idx in 1:(2*n_epochs)
-        epoch_idx = ceil(Int, frame_idx / 2)
-        is_route_frame = (frame_idx % 2 == 0)
+    # Helper function to check if routes exist and are non-empty
+    function has_routes(routes)
+        if isnothing(routes)
+            return false
+        elseif routes isa Vector{Vector{Int}}
+            return any(!isempty(route) for route in routes)
+        elseif routes isa Vector{Int}
+            return !isempty(routes)
+        elseif routes isa BitMatrix
+            return any(routes)
+        else
+            return false
+        end
+    end
 
+    # Create frame plan: determine which epochs have routes
+    frame_plan = []
+    for (epoch_idx, sample) in enumerate(data_samples)
+        # Always add state frame
+        push!(frame_plan, (epoch_idx, :state))
+
+        # Add routes frame only if routes exist
+        if has_routes(sample.y_true)
+            push!(frame_plan, (epoch_idx, :routes))
+        end
+    end
+
+    total_frames = length(frame_plan)
+
+    # Create animation with dynamic frame plan
+    anim = @animate for frame_idx in 1:total_frames
+        epoch_idx, frame_type = frame_plan[frame_idx]
         sample = data_samples[epoch_idx]
         state = sample.instance
 
@@ -498,7 +525,7 @@ function animate_epochs(
                 kwargs...
             )
         else
-            if is_route_frame && !isnothing(sample.y_true)
+            if frame_type == :routes
                 # Show state with routes
                 plot_routes(state, sample.y_true;
                            xlims=xlims,
@@ -514,7 +541,7 @@ function animate_epochs(
                            show_route_labels=false,
                            size=figsize,
                            kwargs...)
-            else
+            else # frame_type == :state
                 # Show state only
                 plot_state(state;
                           xlims=xlims,
