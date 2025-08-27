@@ -13,13 +13,18 @@
     fig1 = DVSP.plot_instancee(env)
     @test fig1 isa Plots.Plot
 
-    # Test with anticipative solution and plot_epochs (like in the script)
     instance = dataset[1].instance
     scenario = generate_scenario(b, instance; seed=0)
     v, y = generate_anticipative_solution(b, env, scenario; nb_epochs=3, reset_env=true)
 
     fig2 = DVSP.plot_epochs(y)
     @test fig2 isa Plots.Plot
+
+    policies = generate_policies(b)
+    lazy = policies[1]
+    _, d = evaluate_policy!(lazy, env)
+    fig3 = DVSP.plot_routes(d[1].instance, d[1].y_true)
+    @test fig3 isa Plots.Plot
 
     # Test animation
     temp_filename = tempname() * ".gif"
