@@ -272,7 +272,7 @@ end
     b = DynamicAssortmentBenchmark(N=5, d=2, K=3, max_steps=20)
 
     # Generate test data
-    dataset = generate_dataset(b, 5; seed=0)
+    dataset = generate_dataset(b, 10; seed=0)
     environments = generate_environments(b, dataset)
 
     # Get policies
@@ -284,8 +284,8 @@ end
     @test greedy.name == "Greedy"
 
     # Test policy evaluation
-    r_expert, d = evaluate_policy!(expert, environments)
-    r_greedy, _ = evaluate_policy!(greedy, environments)
+    r_expert, d = evaluate_policy!(expert, environments, 10)
+    r_greedy, _ = evaluate_policy!(greedy, environments, 10)
 
     @test length(r_expert) == length(environments)
     @test length(r_greedy) == length(environments)

@@ -25,13 +25,14 @@ function Instance(
     epoch_duration::Float64=1.0,
     two_dimensional_features::Bool=false,
 )
-    last_epoch = trunc(
-        Int,
-        (
-            maximum(static_instance.start_time) - minimum(static_instance.duration[1, :]) -
-            Δ_dispatch
-        ) / epoch_duration,
-    )
+    last_epoch =
+        trunc(
+            Int,
+            (
+                maximum(static_instance.start_time) -
+                minimum(static_instance.duration[1, :]) - Δ_dispatch
+            ) / epoch_duration,
+        ) - 1
     return Instance(;
         static_instance=static_instance,
         max_requests_per_epoch=max_requests_per_epoch,

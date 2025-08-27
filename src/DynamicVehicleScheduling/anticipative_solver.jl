@@ -51,7 +51,9 @@ function anticipative_solver(
     nb_epochs=typemax(Int),
     seed=get_seed(env),
 )
-    reset_env && reset!(env; reset_rng=true, seed)
+    if reset_env
+        reset!(env; reset_rng=true, seed)
+    end
 
     start_epoch = current_epoch(env)
     end_epoch = min(last_epoch(env), start_epoch + nb_epochs - 1)
@@ -73,7 +75,7 @@ function anticipative_solver(
 
     nb_nodes = length(customer_index)
     job_indices = 2:nb_nodes
-    epoch_indices = T#first_epoch:last_epoch
+    epoch_indices = T
 
     @variable(model, y[i = 1:nb_nodes, j = 1:nb_nodes, t = epoch_indices]; binary=true)
 
@@ -128,6 +130,7 @@ function anticipative_solver(
 
     optimize!(model)
 
+    @assert termination_status(model) == JuMP.MOI.OPTIMAL "Anticipative MIP did not solve to optimality! (status: $(termination_status(model)))"
     obj = JuMP.objective_value(model)
     epoch_routes = retrieve_routes_anticipative(
         value.(y), env, customer_index, epoch_indices

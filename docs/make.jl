@@ -9,12 +9,11 @@ tutorial_dir = joinpath(@__DIR__, "src", "tutorials")
 benchmarks_dir = joinpath(@__DIR__, "src", "benchmarks")
 api_dir = joinpath(@__DIR__, "src", "api")
 
-api_files = map(x -> joinpath("api", x), readdir(api_dir))
 tutorial_files = readdir(tutorial_dir)
 md_tutorial_files = [split(file, ".")[1] * ".md" for file in tutorial_files]
 benchmark_files = [joinpath("benchmarks", e) for e in readdir(benchmarks_dir)]
 
-include_tutorial = true
+include_tutorial = false
 
 if include_tutorial
     for file in tutorial_files
@@ -29,10 +28,13 @@ makedocs(;
     sitename="DecisionFocusedLearningBenchmarks.jl",
     format=Documenter.HTML(; size_threshold=typemax(Int)),
     pages=[
-        "Home" => "index.md",
+        "Home" => [
+            "Getting started" => "index.md",
+            "Understanding Benchmark Interfaces" => "benchmark_interfaces.md",
+        ],
         "Tutorials" => include_tutorial ? md_tutorial_files : [],
         "Benchmark problems list" => benchmark_files,
-        "API reference" => "api/api.md",
+        "API reference" => "api.md",
     ],
 )
 

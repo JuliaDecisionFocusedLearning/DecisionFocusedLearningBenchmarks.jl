@@ -142,8 +142,5 @@ function Utils.generate_policies(::DynamicAssortmentBenchmark)
 end
 
 export DynamicAssortmentBenchmark
-public generate_sample, generate_statistical_model, generate_maximizer
-public generate_environment, generate_policies
-public reset!, is_terminated, observe, step!
 
 end
