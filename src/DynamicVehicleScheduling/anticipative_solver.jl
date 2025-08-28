@@ -48,43 +48,57 @@ function anticipative_solver(
     model_builder=highs_model,
     two_dimensional_features=env.instance.two_dimensional_features,
     reset_env=true,
-    nb_epochs=typemax(Int),
+    nb_epochs=nothing,
     seed=get_seed(env),
+    verbose=false,
 )
     if reset_env
         reset!(env; reset_rng=true, seed)
     end
 
+    @assert !is_terminated(env)
+
     start_epoch = current_epoch(env)
-    end_epoch = min(last_epoch(env), start_epoch + nb_epochs - 1)
+    end_epoch = if isnothing(nb_epochs)
+        last_epoch(env)
+    else
+        min(last_epoch(env), start_epoch + nb_epochs - 1)
+    end
     T = start_epoch:end_epoch
+    TT = (start_epoch + 1):end_epoch # horizon without start epoch
+
+    starting_state = deepcopy(env.state)
 
     request_epoch = [0]
-    for t in T
+    request_epoch = vcat(request_epoch, fill(start_epoch, customer_count(starting_state)))
+    for t in TT
         request_epoch = vcat(request_epoch, fill(t, length(scenario.indices[t])))
     end
-    customer_index = vcat(1, scenario.indices[T]...)
-    service_time = vcat(0.0, scenario.service_time[T]...)
-    start_time = vcat(0.0, scenario.start_time[T]...)
+
+    customer_index = vcat(starting_state.location_indices, scenario.indices[TT]...)
+    service_time = vcat(
+        starting_state.state_instance.service_time, scenario.service_time[TT]...
+    )
+    start_time = vcat(starting_state.state_instance.start_time, scenario.start_time[TT]...)
 
     duration = env.instance.static_instance.duration[customer_index, customer_index]
     (; epoch_duration, Δ_dispatch) = env.instance
 
     model = model_builder()
-    set_silent(model)
+    verbose || set_silent(model)
 
     nb_nodes = length(customer_index)
     job_indices = 2:nb_nodes
     epoch_indices = T
 
-    @variable(model, y[i = 1:nb_nodes, j = 1:nb_nodes, t = epoch_indices]; binary=true)
+    @variable(model, y[i=1:nb_nodes, j=1:nb_nodes, t=epoch_indices]; binary=true)
 
     @objective(
         model,
         Max,
         sum(
-            -duration[i, j] * y[i, j, t] for
-            i in 1:nb_nodes, j in 1:nb_nodes, t in epoch_indices
+            -duration[i, j] * y[i, j, t] for i in 1:nb_nodes, j in 1:nb_nodes,
+            t in epoch_indices
         )
     )
 
@@ -136,38 +150,55 @@ function anticipative_solver(
         value.(y), env, customer_index, epoch_indices
     )
 
-    epoch_indices = Vector{Int}[]
-    N = 1
-    indices = [1]
     index = 1
-    for epoch in 1:last_epoch(env)
-        M = length(scenario.indices[epoch])
-        indices = vcat(indices, (N + 1):(N + M))
-        push!(epoch_indices, copy(indices))
-        N = N + M
-        if epoch in T
-            dispatched = vcat(epoch_routes[index]...)
-            index += 1
-            indices = setdiff(indices, dispatched)
-        end
-    end
+    indices = collect(1:(customer_count(starting_state) + 1)) # current known indices in global indexing
+    epoch_indices = [indices] # store global indices present at each epoch
+    N = length(indices) # current last index known in global indexing
+    for epoch in TT # 1:last_epoch(env)
+        # remove dispatched customers from indices
+        dispatched = vcat(epoch_routes[index]...)
+        indices = setdiff(indices, dispatched)
 
-    indices = vcat(1, scenario.indices...)
-    start_time = vcat(0.0, scenario.start_time...)
-    service_time = vcat(0.0, scenario.service_time...)
+        M = length(scenario.indices[epoch]) # number of new customers in epoch
+        indices = vcat(indices, (N + 1):(N + M))  # add global indices of customers in epoch
+        push!(epoch_indices, copy(indices)) # store global indices present at each epoch
+        N = N + M
+        index += 1
+    end
+    # epoch_indices = Vector{Int}[] # store global indices present at each epoch
+    # N = 1 # current last index known in global indexing (= depot)
+    # index = 1
+    # indices = [1]
+    # for epoch in 1:last_epoch(env)
+    #     M = length(scenario.indices[epoch]) # number of new customers in epoch
+    #     indices = vcat(indices, (N + 1):(N + M))  # add global indices of customers in epoch
+    #     push!(epoch_indices, copy(indices))
+    #     N = N + M
+    #     if epoch in T #
+    #         dispatched = vcat(epoch_routes[index]...)
+    #         index += 1
+    #         indices = setdiff(indices, dispatched)
+    #     end
+    # end
+
+    # indices = vcat(1, scenario.indices...)
+    # start_time = vcat(0.0, scenario.start_time...)
+    # service_time = vcat(0.0, scenario.service_time...)
 
     dataset = map(enumerate(T)) do (i, epoch)
         routes = epoch_routes[i]
-        epoch_customers = epoch_indices[epoch]
+        epoch_customers = epoch_indices[i]
 
-        y_true = VSPSolution(
-            Vector{Int}[
-                map(idx -> findfirst(==(idx), epoch_customers), route) for route in routes
-            ];
-            max_index=length(epoch_customers),
-        ).edge_matrix
+        y_true =
+            VSPSolution(
+                Vector{Int}[
+                    map(idx -> findfirst(==(idx), epoch_customers), route) for
+                    route in routes
+                ];
+                max_index=length(epoch_customers),
+            ).edge_matrix
 
-        location_indices = indices[epoch_customers]
+        location_indices = customer_index[epoch_customers]
         new_coordinates = env.instance.static_instance.coordinate[location_indices]
         new_start_time = start_time[epoch_customers]
         new_service_time = service_time[epoch_customers]
@@ -189,8 +220,7 @@ function anticipative_solver(
             is_must_dispatch[2:end] .= true
         else
             is_must_dispatch[2:end] .=
-                planning_start_time .+ epoch_duration .+ @view(new_duration[1, 2:end]) .>
-                new_start_time[2:end]
+                planning_start_time .+ epoch_duration .+ @view(new_duration[1, 2:end]) .> new_start_time[2:end]
         end
         is_postponable[2:end] .= .!is_must_dispatch[2:end]
 
