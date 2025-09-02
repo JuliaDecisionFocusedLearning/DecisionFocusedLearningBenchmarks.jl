@@ -13,7 +13,7 @@ tutorial_files = readdir(tutorial_dir)
 md_tutorial_files = [split(file, ".")[1] * ".md" for file in tutorial_files]
 benchmark_files = [joinpath("benchmarks", e) for e in readdir(benchmarks_dir)]
 
-include_tutorial = false
+include_tutorial = true
 
 if include_tutorial
     for file in tutorial_files

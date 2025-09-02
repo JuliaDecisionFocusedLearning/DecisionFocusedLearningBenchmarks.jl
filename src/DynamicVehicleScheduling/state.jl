@@ -212,10 +212,11 @@ function decode_bitmatrix_to_routes(routes::BitMatrix)
                     current = non_depot_next[1]
                     push!(route, current)
                 else
-                    # Multiple outgoing edges - this shouldn't happen in valid routes
-                    # but we'll take the first one
-                    current = non_depot_next[1]
-                    push!(route, current)
+                    throw(
+                        ErrorException(
+                            "Invalid route: multiple outgoing edges from location $current"
+                        ),
+                    )
                 end
             end
 
