@@ -192,49 +192,7 @@ Plot a given DVSPState with routes overlaid. This version accepts routes as a Bi
 where entry (i,j) = true indicates an edge from location i to location j.
 """
 function plot_routes(state::DVSPState, routes::BitMatrix; kwargs...)
-    # Convert BitMatrix to vector of route vectors
-    n_locations = size(routes, 1)
-    route_vectors = Vector{Int}[]
-
-    # Find all outgoing edges from depot (location 1)
-    depot_destinations = findall(routes[1, :])
-
-    # For each destination from depot, reconstruct the route
-    for dest in depot_destinations
-        if dest != 1  # Skip self-loops at depot
-            route = Int[]
-            current = dest
-            push!(route, current)
-
-            # Follow the route until we return to depot
-            while true
-                # Find next location (should be unique for valid routes)
-                next_locations = findall(routes[current, :])
-
-                # Filter out the depot for intermediate steps
-                non_depot_next = filter(x -> x != 1, next_locations)
-
-                if isempty(non_depot_next)
-                    # Must return to depot, route is complete
-                    break
-                elseif length(non_depot_next) == 1
-                    # Continue to next location
-                    current = non_depot_next[1]
-                    push!(route, current)
-                else
-                    # Multiple outgoing edges - this shouldn't happen in valid routes
-                    # but we'll take the first one
-                    current = non_depot_next[1]
-                    push!(route, current)
-                end
-            end
-
-            if !isempty(route)
-                push!(route_vectors, route)
-            end
-        end
-    end
-
+    route_vectors = decode_bitmatrix_to_routes(routes)
     return plot_routes(state, route_vectors; kwargs...)
 end
 

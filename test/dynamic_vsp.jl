@@ -46,4 +46,9 @@
     y2 = maximizer(θ2; instance=instance2)
     @test size(x, 1) == 2
     @test size(x2, 1) == 14
+
+    anticipative_value, solution = generate_anticipative_solution(b, env; reset_env=true)
+    reset!(env; reset_rng=true)
+    cost = sum(step!(env, sample.y_true) for sample in solution)
+    @test isapprox(cost, anticipative_value; atol=1e-5)
 end

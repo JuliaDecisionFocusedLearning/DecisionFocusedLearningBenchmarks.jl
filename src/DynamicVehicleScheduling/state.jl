@@ -149,7 +149,8 @@ function is_feasible(state::DVSPState, routes::Vector{Vector{Int}}; verbose::Boo
     if all(is_dispatched[is_must_dispatch])
         return true
     else
-        verbose && @warn "Not all must-dispatch requests are dispatched"
+        verbose &&
+            @warn "Not all must-dispatch requests are dispatched $(is_dispatched[is_must_dispatch])"
         return false
     end
 end
@@ -178,6 +179,58 @@ function apply_routes!(
     state.is_postponable = is_postponable[undispatched_indices]
     state.location_indices = location_indices[undispatched_indices]
     return c
+end
+
+function decode_bitmatrix_to_routes(routes::BitMatrix)
+    # Convert BitMatrix to vector of route vectors
+    n_locations = size(routes, 1)
+    route_vectors = Vector{Int}[]
+
+    # Find all outgoing edges from depot (location 1)
+    depot_destinations = findall(routes[1, :])
+
+    # For each destination from depot, reconstruct the route
+    for dest in depot_destinations
+        if dest != 1  # Skip self-loops at depot
+            route = Int[]
+            current = dest
+            push!(route, current)
+
+            # Follow the route until we return to depot
+            while true
+                # Find next location (should be unique for valid routes)
+                next_locations = findall(routes[current, :])
+
+                # Filter out the depot for intermediate steps
+                non_depot_next = filter(x -> x != 1, next_locations)
+
+                if isempty(non_depot_next)
+                    # Must return to depot, route is complete
+                    break
+                elseif length(non_depot_next) == 1
+                    # Continue to next location
+                    current = non_depot_next[1]
+                    push!(route, current)
+                else
+                    throw(
+                        ErrorException(
+                            "Invalid route: multiple outgoing edges from location $current"
+                        ),
+                    )
+                end
+            end
+
+            if !isempty(route)
+                push!(route_vectors, route)
+            end
+        end
+    end
+    return route_vectors
+end
+
+function apply_routes!(state::DVSPState, routes::BitMatrix; check_feasibility::Bool=true)
+    route_vectors = decode_bitmatrix_to_routes(routes)
+    return apply_routes!(state, route_vectors; check_feasibility)
 end
 
 function cost(state::DVSPState, routes::Vector{Vector{Int}})

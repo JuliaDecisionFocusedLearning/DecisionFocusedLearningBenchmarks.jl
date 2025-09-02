@@ -232,7 +232,7 @@ Generate a vector of environments for the given dynamic benchmark and dataset.
 """
 function generate_environments(
     bench::AbstractDynamicBenchmark,
-    dataset::Vector{<:DataSample};
+    dataset::AbstractArray{<:DataSample};
     seed=nothing,
     rng=MersenneTwister(seed),
     kwargs...,

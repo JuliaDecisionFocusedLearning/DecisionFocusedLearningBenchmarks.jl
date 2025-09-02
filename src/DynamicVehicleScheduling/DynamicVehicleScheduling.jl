@@ -111,7 +111,10 @@ function Utils.generate_policies(b::DynamicVehicleSchedulingBenchmark)
     return (lazy, greedy)
 end
 
-function Utils.generate_statistical_model(b::DynamicVehicleSchedulingBenchmark)
+function Utils.generate_statistical_model(
+    b::DynamicVehicleSchedulingBenchmark; seed=nothing
+)
+    Random.seed!(seed)
     return Chain(Dense((b.two_dimensional_features ? 2 : 14) => 1), vec)
 end
 
