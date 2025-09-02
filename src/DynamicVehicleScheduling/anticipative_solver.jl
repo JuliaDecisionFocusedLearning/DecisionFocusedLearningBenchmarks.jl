@@ -165,25 +165,6 @@ function anticipative_solver(
         N = N + M
         index += 1
     end
-    # epoch_indices = Vector{Int}[] # store global indices present at each epoch
-    # N = 1 # current last index known in global indexing (= depot)
-    # index = 1
-    # indices = [1]
-    # for epoch in 1:last_epoch(env)
-    #     M = length(scenario.indices[epoch]) # number of new customers in epoch
-    #     indices = vcat(indices, (N + 1):(N + M))  # add global indices of customers in epoch
-    #     push!(epoch_indices, copy(indices))
-    #     N = N + M
-    #     if epoch in T #
-    #         dispatched = vcat(epoch_routes[index]...)
-    #         index += 1
-    #         indices = setdiff(indices, dispatched)
-    #     end
-    # end
-
-    # indices = vcat(1, scenario.indices...)
-    # start_time = vcat(0.0, scenario.start_time...)
-    # service_time = vcat(0.0, scenario.service_time...)
 
     dataset = map(enumerate(T)) do (i, epoch)
         routes = epoch_routes[i]
@@ -215,7 +196,7 @@ function anticipative_solver(
         epoch_duration = env.instance.epoch_duration
         Δ_dispatch = env.instance.Δ_dispatch
         planning_start_time = (epoch - 1) * epoch_duration + Δ_dispatch
-        if epoch == last_epoch
+        if epoch == end_epoch
             # If we are in the last epoch, all requests must be dispatched
             is_must_dispatch[2:end] .= true
         else
@@ -223,6 +204,7 @@ function anticipative_solver(
                 planning_start_time .+ epoch_duration .+ @view(new_duration[1, 2:end]) .> new_start_time[2:end]
         end
         is_postponable[2:end] .= .!is_must_dispatch[2:end]
+        # TODO: avoid code duplication with add_new_customers!
 
         state = DVSPState(;
             state_instance=static_instance,
