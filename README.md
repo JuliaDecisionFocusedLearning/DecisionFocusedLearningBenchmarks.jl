@@ -12,7 +12,9 @@ Decision-focused learning (DFL) is a paradigm that integrates machine learning p
 
 A typical DFL algorithm involves training a parametrized policy that combines a statistical predictor with an optimization component:
 
-$$x \xrightarrow[\text{Instance}]{} \text{Statistical model } \varphi_w \xrightarrow[\text{Parameters}]{\theta} \text{CO algorithm } f \xrightarrow[\text{Solution}]{y}$$
+```math
+\xrightarrow{x} \boxed{\text{Statistical model } \varphi_w} \xrightarrow{\theta} \boxed{\text{CO algorithm } f} \xrightarrow{ y}
+```
 
 Where:
 - **Instance** $x$: input data (e.g., features, context)
