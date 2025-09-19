@@ -396,6 +396,7 @@ function animate_epochs(
     show_colorbar=false,
     cost_bar_width=0.05,
     cost_bar_margin=0.02,
+    cost_bar_color_palette=:turbo,
     kwargs...,
 )
     n_epochs = length(data_samples)
@@ -604,7 +605,7 @@ function animate_epochs(
                 label="",
             )
 
-            cmap = Plots.cgrad(:turbo)   # or :plasma, :inferno, etc.
+            cmap = Plots.cgrad(cost_bar_color_palette)
             # Draw the filled portion with solid color
             if filled_height > 0
                 # Get a color at a value between 0 and 1
@@ -629,39 +630,10 @@ function animate_epochs(
                 )
             end
 
-            # Add cost labels
-            # plot!(
-            #     fig,
-            #     [bar_x_start - 0.01 * x_range],
-            #     [bar_y_start];
-            #     seriestype=:scatter,
-            #     markersize=0,
-            #     label="",
-            #     annotations=(
-            #         bar_x_start - 0.02 * x_range, bar_y_start, ("0", :right, guidefontsize)
-            #     ),
-            # )
-
-            # if max_cost > 0
-            #     plot!(
-            #         fig,
-            #         [bar_x_start - 0.01 * x_range],
-            #         [bar_y_end];
-            #         seriestype=:scatter,
-            #         markersize=0,
-            #         label="",
-            #         annotations=(
-            #             bar_x_start - 0.02 * x_range,
-            #             bar_y_end,
-            #             (@sprintf("%.1f", max_cost), :right, guidefontsize),
-            #         ),
-            #     )
-            # end
-
             # Add current cost value
             cost_text_y = bar_y_start + filled_height + 0.02 * y_range
             if cost_text_y > bar_y_end
-                cost_text_y = bar_y_end #+ 0.01 * y_range
+                cost_text_y = bar_y_end
             end
 
             plot!(
@@ -672,7 +644,7 @@ function animate_epochs(
                 markersize=0,
                 label="",
                 annotations=(
-                    bar_x_start - 0.04 * x_range,#(bar_x_start + bar_x_end) / 2,
+                    bar_x_start - 0.04 * x_range,
                     cost_text_y,
                     (@sprintf("%.1f", current_cost), :center, guidefontsize),
                 ),
