@@ -13,7 +13,7 @@ using IterTools: partition
 using JSON
 using JuMP
 using Plots: plot, plot!, scatter!, @animate, Plots, gif
-using Printf: @printf
+using Printf: @printf, @sprintf
 using Random: Random, AbstractRNG, MersenneTwister, seed!, randperm
 using Requires: @require
 using Statistics: mean, quantile

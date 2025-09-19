@@ -17,6 +17,7 @@ function plot_state(
     postponable_color=:lightblue,
     show_axis_labels=true,
     markerstrokewidth=0.5,
+    show_colorbar=false,
     kwargs...,
 )
     # Get coordinates from the state instance
@@ -60,35 +61,39 @@ function plot_state(
     # Plot must-dispatch customers
     if sum(state.is_must_dispatch) > 0
         must_dispatch_indices = findall(state.is_must_dispatch)
-        scatter!(
-            fig,
-            x[must_dispatch_indices],
-            y[must_dispatch_indices];
-            label="Must-dispatch requests",
-            markercolor=must_dispatch_color,
-            marker=:star5,
-            markersize=customer_markersize,
-            marker_z=start_times[must_dispatch_indices],
-            colormap=:plasma,
-            markerstrokewidth=markerstrokewidth,
+        scatter_args = Dict(
+            :label => "Must-dispatch requests",
+            :markercolor => must_dispatch_color,
+            :marker => :star5,
+            :markersize => customer_markersize,
+            :markerstrokewidth => markerstrokewidth,
         )
+
+        if show_colorbar
+            scatter_args[:marker_z] = start_times[must_dispatch_indices]
+            scatter_args[:colormap] = :plasma
+        end
+
+        scatter!(fig, x[must_dispatch_indices], y[must_dispatch_indices]; scatter_args...)
     end
 
     # Plot postponable customers
     if sum(state.is_postponable) > 0
         postponable_indices = findall(state.is_postponable)
-        scatter!(
-            fig,
-            x[postponable_indices],
-            y[postponable_indices];
-            label="Postponable requests",
-            markercolor=postponable_color,
-            marker=:utriangle,
-            markersize=customer_markersize,
-            marker_z=start_times[postponable_indices],
-            colormap=:viridis,
-            markerstrokewidth=markerstrokewidth,
+        scatter_args = Dict(
+            :label => "Postponable requests",
+            :markercolor => postponable_color,
+            :marker => :utriangle,
+            :markersize => customer_markersize,
+            :markerstrokewidth => markerstrokewidth,
         )
+
+        if show_colorbar
+            scatter_args[:marker_z] = start_times[postponable_indices]
+            scatter_args[:colormap] = :viridis
+        end
+
+        scatter!(fig, x[postponable_indices], y[postponable_indices]; scatter_args...)
     end
 
     return fig
@@ -387,6 +392,10 @@ function animate_epochs(
     legendfontsize=12,
     tickfontsize=11,
     show_axis_labels=true,
+    show_cost_bar=true,
+    show_colorbar=false,
+    cost_bar_width=0.05,
+    cost_bar_margin=0.02,
     kwargs...,
 )
     n_epochs = length(data_samples)
@@ -397,10 +406,19 @@ function animate_epochs(
 
     # Calculate global limits for consistent scaling
     all_coordinates = []
+    epoch_costs = Float64[]
     for sample in data_samples
         if !isnothing(sample.instance)
             coords = coordinate(sample.instance)
             append!(all_coordinates, coords)
+            # Calculate cost for this epoch if routes exist
+            if sample.y_true isa BitMatrix
+                routes = decode_bitmatrix_to_routes(sample.y_true)
+            else
+                routes = sample.y_true isa Vector{Int} ? [sample.y_true] : sample.y_true
+            end
+            epoch_cost = cost(sample.instance, routes)
+            push!(epoch_costs, epoch_cost)
         end
     end
 
@@ -408,16 +426,29 @@ function animate_epochs(
         error("No valid coordinates found in data samples")
     end
 
+    # Calculate cumulative costs for the cost bar
+    cumulative_costs = cumsum(epoch_costs)
+    max_cost = isempty(cumulative_costs) ? 1.0 : maximum(cumulative_costs)
+
     xlims = (
         minimum(p.x for p in all_coordinates) - margin,
         maximum(p.x for p in all_coordinates) + margin,
     )
 
-    # Add extra margin at the top for legend space
+    # Add extra margin at the top for legend space and cost bar
     y_min = minimum(p.y for p in all_coordinates) - margin
     y_max = maximum(p.y for p in all_coordinates) + margin
     y_range = y_max - y_min
     legend_margin = y_range * legend_margin_factor
+
+    # Adjust x-axis if showing cost bar
+    if show_cost_bar
+        x_min, x_max = xlims
+        x_range = x_max - x_min
+        cost_bar_space = x_range * (cost_bar_width + cost_bar_margin)
+        xlims = (x_min, x_max + cost_bar_space)
+    end
+
     ylims = (y_min, y_max + legend_margin)
 
     # Calculate global color limits
@@ -472,7 +503,7 @@ function animate_epochs(
 
         if isnothing(state)
             # Empty frame for missing data
-            plot(;
+            fig = plot(;
                 xlims=xlims,
                 ylims=ylims,
                 title="Epoch $epoch_idx (No Data)",
@@ -486,7 +517,7 @@ function animate_epochs(
         else
             if frame_type == :routes
                 # Show state with routes
-                plot_routes(
+                fig = plot_routes(
                     state,
                     sample.y_true;
                     xlims=xlims,
@@ -500,12 +531,13 @@ function animate_epochs(
                     show_axis_labels=show_axis_labels,
                     markerstrokewidth=0.5,
                     show_route_labels=false,
+                    show_colorbar=show_colorbar,
                     size=figsize,
                     kwargs...,
                 )
             else # frame_type == :state
                 # Show state only
-                plot_state(
+                fig = plot_state(
                     state;
                     xlims=xlims,
                     ylims=ylims,
@@ -517,11 +549,152 @@ function animate_epochs(
                     tickfontsize=tickfontsize,
                     show_axis_labels=show_axis_labels,
                     markerstrokewidth=0.5,
+                    show_colorbar=show_colorbar,
                     size=figsize,
                     kwargs...,
                 )
             end
         end
+
+        # Add cost bar if requested
+        if show_cost_bar && !isempty(cumulative_costs)
+            # Calculate cost bar position on the right side of the plot
+            x_min, x_max = xlims
+            x_range = x_max - x_min
+            bar_x_start = x_max - cost_bar_width * x_range
+            bar_x_end = x_max - cost_bar_margin * x_range
+
+            y_min, y_max = ylims
+            y_range = y_max - y_min
+            bar_y_start = y_min + 0.1 * y_range
+            bar_y_end = y_max - 0.1 * y_range
+            bar_height = bar_y_end - bar_y_start
+
+            # Calculate current cumulative cost based on frame type
+            # Cost increases only when routes are displayed (dispatched)
+            current_cost = 0.0
+
+            # Go through all frames up to the current one to see which epochs have had routes dispatched
+            for frame_i in 1:frame_idx
+                frame_epoch, frame_frame_type = frame_plan[frame_i]
+
+                # Add cost only when we encounter a routes frame
+                if frame_frame_type == :routes && frame_epoch <= length(epoch_costs)
+                    current_cost += epoch_costs[frame_epoch]
+                end
+            end
+
+            # Calculate filled height
+            if max_cost > 0
+                filled_height = (current_cost / max_cost) * bar_height
+            else
+                filled_height = 0.0
+            end
+
+            # Draw the cost bar background (empty bar)
+            plot!(
+                fig,
+                [bar_x_start, bar_x_end, bar_x_end, bar_x_start, bar_x_start],
+                [bar_y_start, bar_y_start, bar_y_end, bar_y_end, bar_y_start];
+                seriestype=:shape,
+                color=:white,
+                alpha=0.8,
+                linecolor=:black,
+                linewidth=2,
+                label="",
+            )
+
+            cmap = Plots.cgrad(:turbo)   # or :plasma, :inferno, etc.
+            # Draw the filled portion with solid color
+            if filled_height > 0
+                # Get a color at a value between 0 and 1
+                ratio = current_cost / max_cost
+                color_at_val = Plots.get(cmap, ratio)
+                plot!(
+                    fig,
+                    [bar_x_start, bar_x_end, bar_x_end, bar_x_start, bar_x_start],
+                    [
+                        bar_y_start,
+                        bar_y_start,
+                        bar_y_start + filled_height,
+                        bar_y_start + filled_height,
+                        bar_y_start,
+                    ];
+                    seriestype=:shape,
+                    color=color_at_val,
+                    alpha=0.7,
+                    linecolor=:darkred,
+                    linewidth=1,
+                    label="",
+                )
+            end
+
+            # Add cost labels
+            # plot!(
+            #     fig,
+            #     [bar_x_start - 0.01 * x_range],
+            #     [bar_y_start];
+            #     seriestype=:scatter,
+            #     markersize=0,
+            #     label="",
+            #     annotations=(
+            #         bar_x_start - 0.02 * x_range, bar_y_start, ("0", :right, guidefontsize)
+            #     ),
+            # )
+
+            # if max_cost > 0
+            #     plot!(
+            #         fig,
+            #         [bar_x_start - 0.01 * x_range],
+            #         [bar_y_end];
+            #         seriestype=:scatter,
+            #         markersize=0,
+            #         label="",
+            #         annotations=(
+            #             bar_x_start - 0.02 * x_range,
+            #             bar_y_end,
+            #             (@sprintf("%.1f", max_cost), :right, guidefontsize),
+            #         ),
+            #     )
+            # end
+
+            # Add current cost value
+            cost_text_y = bar_y_start + filled_height + 0.02 * y_range
+            if cost_text_y > bar_y_end
+                cost_text_y = bar_y_end #+ 0.01 * y_range
+            end
+
+            plot!(
+                fig,
+                [bar_x_start + (bar_x_end - bar_x_start) / 2],
+                [cost_text_y];
+                seriestype=:scatter,
+                markersize=0,
+                label="",
+                annotations=(
+                    bar_x_start - 0.04 * x_range,#(bar_x_start + bar_x_end) / 2,
+                    cost_text_y,
+                    (@sprintf("%.1f", current_cost), :center, guidefontsize),
+                ),
+            )
+
+            # Add cost bar title
+            plot!(
+                fig,
+                [(bar_x_start + bar_x_end) / 2],
+                [bar_y_end + 0.05 * y_range];
+                seriestype=:scatter,
+                markersize=0,
+                label="",
+                annotations=(
+                    (bar_x_start + bar_x_end) / 2,
+                    bar_y_end + 0.05 * y_range,
+                    ("Cost", :center, guidefontsize),
+                ),
+            )
+        end
+
+        fig
     end
 
     # Save as GIF
@@ -529,138 +702,3 @@ function animate_epochs(
 
     return anim
 end
-
-# """
-# $TYPEDSIGNATURES
-
-# Plot the environment of a DVSPEnv, restricted to the given `epoch_indices` (all epoch if not given).
-# """
-# function plot_environment(
-#     env::DVSPEnv;
-#     customer_markersize=4,
-#     depot_markersize=7,
-#     alpha_depot=0.8,
-#     depot_color=:lightgreen,
-#     epoch_indices=nothing,
-#     kwargs...,
-# )
-#     draw_all_epochs!(env)
-
-#     epoch_appearance = env.request_epoch
-#     coordinates = coordinate(get_state(env))
-
-#     epoch_indices = isnothing(epoch_indices) ? get_epoch_indices(env) : epoch_indices
-
-#     xlims = (minimum(c.x for c in coordinates), maximum(c.x for c in coordinates))
-#     ylims = (minimum(c.y for c in coordinates), maximum(c.y for c in coordinates))
-
-#     fig = plot(;
-#         legend=:topleft,
-#         xlabel="x coordinate",
-#         ylabel="y coordinate",
-#         xlims,
-#         ylims,
-#         kwargs...,
-#     )
-
-#     for epoch in epoch_indices
-#         requests = findall(epoch_appearance .== epoch)
-#         x = [coordinates[request].x for request in requests]
-#         y = [coordinates[request].y for request in requests]
-#         scatter!(
-#             fig, x, y; label="Epoch $epoch", marker=:circle, markersize=customer_markersize
-#         )
-#     end
-#     scatter!(
-#         fig,
-#         [coordinates[1].x],
-#         [coordinates[1].y];
-#         label="Depot",
-#         markercolor=depot_color,
-#         marker=:rect,
-#         markersize=depot_markersize,
-#         alpha=alpha_depot,
-#     )
-
-#     return fig
-# end
-
-# """
-# $TYPEDSIGNATURES
-
-# Plot the given `routes`` for a VSP `state`.
-# """
-# function plot_epoch(state::DVSPState, routes; kwargs...)
-#     (; coordinate, start_time) = state.instance
-#     x_depot = coordinate[1].x
-#     y_depot = coordinate[1].y
-#     X = [p.x for p in coordinate]
-#     Y = [p.y for p in coordinate]
-#     markersize = 5
-#     fig = plot(;
-#         legend=:topleft, xlabel="x", ylabel="y", clim=(0.0, maximum(start_time)), kwargs...
-#     )
-#     for route in routes
-#         x_points = vcat(x_depot, X[route], x_depot)
-#         y_points = vcat(y_depot, Y[route], y_depot)
-#         plot!(fig, x_points, y_points; label=nothing)
-#     end
-#     scatter!(
-#         fig,
-#         [x_depot],
-#         [y_depot];
-#         label="depot",
-#         markercolor=:lightgreen,
-#         markersize,
-#         marker=:rect,
-#     )
-#     if sum(state.is_postponable) > 0
-#         scatter!(
-#             fig,
-#             X[state.is_postponable],
-#             Y[state.is_postponable];
-#             label="Postponable customers",
-#             marker_z=start_time[state.is_postponable],
-#             markersize,
-#             colormap=:turbo,
-#             marker=:utriangle,
-#         )
-#     end
-#     if sum(state.is_must_dispatch) > 0
-#         scatter!(
-#             fig,
-#             X[state.is_must_dispatch],
-#             Y[state.is_must_dispatch];
-#             label="Must-dispatch customers",
-#             marker_z=start_time[state.is_must_dispatch],
-#             markersize,
-#             colormap=:turbo,
-#             marker=:star5,
-#         )
-#     end
-#     return fig
-# end
-
-# """
-# $TYPEDSIGNATURES
-
-# Create a plot of routes for each epoch.
-# """
-# function plot_routes(env::DVSPEnv, routes; epoch_indices=nothing, kwargs...)
-#     reset!(env)
-#     epoch_indices = isnothing(epoch_indices) ? get_epoch_indices(env) : epoch_indices
-
-#     coordinates = env.config.static_instance.coordinate
-#     xlims = (minimum(c.x for c in coordinates), maximum(c.x for c in coordinates))
-#     ylims = (minimum(c.y for c in coordinates), maximum(c.y for c in coordinates))
-
-#     figs = map(epoch_indices) do epoch
-#         s = next_epoch!(env)
-#         fig = plot_epoch(
-#             s, state_route_from_env_routes(env, routes[epoch]); xlims, ylims, kwargs...
-#         )
-#         apply_decision!(env, routes[epoch])
-#         return fig
-#     end
-#     return figs
-# end
