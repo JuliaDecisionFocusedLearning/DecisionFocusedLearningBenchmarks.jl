@@ -231,7 +231,13 @@ The returned dictionary contains:
 This lets plotting code build figures without depending on plotting internals.
 """
 function build_plot_data(data_samples::Vector{<:DataSample})
-    return [build_state_data(sample.instance.state) for sample in data_samples]
+    state_data = [build_state_data(sample.instance.state) for sample in data_samples]
+    rewards = [sample.instance.reward for sample in data_samples]
+    routess = [sample.y_true for sample in data_samples]
+    return [
+        (; state..., reward, routes) for
+        (state, reward, routes) in zip(state_data, rewards, routess)
+    ]
 end
 
 """
@@ -385,34 +391,24 @@ function animate_epochs(
     end
 
     pd = build_plot_data(data_samples)
-    n_epochs = pd.n_epochs
-    # Build all_coordinates from pd.coordinates
-    all_coordinates = []
-    for coords in pd.coordinates
-        for c in coords
-            push!(all_coordinates, (; x=c[1], y=c[2]))
-        end
-    end
-    epoch_costs = copy(pd.epoch_costs)
+    epoch_costs = [-sample.instance.reward for sample in data_samples]
 
-    if isempty(all_coordinates)
-        error("No valid coordinates found in data samples")
-    end
+    # Calculate global xlims and ylims from all states
+    x_min = minimum(min(data.x_depot, minimum(data.x_customers)) for data in pd)
+    x_max = maximum(max(data.x_depot, maximum(data.x_customers)) for data in pd)
+    y_min = minimum(min(data.y_depot, minimum(data.y_customers)) for data in pd)
+    y_max = maximum(max(data.y_depot, maximum(data.y_customers)) for data in pd)
 
-    # Calculate cumulative costs for the cost bar
-    cumulative_costs = cumsum(epoch_costs)
-    max_cost = isempty(cumulative_costs) ? 1.0 : maximum(cumulative_costs)
-
-    xlims = (
-        minimum(p.x for p in all_coordinates) - margin,
-        maximum(p.x for p in all_coordinates) + margin,
-    )
-
-    # Add extra margin at the top for legend space and cost bar
-    y_min = minimum(p.y for p in all_coordinates) - margin
-    y_max = maximum(p.y for p in all_coordinates) + margin
-    y_range = y_max - y_min
+    xlims = (x_min - margin, x_max + margin)
+    # Add extra margin at the top for legend space
+    y_range = y_max - y_min + 2 * margin
     legend_margin = y_range * legend_margin_factor
+    ylims = (y_min - margin, y_max + margin + legend_margin)
+
+    # Calculate global color limits for consistent scaling across subplots
+    min_start_time = minimum(minimum(data.start_times) for data in pd)
+    max_start_time = maximum(maximum(data.start_times) for data in pd)
+    clims = (min_start_time, max_start_time)
 
     # Adjust x-axis if showing cost bar
     if show_cost_bar
@@ -422,48 +418,13 @@ function animate_epochs(
         xlims = (x_min, x_max + cost_bar_space)
     end
 
-    ylims = (y_min, y_max + legend_margin)
-
-    # Calculate global color limits
-    all_start_times = []
-    for sample in data_samples
-        if !isnothing(sample.instance.state)
-            times = start_time(sample.instance.state)
-            append!(all_start_times, times)
-        end
-    end
-
-    clims = if !isempty(all_start_times)
-        (minimum(all_start_times), maximum(all_start_times))
-    else
-        (0.0, 1.0)
-    end
-
-    # Helper function to check if routes exist and are non-empty
-    function has_routes(routes)
-        if isnothing(routes)
-            return false
-        elseif routes isa Vector{Vector{Int}}
-            return any(!isempty(route) for route in routes)
-        elseif routes isa Vector{Int}
-            return !isempty(routes)
-        elseif routes isa BitMatrix
-            return any(routes)
-        else
-            return false
-        end
-    end
-
-    # Create frame plan: determine which epochs have routes
+    # Create interleaved frame plan: always include a state frame and a routes frame
+    # for every epoch. The routes-frame will render a 'no routes' message when
+    # no routes are present, which keeps timing consistent and the code simpler.
     frame_plan = []
-    for (epoch_idx, sample) in enumerate(data_samples)
-        # Always add state frame
+    for (epoch_idx, _) in enumerate(data_samples)
         push!(frame_plan, (epoch_idx, :state))
-
-        # Add routes frame only if routes exist
-        if has_routes(sample.y_true)
-            push!(frame_plan, (epoch_idx, :routes))
-        end
+        push!(frame_plan, (epoch_idx, :routes))
     end
 
     total_frames = length(frame_plan)
@@ -474,63 +435,47 @@ function animate_epochs(
         sample = data_samples[epoch_idx]
         state = sample.instance.state
 
-        if isnothing(state)
-            # Empty frame for missing data
-            fig = plot(;
+        if frame_type == :routes
+            fig = plot_routes(
+                state,
+                sample.y_true;
                 xlims=xlims,
                 ylims=ylims,
-                title="Epoch $epoch_idx (No Data)",
+                clims=clims,
+                title="Epoch $(state.current_epoch) - Routes Dispatched",
                 titlefontsize=titlefontsize,
                 guidefontsize=guidefontsize,
+                legendfontsize=legendfontsize,
                 tickfontsize=tickfontsize,
-                legend=false,
+                show_axis_labels=show_axis_labels,
+                markerstrokewidth=0.5,
+                show_route_labels=false,
+                show_colorbar=show_colorbar,
                 size=figsize,
                 kwargs...,
             )
-        else
-            if frame_type == :routes
-                # Show state with routes
-                fig = plot_routes(
-                    state,
-                    sample.y_true;
-                    xlims=xlims,
-                    ylims=ylims,
-                    clims=clims,
-                    title="Epoch $(state.current_epoch) - Routes Dispatched",
-                    titlefontsize=titlefontsize,
-                    guidefontsize=guidefontsize,
-                    legendfontsize=legendfontsize,
-                    tickfontsize=tickfontsize,
-                    show_axis_labels=show_axis_labels,
-                    markerstrokewidth=0.5,
-                    show_route_labels=false,
-                    show_colorbar=show_colorbar,
-                    size=figsize,
-                    kwargs...,
-                )
-            else # frame_type == :state
-                # Show state only
-                fig = plot_state(
-                    state;
-                    xlims=xlims,
-                    ylims=ylims,
-                    clims=clims,
-                    title="Epoch $(state.current_epoch) - Available Requests",
-                    titlefontsize=titlefontsize,
-                    guidefontsize=guidefontsize,
-                    legendfontsize=legendfontsize,
-                    tickfontsize=tickfontsize,
-                    show_axis_labels=show_axis_labels,
-                    markerstrokewidth=0.5,
-                    show_colorbar=show_colorbar,
-                    size=figsize,
-                    kwargs...,
-                )
-            end
+        else # frame_type == :state
+            # Show state only
+            fig = plot_state(
+                state;
+                xlims=xlims,
+                ylims=ylims,
+                clims=clims,
+                title="Epoch $(state.current_epoch) - Available Requests",
+                titlefontsize=titlefontsize,
+                guidefontsize=guidefontsize,
+                legendfontsize=legendfontsize,
+                tickfontsize=tickfontsize,
+                show_axis_labels=show_axis_labels,
+                markerstrokewidth=0.5,
+                show_colorbar=show_colorbar,
+                size=figsize,
+                kwargs...,
+            )
         end
 
         # Add cost bar if requested
-        if show_cost_bar && !isempty(cumulative_costs)
+        if show_cost_bar
             # Calculate cost bar position on the right side of the plot
             x_min, x_max = xlims
             x_range = x_max - x_min
@@ -558,6 +503,7 @@ function animate_epochs(
             end
 
             # Calculate filled height
+            max_cost = sum(epoch_costs)
             if max_cost > 0
                 filled_height = (current_cost / max_cost) * bar_height
             else
@@ -815,6 +761,7 @@ function animate_solutions_side_by_side(
                         legendfontsize=legendfontsize,
                         tickfontsize=tickfontsize,
                         show_axis_labels=show_axis_labels,
+                        show_colorbar=false,
                         markerstrokewidth=0.5,
                         size=(floor(Int, figsize[1] / n_solutions), figsize[2]),
                         kwargs...,
