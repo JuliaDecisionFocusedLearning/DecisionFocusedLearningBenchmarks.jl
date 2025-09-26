@@ -1,5 +1,51 @@
-function plot_instancee(env::DVSPEnv; kwargs...)
+"""
+Typed container for plot-ready data.
+"""
+struct PlotData
+    n_epochs::Int
+    coordinates::Vector{Vector{Tuple{Float64,Float64}}}
+    start_times::Vector{Vector{Float64}}
+    node_types::Vector{Vector{Symbol}}
+    routes::Vector{Vector{Vector{Int}}}
+    epoch_costs::Vector{Float64}
+end
+
+function PlotData(d::Dict)
+    return PlotData(
+        d[:n_epochs],
+        d[:coordinates],
+        d[:start_times],
+        d[:node_types],
+        d[:routes],
+        d[:epoch_costs],
+    )
+end
+
+function plot_instance(env::DVSPEnv; kwargs...)
     return plot_instance(env.instance.static_instance; kwargs...)
+end
+
+function build_state_data(state::DVSPState)
+    coords = coordinate(state)
+    x = [p.x for p in coords]
+    y = [p.y for p in coords]
+    x_depot = x[1]
+    y_depot = y[1]
+    x_customers = x[2:end]
+    y_customers = y[2:end]
+    start_times_customers = start_time(state)[2:end]
+    service_times_customers = service_time(state)[2:end]
+    must_customers = state.is_must_dispatch[2:end]
+
+    return (;
+        x_depot=x_depot,
+        y_depot=y_depot,
+        x_customers=x_customers,
+        y_customers=y_customers,
+        is_must_dispatch=must_customers,
+        start_times=start_times_customers,
+        service_times=service_times_customers,
+    )
 end
 
 """
@@ -13,22 +59,20 @@ function plot_state(
     depot_markersize=8,
     alpha_depot=0.8,
     depot_color=:lightgreen,
+    depot_marker=:rect,
     must_dispatch_color=:red,
     postponable_color=:lightblue,
+    must_dispatch_marker=:star5,
+    postponable_marker=:utriangle,
     show_axis_labels=true,
     markerstrokewidth=0.5,
     show_colorbar=false,
     kwargs...,
 )
-    # Get coordinates from the state instance
-    coordinates = coordinate(state)
-    start_times = start_time(state)
+    (; x_depot, y_depot, x_customers, y_customers, is_must_dispatch, start_times, service_times) = build_state_data(
+        state
+    )
 
-    # Extract x and y coordinates
-    x = [p.x for p in coordinates]
-    y = [p.y for p in coordinates]
-
-    # Create the plot
     plot_args = Dict(
         :legend => :topleft, :title => "DVSP State - Epoch $(state.current_epoch)"
     )
@@ -45,56 +89,57 @@ function plot_state(
 
     fig = plot(; plot_args...)
 
-    # Plot depot (always the first coordinate)
+    # Display depot
     scatter!(
         fig,
-        [x[1]],
-        [y[1]];
+        [x_depot],
+        [y_depot];
         label="Depot",
         markercolor=depot_color,
-        marker=:rect,
+        marker=depot_marker,
         markersize=depot_markersize,
         alpha=alpha_depot,
         markerstrokewidth=markerstrokewidth,
     )
 
-    # Plot must-dispatch customers
-    if sum(state.is_must_dispatch) > 0
-        must_dispatch_indices = findall(state.is_must_dispatch)
-        scatter_args = Dict(
-            :label => "Must-dispatch requests",
-            :markercolor => must_dispatch_color,
-            :marker => :star5,
-            :markersize => customer_markersize,
-            :markerstrokewidth => markerstrokewidth,
-        )
+    scatter_must_dispatch_args = Dict(
+        :label => "Must-dispatch requests",
+        :markercolor => must_dispatch_color,
+        :marker => must_dispatch_marker,
+        :markersize => customer_markersize,
+        :markerstrokewidth => markerstrokewidth,
+    )
 
-        if show_colorbar
-            scatter_args[:marker_z] = start_times[must_dispatch_indices]
-            scatter_args[:colormap] = :plasma
-        end
+    scatter_postponable_args = Dict(
+        :label => "Postponable requests",
+        :markercolor => postponable_color,
+        :marker => postponable_marker,
+        :markersize => customer_markersize,
+        :markerstrokewidth => markerstrokewidth,
+    )
 
-        scatter!(fig, x[must_dispatch_indices], y[must_dispatch_indices]; scatter_args...)
+    scatter_args = Dict()
+    if show_colorbar
+        scatter_args[:marker_z] = start_times[must_dispatch_indices]
+        scatter_args[:colormap] = :plasma
     end
 
-    # Plot postponable customers
-    if sum(state.is_postponable) > 0
-        postponable_indices = findall(state.is_postponable)
-        scatter_args = Dict(
-            :label => "Postponable requests",
-            :markercolor => postponable_color,
-            :marker => :utriangle,
-            :markersize => customer_markersize,
-            :markerstrokewidth => markerstrokewidth,
-        )
+    # Display customers, separating must-dispatch and postponable
+    scatter!(
+        fig,
+        x_customers[is_must_dispatch],
+        y_customers[is_must_dispatch];
+        scatter_must_dispatch_args...,
+        scatter_args...,
+    )
 
-        if show_colorbar
-            scatter_args[:marker_z] = start_times[postponable_indices]
-            scatter_args[:colormap] = :viridis
-        end
-
-        scatter!(fig, x[postponable_indices], y[postponable_indices]; scatter_args...)
-    end
+    scatter!(
+        fig,
+        x_customers[.!is_must_dispatch],
+        y_customers[.!is_must_dispatch];
+        scatter_postponable_args...,
+        scatter_args...,
+    )
 
     return fig
 end
@@ -109,28 +154,28 @@ indices of locations visited by that route (excluding the depot).
 function plot_routes(
     state::DVSPState,
     routes::Vector{Vector{Int}};
-    # route_colors=nothing,
+    route_color=nothing,
     route_linewidth=2,  # Increased from 2 to 3
-    # route_alpha=0.7,
-    show_route_labels=true,
+    route_alpha=0.8,
     kwargs...,
 )
     # Start with the basic state plot
     fig = plot_state(state; kwargs...)
 
-    # Get coordinates for route plotting
-    coordinates = coordinate(state)
-    x = [p.x for p in coordinates]
-    y = [p.y for p in coordinates]
+    (; x_depot, y_depot, x_customers, y_customers, is_must_dispatch, start_times, service_times) = build_state_data(
+        state
+    )
 
-    # Depot coordinates (always first)
-    x_depot = x[1]
-    y_depot = y[1]
+    x = vcat(x_depot, x_customers)
+    y = vcat(y_depot, y_customers)
 
-    # Default route colors if not provided
-    # if isnothing(route_colors)
-    #     route_colors = [:blue, :purple, :orange, :brown, :pink, :gray, :olive, :cyan]
-    # end
+    plot_args = Dict(
+        :linewidth => route_linewidth, :alpha => route_alpha, :z_order => :back;
+    )
+
+    if !isnothing(route_color)
+        plot_args[:color] = route_color
+    end
 
     # Plot each route
     for (route_idx, route) in enumerate(routes)
@@ -139,56 +184,42 @@ function plot_routes(
             route_x = vcat(x_depot, x[route], x_depot)
             route_y = vcat(y_depot, y[route], y_depot)
 
-            # Select color for this route
-            # color = route_colors[(route_idx - 1) % length(route_colors) + 1]
-
-            # Plot the route with more visible styling
-            label = show_route_labels ? "Route $route_idx" : nothing
-            plot!(
-                fig,
-                route_x,
-                route_y;
-                # color=:black,
-                linewidth=route_linewidth,
-                alpha=1.0,  # Make routes fully opaque
-                label=label,
-                linestyle=:solid,
-            )
+            plot!(fig, route_x, route_y; label=false, plot_args...)
         end
     end
 
     return fig
 end
 
-"""
-$TYPEDSIGNATURES
+# """
+# $TYPEDSIGNATURES
 
-Plot a given DVSPState with routes overlaid. This version accepts routes as a single
-vector where routes are separated by depot visits (index 1).
-"""
-function plot_routes(state::DVSPState, routes::Vector{Int}; kwargs...)
-    # Convert single route vector to vector of route vectors
-    route_vectors = Vector{Int}[]
-    current_route = Int[]
+# Plot a given DVSPState with routes overlaid. This version accepts routes as a single
+# vector where routes are separated by depot visits (index 1).
+# """
+# function plot_routes(state::DVSPState, routes::Vector{Int}; kwargs...)
+#     # Convert single route vector to vector of route vectors
+#     route_vectors = Vector{Int}[]
+#     current_route = Int[]
 
-    for location in routes
-        if location == 1  # Depot visit indicates end of route
-            if !isempty(current_route)
-                push!(route_vectors, copy(current_route))
-                empty!(current_route)
-            end
-        else
-            push!(current_route, location)
-        end
-    end
+#     for location in routes
+#         if location == 1  # Depot visit indicates end of route
+#             if !isempty(current_route)
+#                 push!(route_vectors, copy(current_route))
+#                 empty!(current_route)
+#             end
+#         else
+#             push!(current_route, location)
+#         end
+#     end
 
-    # Add the last route if it doesn't end with depot
-    if !isempty(current_route)
-        push!(route_vectors, current_route)
-    end
+#     # Add the last route if it doesn't end with depot
+#     if !isempty(current_route)
+#         push!(route_vectors, current_route)
+#     end
 
-    return plot_routes(state, route_vectors; kwargs...)
-end
+#     return plot_routes(state, route_vectors; kwargs...)
+# end
 
 """
 $TYPEDSIGNATURES
@@ -199,6 +230,156 @@ where entry (i,j) = true indicates an edge from location i to location j.
 function plot_routes(state::DVSPState, routes::BitMatrix; kwargs...)
     route_vectors = decode_bitmatrix_to_routes(routes)
     return plot_routes(state, route_vectors; kwargs...)
+end
+
+"""
+Return a Dict with plot-ready information extracted from a vector of DataSample objects.
+
+
+The returned dictionary contains:
+- :n_epochs => Int
+- :coordinates => Vector{Vector{Tuple{Float64,Float64}}} (per-epoch list of (x,y) tuples, empty if instance missing)
+- :start_times => Vector{Vector{Float64}} (per-epoch start times, empty if instance missing)
+- :node_types => Vector{Vector{Symbol}} (per-epoch node-type labels aligned with coordinates)
+- :routes => Vector{Vector{Vector{Int}}} (per-epoch normalized routes; empty vector when no routes)
+- :epoch_costs => Vector{Float64} (per-epoch cost; NaN if not computable)
+
+This lets plotting code build figures without depending on plotting internals.
+"""
+function build_plot_data(data_samples::Vector{<:DataSample})
+    n = length(data_samples)
+
+    coordinates = Vector{Vector{Tuple{Float64,Float64}}}(undef, n)
+    start_times = Vector{Vector{Float64}}(undef, n)
+    # node_types[i] is a Vector{Symbol} with one entry per coordinate indicating
+    # :depot, :must_dispatch, :postponable, or :customer
+    node_types = Vector{Vector{Symbol}}(undef, n)
+    routes = Vector{Vector{Vector{Int}}}(undef, n)
+    epoch_costs = Float64[]
+
+    for (i, sample) in enumerate(data_samples)
+        if isnothing(sample.instance)
+            coordinates[i] = Tuple{Float64,Float64}[]
+            start_times[i] = Float64[]
+            routes[i] = Vector{Vector{Int}}()
+            push!(epoch_costs, NaN)
+            continue
+        end
+
+        # Coordinates and start times
+        state = sample.instance
+        coords = coordinate(state)
+        # convert Point{T} to Tuple{Float64,Float64}
+        coordinates[i] = [(p.x, p.y) for p in coords]
+        start_times[i] = start_time(state)
+
+        # Build per-node type vector aligned with coords (index 1 == depot)
+        types = Symbol[]
+        ncoords = length(coords)
+        for j in 1:ncoords
+            if j == 1
+                push!(types, :depot)
+            else
+                # Guard presence of flags on state; default to :customer
+                is_must =
+                    hasproperty(state, :is_must_dispatch) &&
+                    j <= length(state.is_must_dispatch) &&
+                    state.is_must_dispatch[j]
+                is_post =
+                    hasproperty(state, :is_postponable) &&
+                    j <= length(state.is_postponable) &&
+                    state.is_postponable[j]
+                if is_must
+                    push!(types, :must_dispatch)
+                elseif is_post
+                    push!(types, :postponable)
+                else
+                    push!(types, :customer)
+                end
+            end
+        end
+        node_types[i] = types
+
+        # Normalize routes into Vector{Vector{Int}} (empty vector if no routes)
+        r = Vector{Vector{Int}}()
+        if !isnothing(sample.y_true)
+            if sample.y_true isa BitMatrix
+                r = decode_bitmatrix_to_routes(sample.y_true)
+            elseif sample.y_true isa Vector{Int}
+                # Convert single-vector representation (with depot index 1 separating routes)
+                route_vectors = Vector{Vector{Int}}()
+                current = Int[]
+                for loc in sample.y_true
+                    if loc == 1
+                        if !isempty(current)
+                            push!(route_vectors, copy(current))
+                            empty!(current)
+                        end
+                    else
+                        push!(current, loc)
+                    end
+                end
+                if !isempty(current)
+                    push!(route_vectors, current)
+                end
+                r = route_vectors
+            elseif sample.y_true isa Vector{Vector{Int}}
+                r = sample.y_true
+            else
+                # Unknown format: try to use as-is, otherwise set nothing
+                try
+                    # try to coerce to Vector{Vector{Int}}
+                    r = Vector{Vector{Int}}(sample.y_true)
+                catch
+                    r = Vector{Vector{Int}}()
+                end
+            end
+        end
+
+        routes[i] = r
+
+        # Compute cost if possible (keep NaN when no routes)
+        if isempty(r)
+            push!(epoch_costs, NaN)
+        else
+            try
+                push!(epoch_costs, cost(sample.instance, r))
+            catch
+                push!(epoch_costs, NaN)
+            end
+        end
+    end
+
+    return PlotData(n, coordinates, start_times, node_types, routes, epoch_costs)
+end
+
+"""
+Build plot-ready data for multiple solutions. `solutions_data_samples` should be an
+AbstractVector where each element is a Vector{<:DataSample} (one per solution). The
+function returns a Dict with :n_solutions, :n_epochs, and :solutions => Vector of
+the per-solution Dicts produced by `build_plot_data`.
+"""
+function build_plot_data_for_solutions(solutions_data_samples::AbstractVector)
+    n_solutions = length(solutions_data_samples)
+    if n_solutions == 0
+        return Dict(:n_solutions => 0, :n_epochs => 0, :solutions => Vector{Any}())
+    end
+
+    # Ensure consistent epoch length across solutions if possible
+    n_epochs = length(solutions_data_samples[1])
+    for (i, s) in enumerate(solutions_data_samples)
+        if length(s) != n_epochs
+            # we won't error here; just record differing lengths in returned dict
+            n_epochs = -1
+            break
+        end
+    end
+
+    per_solution = [build_plot_data(s) for s in solutions_data_samples]
+
+    return Dict(
+        :n_solutions => n_solutions, :n_epochs => n_epochs, :solutions => per_solution
+    )
 end
 
 """
@@ -223,11 +404,13 @@ function plot_epochs(
     show_colorbar=false,
     kwargs...,
 )
-    n_epochs = length(data_samples)
-
-    if n_epochs == 0
+    if length(data_samples) == 0
         error("No data samples provided")
     end
+
+    # Build centralized plot data
+    pd = build_plot_data(data_samples)
+    n_epochs = pd.n_epochs
 
     # Determine grid layout
     if isnothing(cols)
@@ -237,10 +420,9 @@ function plot_epochs(
 
     # Calculate global xlims and ylims from all states
     all_coordinates = []
-    for sample in data_samples
-        if !isnothing(sample.instance)
-            coords = coordinate(sample.instance)
-            append!(all_coordinates, coords)
+    for coords in pd.coordinates
+        for c in coords
+            push!(all_coordinates, (; x=c[1], y=c[2]))
         end
     end
 
@@ -263,11 +445,8 @@ function plot_epochs(
 
     # Calculate global color limits for consistent scaling across subplots
     all_start_times = []
-    for sample in data_samples
-        if !isnothing(sample.instance)
-            times = start_time(sample.instance)
-            append!(all_start_times, times)
-        end
+    for times in pd.start_times
+        append!(all_start_times, times)
     end
 
     clims = if !isempty(all_start_times)
@@ -279,7 +458,8 @@ function plot_epochs(
     # Create subplots
     plots = []
 
-    for (i, sample) in enumerate(data_samples)
+    for i in 1:n_epochs
+        sample = data_samples[i]
         state = sample.instance
 
         if isnothing(state)
@@ -399,29 +579,20 @@ function animate_epochs(
     cost_bar_color_palette=:turbo,
     kwargs...,
 )
-    n_epochs = length(data_samples)
-
-    if n_epochs == 0
+    if length(data_samples) == 0
         error("No data samples provided")
     end
 
-    # Calculate global limits for consistent scaling
+    pd = build_plot_data(data_samples)
+    n_epochs = pd.n_epochs
+    # Build all_coordinates from pd.coordinates
     all_coordinates = []
-    epoch_costs = Float64[]
-    for sample in data_samples
-        if !isnothing(sample.instance)
-            coords = coordinate(sample.instance)
-            append!(all_coordinates, coords)
-            # Calculate cost for this epoch if routes exist
-            if sample.y_true isa BitMatrix
-                routes = decode_bitmatrix_to_routes(sample.y_true)
-            else
-                routes = sample.y_true isa Vector{Int} ? [sample.y_true] : sample.y_true
-            end
-            epoch_cost = cost(sample.instance, routes)
-            push!(epoch_costs, epoch_cost)
+    for coords in pd.coordinates
+        for c in coords
+            push!(all_coordinates, (; x=c[1], y=c[2]))
         end
     end
+    epoch_costs = copy(pd.epoch_costs)
 
     if isempty(all_coordinates)
         error("No valid coordinates found in data samples")

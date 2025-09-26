@@ -33,7 +33,6 @@ By default, the environment is reset before running the policy.
 """
 function evaluate_policy!(policy, env::AbstractEnvironment; kwargs...)
     total_reward = 0.0
-    reset!(env; reset_rng=false)
     local labeled_dataset
     while !is_terminated(env)
         y = policy(env; kwargs...)
@@ -72,9 +71,9 @@ By default, the environment is reset before running the policy.
 function evaluate_policy!(
     policy, env::AbstractEnvironment, episodes::Int; seed=get_seed(env), kwargs...
 )
-    reset!(env; reset_rng=true, seed)
     total_reward = 0.0
     datasets = map(1:episodes) do _i
+        reset!(env; reset_rng=(_i == 1))
         reward, dataset = evaluate_policy!(policy, env; kwargs...)
         total_reward += reward
         return dataset
