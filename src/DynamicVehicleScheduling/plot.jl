@@ -289,7 +289,7 @@ function plot_epochs(
             :markerstrokewidth => 0.5,
         )
 
-        if plot_routes_flag && !isnothing(sample.y_true)
+        if plot_routes_flag
             fig = plot_routes(
                 state,
                 sample.y_true;
@@ -325,19 +325,6 @@ function plot_epochs(
 
     return combined_plot
 end
-
-"""
-$TYPEDSIGNATURES
-
-Plot multiple epochs side by side, optionally filtering to specific epoch indices.
-"""
-function plot_epochs(
-    data_samples::Vector{<:DataSample}, epoch_indices::Vector{Int}; kwargs...
-)
-    filtered_samples = data_samples[epoch_indices]
-    return plot_epochs(filtered_samples; kwargs...)
-end
-
 """
 $TYPEDSIGNATURES
 
@@ -363,10 +350,6 @@ function animate_epochs(
     cost_bar_color_palette=:turbo,
     kwargs...,
 )
-    if length(data_samples) == 0
-        error("No data samples provided")
-    end
-
     pd = build_plot_data(data_samples)
     epoch_costs = [-sample.instance.reward for sample in data_samples]
 
