@@ -155,7 +155,7 @@ function plot_routes(
     state::DVSPState,
     routes::Vector{Vector{Int}};
     route_color=nothing,
-    route_linewidth=2,  # Increased from 2 to 3
+    route_linewidth=2,
     route_alpha=0.8,
     kwargs...,
 )
@@ -190,36 +190,6 @@ function plot_routes(
 
     return fig
 end
-
-# """
-# $TYPEDSIGNATURES
-
-# Plot a given DVSPState with routes overlaid. This version accepts routes as a single
-# vector where routes are separated by depot visits (index 1).
-# """
-# function plot_routes(state::DVSPState, routes::Vector{Int}; kwargs...)
-#     # Convert single route vector to vector of route vectors
-#     route_vectors = Vector{Int}[]
-#     current_route = Int[]
-
-#     for location in routes
-#         if location == 1  # Depot visit indicates end of route
-#             if !isempty(current_route)
-#                 push!(route_vectors, copy(current_route))
-#                 empty!(current_route)
-#             end
-#         else
-#             push!(current_route, location)
-#         end
-#     end
-
-#     # Add the last route if it doesn't end with depot
-#     if !isempty(current_route)
-#         push!(route_vectors, current_route)
-#     end
-
-#     return plot_routes(state, route_vectors; kwargs...)
-# end
 
 """
 $TYPEDSIGNATURES
