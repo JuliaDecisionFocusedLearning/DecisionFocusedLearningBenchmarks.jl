@@ -10,7 +10,7 @@
     env = environments[1]
 
     # Test basic plotting functions
-    fig1 = DVSP.plot_instancee(env)
+    fig1 = DVSP.plot_instance(env)
     @test fig1 isa Plots.Plot
 
     instance = dataset[1].instance
@@ -23,7 +23,7 @@
     policies = generate_policies(b)
     lazy = policies[1]
     _, d = evaluate_policy!(lazy, env)
-    fig3 = DVSP.plot_routes(d[1].instance, d[1].y_true)
+    fig3 = DVSP.plot_routes(d[1].instance.state, d[1].y_true)
     @test fig3 isa Plots.Plot
 
     # Test animation
