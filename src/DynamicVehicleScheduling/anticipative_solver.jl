@@ -54,6 +54,7 @@ function anticipative_solver(
 )
     if reset_env
         reset!(env; reset_rng=true, seed)
+        scenario = env.scenario
     end
 
     @assert !is_terminated(env)
@@ -213,13 +214,15 @@ function anticipative_solver(
             current_epoch=epoch,
         )
 
+        reward = -cost(state, decode_bitmatrix_to_routes(y_true))
+
         x = if two_dimensional_features
             compute_2D_features(state, env.instance)
         else
             compute_features(state, env.instance)
         end
 
-        return DataSample(; instance=state, y_true, x)
+        return DataSample(; instance=(; state, reward), y_true, x)
     end
 
     return obj, dataset

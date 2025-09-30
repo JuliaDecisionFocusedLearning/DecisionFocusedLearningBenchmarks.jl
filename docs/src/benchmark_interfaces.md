@@ -26,13 +26,13 @@ The package defines a hierarchy of three abstract types:
 
 ```
 AbstractBenchmark
-├── AbstractStochasticBenchmark{exogenous}
+└── AbstractStochasticBenchmark{exogenous}
     └── AbstractDynamicBenchmark{exogenous}
 ```
 
 - **`AbstractBenchmark`**: static, single-stage optimization problems
 - **`AbstractStochasticBenchmark{exogenous}`**: stochastic, single stage optimization problems
- **`AbstractDynamicBenchmark{exogenous}`**: multi-stage sequential decision problems
+- **`AbstractDynamicBenchmark{exogenous}`**: multi-stage sequential decision-making problems
 
 The `{exogenous}` type parameter indicates whether uncertainty distribution comes from external sources (`true`) or is influenced by decisions (`false`), which affects available methods.
 

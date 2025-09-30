@@ -62,11 +62,11 @@ end
     dataset = [random_sample() for _ in 1:N]
 
     # Test fit with ZScoreTransform
-    zt = fit(ZScoreTransform, dataset)
+    zt = fit(ZScoreTransform, dataset; dims=2)
     @test zt isa ZScoreTransform
 
     # Test fit with UnitRangeTransform
-    ut = fit(UnitRangeTransform, dataset)
+    ut = fit(UnitRangeTransform, dataset; dims=2)
     @test ut isa UnitRangeTransform
 
     # Test transform (non-mutating)
