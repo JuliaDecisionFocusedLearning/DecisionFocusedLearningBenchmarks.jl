@@ -44,7 +44,7 @@ function evaluate_policy!(
         features, state = observe(env)
         state_copy = deepcopy(state)  # To avoid mutation issues
         reward = step!(env, y)
-        sample = DataSample(; x=features, y_true=y, instance=(; state=state_copy, reward))
+        sample = DataSample(; x=features, y=y, info=(; state=state_copy, reward))
         if @isdefined labeled_dataset
             push!(labeled_dataset, sample)
         else

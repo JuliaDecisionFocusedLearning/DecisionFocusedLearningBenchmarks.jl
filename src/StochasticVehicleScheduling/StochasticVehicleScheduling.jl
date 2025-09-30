@@ -208,7 +208,7 @@ function plot_solution(
 )
     (; tasks, district_width, width) = sample.info.city
     ticks = 0:district_width:width
-    solution = Solution(sample.y_true, sample.info)
+    solution = Solution(sample.y, sample.info)
     path_list = compute_path_list(solution)
     fig = plot(;
         xlabel="x",

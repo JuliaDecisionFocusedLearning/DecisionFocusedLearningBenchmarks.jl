@@ -42,7 +42,7 @@
 
     for sample in dataset
         x = sample.x
-        instance = sample.instance
+        instance = sample.info
         E = ne(instance.graph)
         @test size(x) == (20, E)
         θ = model(x)

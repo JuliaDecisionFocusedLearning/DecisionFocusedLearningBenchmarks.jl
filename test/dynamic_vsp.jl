@@ -26,7 +26,7 @@
     @test mean(r_lazy) <= mean(r_greedy)
 
     env = environments[1]
-    instance = dataset[1].instance
+    instance = dataset[1].info
     scenario = generate_scenario(b, instance)
     v, y = generate_anticipative_solution(b, env, scenario; nb_epochs=2, reset_env=true)
 
@@ -49,6 +49,8 @@
 
     anticipative_value, solution = generate_anticipative_solution(b, env; reset_env=true)
     reset!(env; reset_rng=true)
-    cost = sum(step!(env, sample.y_true) for sample in solution)
+    cost = sum(step!(env, sample.y) for sample in solution)
+    cost2 = sum(sample.info.reward for sample in solution)
     @test isapprox(cost, anticipative_value; atol=1e-5)
+    @test isapprox(cost, cost2; atol=1e-5)
 end

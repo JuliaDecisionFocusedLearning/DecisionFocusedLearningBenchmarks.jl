@@ -32,10 +32,7 @@ end
 
     function random_sample()
         return DataSample(;
-            x=randn(rng, 10, 5),
-            θ_true=rand(rng, 5),
-            y_true=rand(rng, 10),
-            instance="this is an instance",
+            x=randn(rng, 10, 5), θ=rand(rng, 5), y=rand(rng, 10), info="this is an instance"
         )
     end
 
@@ -45,7 +42,7 @@ end
     io = IOBuffer()
     show(io, sample)
     @test String(take!(io)) ==
-        "DataSample(x=$(sample.x), θ_true=$(sample.θ_true), y_true=$(sample.y_true), instance=$(sample.instance))"
+        "DataSample(x=$(sample.x), θ_true=$(sample.θ), y_true=$(sample.y), instance=$(sample.info))"
 
     # Test StatsBase methods
     using StatsBase:
@@ -76,9 +73,9 @@ end
 
     # Check that other fields are preserved
     for i in 1:N
-        @test dataset_zt[i].θ_true == dataset[i].θ_true
-        @test dataset_zt[i].y_true == dataset[i].y_true
-        @test dataset_zt[i].instance == dataset[i].instance
+        @test dataset_zt[i].θ == dataset[i].θ
+        @test dataset_zt[i].y == dataset[i].y
+        @test dataset_zt[i].info == dataset[i].info
     end
 
     # Check that features are actually transformed
@@ -92,9 +89,9 @@ end
 
     # Check that other fields remain unchanged after transform!
     for i in 1:N
-        @test dataset_copy[i].θ_true == dataset[i].θ_true
-        @test dataset_copy[i].y_true == dataset[i].y_true
-        @test dataset_copy[i].instance == dataset[i].instance
+        @test dataset_copy[i].θ == dataset[i].θ
+        @test dataset_copy[i].y == dataset[i].y
+        @test dataset_copy[i].info == dataset[i].info
     end
 
     # Test reconstruct (non-mutating)
@@ -104,9 +101,9 @@ end
     # Test round-trip consistency (should be close to original)
     for i in 1:N
         @test dataset_reconstructed[i].x ≈ dataset[i].x atol = 1e-10
-        @test dataset_reconstructed[i].θ_true == dataset[i].θ_true
-        @test dataset_reconstructed[i].y_true == dataset[i].y_true
-        @test dataset_reconstructed[i].instance == dataset[i].instance
+        @test dataset_reconstructed[i].θ == dataset[i].θ
+        @test dataset_reconstructed[i].y == dataset[i].y
+        @test dataset_reconstructed[i].info == dataset[i].info
     end
 
     # Test reconstruct! (mutating)

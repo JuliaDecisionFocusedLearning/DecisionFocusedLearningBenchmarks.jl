@@ -208,9 +208,9 @@ The returned dictionary contains:
 This lets plotting code build figures without depending on plotting internals.
 """
 function build_plot_data(data_samples::Vector{<:DataSample})
-    state_data = [build_state_data(sample.instance.state) for sample in data_samples]
-    rewards = [sample.instance.reward for sample in data_samples]
-    routess = [sample.y_true for sample in data_samples]
+    state_data = [build_state_data(sample.info.state) for sample in data_samples]
+    rewards = [sample.info.reward for sample in data_samples]
+    routess = [sample.y for sample in data_samples]
     return [
         (; state..., reward, routes) for
         (state, reward, routes) in zip(state_data, rewards, routess)
@@ -273,8 +273,8 @@ function plot_epochs(
     # Create subplots
     plots = map(1:n_epochs) do i
         sample = data_samples[i]
-        state = sample.instance.state
-        reward = sample.instance.reward
+        state = sample.info.state
+        reward = sample.info.reward
 
         common_kwargs = Dict(
             :xlims => xlims,
@@ -292,7 +292,7 @@ function plot_epochs(
         if plot_routes_flag
             fig = plot_routes(
                 state,
-                sample.y_true;
+                sample.y;
                 reward=reward,
                 show_route_labels=false,
                 common_kwargs...,
@@ -351,7 +351,7 @@ function animate_epochs(
     kwargs...,
 )
     pd = build_plot_data(data_samples)
-    epoch_costs = [-sample.instance.reward for sample in data_samples]
+    epoch_costs = [-sample.info.reward for sample in data_samples]
 
     # Calculate global xlims and ylims from all states
     x_min = minimum(min(data.x_depot, minimum(data.x_customers)) for data in pd)
@@ -393,12 +393,12 @@ function animate_epochs(
     anim = @animate for frame_idx in 1:total_frames
         epoch_idx, frame_type = frame_plan[frame_idx]
         sample = data_samples[epoch_idx]
-        state = sample.instance.state
+        state = sample.info.state
 
         if frame_type == :routes
             fig = plot_routes(
                 state,
-                sample.y_true;
+                sample.y;
                 xlims=xlims,
                 ylims=ylims,
                 clims=clims,

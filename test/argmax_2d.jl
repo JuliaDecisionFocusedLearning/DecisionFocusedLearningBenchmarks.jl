@@ -21,11 +21,14 @@
     @test figure isa Plots.Plot
 
     for (i, sample) in enumerate(dataset)
-        (; x, θ_true, y_true, instance) = sample
+        x = sample.x
+        θ_true = sample.θ
+        y_true = sample.y
+        instance = sample.info
         @test length(x) == nb_features
         @test length(θ_true) == 2
         @test length(y_true) == 2
-        @test !isnothing(sample.instance)
+        @test !isnothing(instance)
         @test instance isa Vector{Vector{Float64}}
         @test all(length(vertex) == 2 for vertex in instance)
         @test y_true in instance
