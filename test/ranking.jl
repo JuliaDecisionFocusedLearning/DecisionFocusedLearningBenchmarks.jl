@@ -15,11 +15,13 @@
     maximizer = generate_maximizer(b)
 
     for (i, sample) in enumerate(dataset)
-        (; x, θ_true, y_true) = sample
+        x = sample.x
+        θ_true = sample.θ
+        y_true = sample.y
         @test size(x) == (nb_features, instance_dim)
         @test length(θ_true) == instance_dim
         @test length(y_true) == instance_dim
-        @test isnothing(sample.instance)
+        @test isnothing(sample.info)
         @test all(y_true .== maximizer(θ_true))
 
         θ = model(x)

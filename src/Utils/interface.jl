@@ -113,7 +113,7 @@ $TYPEDSIGNATURES
 For benchmarks where there is an instance object, maximizer needs the instance object as a keyword argument.
 """
 function maximizer_kwargs(::AbstractBenchmark, sample::DataSample)
-    return (; instance=sample.instance)
+    return (; instance=sample.info)
 end
 
 """
@@ -133,7 +133,7 @@ Compute the objective value of given solution `y`.
 function objective_value(
     bench::AbstractBenchmark, sample::DataSample{I,F,S,C}, y::AbstractArray
 ) where {I,F,S,C<:AbstractArray}
-    return objective_value(bench, sample.θ_true, y)
+    return objective_value(bench, sample.θ, y)
 end
 
 """
@@ -144,7 +144,7 @@ Compute the objective value of the target in the sample (needs to exist).
 function objective_value(
     bench::AbstractBenchmark, sample::DataSample{I,F,S,C}
 ) where {I,F,S<:AbstractArray,C}
-    return objective_value(bench, sample, sample.y_true)
+    return objective_value(bench, sample, sample.y)
 end
 
 """
@@ -228,17 +228,29 @@ function generate_environment end
 """
 $TYPEDSIGNATURES
 
+Default behaviour of `generate_environment` applied to a data sample.
+Uses the info field of the sample as the instance.
+"""
+function generate_environment(
+    bench::AbstractDynamicBenchmark, sample::DataSample, rng::AbstractRNG; kwargs...
+)
+    return generate_environment(bench, sample.info, rng; kwargs...)
+end
+
+"""
+$TYPEDSIGNATURES
+
 Generate a vector of environments for the given dynamic benchmark and dataset.
 """
 function generate_environments(
     bench::AbstractDynamicBenchmark,
-    dataset::AbstractArray{<:DataSample};
+    dataset::AbstractArray;
     seed=nothing,
     rng=MersenneTwister(seed),
     kwargs...,
 )
     Random.seed!(rng, seed)
-    return map(dataset) do sample
-        generate_environment(bench, sample.instance, rng; kwargs...)
+    return map(dataset) do instance
+        generate_environment(bench, instance, rng; kwargs...)
     end
 end

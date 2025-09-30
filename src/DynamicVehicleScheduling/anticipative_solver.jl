@@ -222,7 +222,7 @@ function anticipative_solver(
             compute_features(state, env.instance)
         end
 
-        return DataSample(; instance=(; state, reward), y_true, x)
+        return DataSample(; info=(; state, reward), y=y_true, x)
     end
 
     return obj, dataset

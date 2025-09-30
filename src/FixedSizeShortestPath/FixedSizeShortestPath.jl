@@ -121,11 +121,11 @@ function Utils.generate_sample(
     else
         rand(rng, Uniform{type}(1 - ν, 1 + ν), E)
     end
-    costs = -(1 .+ (3 .+ B * features ./ type(sqrt(p))) .^ deg) .* ξ
+    θ_true = -(1 .+ (3 .+ B * features ./ type(sqrt(p))) .^ deg) .* ξ
 
     maximizer = Utils.generate_maximizer(bench)
-    solution = maximizer(costs)
-    return DataSample(; x=features, θ_true=costs, y_true=solution)
+    y_true = maximizer(θ_true)
+    return DataSample(; x=features, θ=θ_true, y=y_true)
 end
 
 """

@@ -62,7 +62,7 @@ function Utils.generate_sample(bench::Argmax2DBenchmark, rng::AbstractRNG)
     θ_true ./= 2 * norm(θ_true)
     instance = build_polytope(rand(rng, polytope_vertex_range); shift=rand(rng))
     y_true = maximizer(θ_true; instance)
-    return DataSample(; x=x, θ_true=θ_true, y_true=y_true, instance=instance)
+    return DataSample(; x=x, θ=θ_true, y=y_true, info=instance)
 end
 
 """
@@ -88,11 +88,11 @@ function Utils.generate_statistical_model(
     return model
 end
 
-function Utils.plot_data(::Argmax2DBenchmark; instance, θ, kwargs...)
+function Utils.plot_data(::Argmax2DBenchmark; info, θ, kwargs...)
     pl = init_plot()
-    plot_polytope!(pl, instance)
+    plot_polytope!(pl, info)
     plot_objective!(pl, θ)
-    return plot_maximizer!(pl, θ, instance, maximizer)
+    return plot_maximizer!(pl, θ, info, maximizer)
 end
 
 """
@@ -101,13 +101,9 @@ $TYPEDSIGNATURES
 Plot the data sample for the [`Argmax2DBenchmark`](@ref).
 """
 function Utils.plot_data(
-    bench::Argmax2DBenchmark,
-    sample::DataSample;
-    instance=sample.instance,
-    θ=sample.θ_true,
-    kwargs...,
+    bench::Argmax2DBenchmark, sample::DataSample; info=sample.info, θ=sample.θ, kwargs...
 )
-    return Utils.plot_data(bench; instance, θ, kwargs...)
+    return Utils.plot_data(bench; info, θ, kwargs...)
 end
 
 export Argmax2DBenchmark

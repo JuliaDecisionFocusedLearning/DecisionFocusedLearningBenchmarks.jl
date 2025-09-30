@@ -17,11 +17,13 @@
     maximizer = generate_maximizer(b)
 
     for (i, sample) in enumerate(dataset)
-        (; x, θ_true, y_true) = sample
+        x = sample.x
+        θ_true = sample.θ
+        y_true = sample.y
         @test size(x) == (n,)
         @test length(θ_true) == n
         @test length(y_true) == n
-        @test isnothing(sample.instance)
+        @test isnothing(sample.info)
         @test all(y_true .== maximizer(θ_true))
 
         # Features and true weights should be equal

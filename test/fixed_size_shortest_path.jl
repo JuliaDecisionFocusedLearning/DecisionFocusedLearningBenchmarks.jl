@@ -18,12 +18,14 @@
     @test gap >= 0
 
     for sample in dataset
-        (; x, θ_true, y_true) = sample
+        x = sample.x
+        θ_true = sample.θ
+        y_true = sample.y
         @test all(θ_true .< 0)
         @test size(x) == (p,)
         @test length(θ_true) == A
         @test length(y_true) == A
-        @test isnothing(sample.instance)
+        @test isnothing(sample.info)
         @test all(y_true .== maximizer(θ_true))
         θ = model(x)
         @test length(θ) == length(θ_true)

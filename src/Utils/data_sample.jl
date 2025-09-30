@@ -12,14 +12,14 @@ $TYPEDFIELDS
     S<:Union{AbstractArray,Nothing},
     C<:Union{AbstractArray,Nothing},
 }
-    "features"
+    "input features (optional)"
     x::F = nothing
-    "target cost parameters (optional)"
-    θ_true::C = nothing
-    "target solution (optional)"
-    y_true::S = nothing
-    "instance object (optional)"
-    instance::I = nothing
+    "intermediate cost parameters (optional)"
+    θ::C = nothing
+    "output solution (optional)"
+    y::S = nothing
+    "additional information, usually the instance (optional)"
+    info::I = nothing
 end
 
 function Base.show(io::IO, d::DataSample)
@@ -27,14 +27,14 @@ function Base.show(io::IO, d::DataSample)
     if !isnothing(d.x)
         push!(fields, "x=$(d.x)")
     end
-    if !isnothing(d.θ_true)
-        push!(fields, "θ_true=$(d.θ_true)")
+    if !isnothing(d.θ)
+        push!(fields, "θ_true=$(d.θ)")
     end
-    if !isnothing(d.y_true)
-        push!(fields, "y_true=$(d.y_true)")
+    if !isnothing(d.y)
+        push!(fields, "y_true=$(d.y)")
     end
-    if !isnothing(d.instance)
-        push!(fields, "instance=$(d.instance)")
+    if !isnothing(d.info)
+        push!(fields, "instance=$(d.info)")
     end
     return print(io, "DataSample(", join(fields, ", "), ")")
 end
@@ -56,15 +56,15 @@ Transform the features in the dataset.
 """
 function StatsBase.transform(t, dataset::AbstractVector{<:DataSample})
     return map(dataset) do d
-        (; instance, x, θ_true, y_true) = d
-        DataSample(; instance, x=StatsBase.transform(t, x), θ_true, y_true)
+        (; info, x, θ, y) = d
+        DataSample(; info, x=StatsBase.transform(t, x), θ, y)
     end
 end
 
 """
 $TYPEDSIGNATURES
 
-Transform the features in the dataset in place.
+Transform the features in the dataset, in place.
 """
 function StatsBase.transform!(t, dataset::AbstractVector{<:DataSample})
     for d in dataset
@@ -79,15 +79,15 @@ Reconstruct the features in the dataset.
 """
 function StatsBase.reconstruct(t, dataset::AbstractVector{<:DataSample})
     return map(dataset) do d
-        (; instance, x, θ_true, y_true) = d
-        DataSample(; instance, x=StatsBase.reconstruct(t, x), θ_true, y_true)
+        (; info, x, θ, y) = d
+        DataSample(; info, x=StatsBase.reconstruct(t, x), θ, y)
     end
 end
 
 """
 $TYPEDSIGNATURES
 
-Reconstruct the features in the dataset in place.
+Reconstruct the features in the dataset, in place.
 """
 function StatsBase.reconstruct!(t, dataset::AbstractVector{<:DataSample})
     for d in dataset
