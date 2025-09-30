@@ -1,6 +1,6 @@
 # Understanding Benchmark Interface
 
-This guide explains how benchmarks work through common interfaces in DecisionFocusedLearningBenchmarks.jl.
+This guide explains how benchmarks work through the common interface of DecisionFocusedLearningBenchmarks.jl.
 Understanding this interface is essential for using existing benchmarks and implementing new ones.
 
 ## Core Concepts
@@ -46,9 +46,9 @@ Every benchmark must implement a data generation method:
 # Generate a single sample
 generate_sample(benchmark::AbstractBenchmark, rng::AbstractRNG; kwargs...) -> DataSample
 ```
-This method should generate a single `DataSample` given a random number generator and optional parameters.
+This method should output a single `DataSample` given a random number generator and optional parameters as keyword arguments.
 
-If needed, benchmarks can instead override the [`generate_dataset`](@ref) method to directly create the entire dataset:
+If needed, benchmarks can instead override the [`generate_dataset`](@ref) method to directly create an entire dataset of size `size`:
 ```julia
 generate_dataset(benchmark::AbstractBenchmark, size::Int; kwargs...) -> Vector{DataSample}
 ```
@@ -67,7 +67,7 @@ generate_statistical_model(benchmark::AbstractBenchmark; kwargs...)
 generate_maximizer(benchmark::AbstractBenchmark; kwargs...)
 ```
 
-The statistical model typically maps from features `x` to cost parameters `θ`.
+The statistical model typically maps features `x` to cost parameters `θ`.
 The maximizer solves optimization problems given cost parameters `θ` (and potentially additional problem dependent keyword arguments), returning decision `y`.
 
 ### Benchmark Policies
@@ -78,7 +78,8 @@ Benchmarks can provide baseline policies for comparison and evaluation:
 # Get baseline policies for comparison
 generate_policies(benchmark::AbstractBenchmark) -> Tuple{Policy}
 ```
-This returns a tuple of `Policy` objects representing different benchmark-specific policies:
+This returns a tuple of `Policy` objects representing different benchmark-specific policies.
+A `Policy` is just a function with a name and description:
 ```julia
 struct Policy{F}
     name::String
@@ -86,7 +87,6 @@ struct Policy{F}
     policy_function::F
 end
 ```
-A `Policy` is just a function with a name and description.
 
 Policies can be evaluated across multiple instances/environments using:
 ```julia

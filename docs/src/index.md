@@ -12,28 +12,31 @@
 
 ## What is Decision-Focused Learning?
 
-Decision-focused learning (DFL) is a paradigm that integrates machine learning prediction with combinatorial optimization to make better decisions under uncertainty. Unlike traditional "predict-then-optimize" approaches that optimize prediction accuracy independently of downstream decision quality, DFL directly optimizes end-to-end decision performance.
+Decision-Focused Learning (DFL) is a paradigm that integrates machine learning prediction with combinatorial optimization to make better decisions under uncertainty.
+Unlike traditional "predict-then-optimize" approaches that optimize prediction accuracy independently of downstream decision quality, DFL directly optimizes end-to-end decision performance.
 
 A typical DFL algorithm involves training a parametrized policy that combines a statistical predictor with an optimization component:
 
 ```math
-\xrightarrow{x} \boxed{\text{Statistical model } \varphi_w} \xrightarrow{\theta} \boxed{\text{CO algorithm } f} \xrightarrow{ y}
+x \;\longrightarrow\; \boxed{\,\text{Statistical model } \varphi_w\,} 
+\;\xrightarrow{\theta}\; \boxed{\,\text{CO algorithm } f\,} 
+\;\longrightarrow\; y
 ```
 
 Where:
-- **Instance** $x$: input data (e.g., features, context)
 - **Statistical model** $\varphi_w$: machine learning predictor (e.g., neural network)
-- **Parameters** $\theta$: predicted parameters for the optimization problem
 - **CO algorithm** $f$: combinatorial optimization solver
-- **Solution** $y$: final decision/solution
+- **Instance** $x$: input data (e.g., features, context)
+- **Parameters** $\theta$: predicted parameters for the optimization problem solved by `f`
+- **Solution** $y$: output decision/solution
 
 ## Package Overview
 
 **DecisionFocusedLearningBenchmarks.jl** provides a comprehensive collection of benchmark problems for evaluating decision-focused learning algorithms. The package offers:
 
 - **Standardized benchmark problems** spanning diverse application domains
-- **Common interfaces** for datasets, statistical models, and optimization components  
-- **Ready-to-use pipelines** compatible with [InferOpt.jl](https://github.com/JuliaDecisionFocusedLearning/InferOpt.jl) and the whole [JuliaDecisionFocusedLearning](https://github.com/JuliaDecisionFocusedLearning) ecosystem
+- **Common interfaces** for creating datasets, statistical models, and optimization algorithms
+- **Ready-to-use DFL policies** compatible with [InferOpt.jl](https://github.com/JuliaDecisionFocusedLearning/InferOpt.jl) and the whole [JuliaDecisionFocusedLearning](https://github.com/JuliaDecisionFocusedLearning) ecosystem
 - **Evaluation tools** for comparing algorithm performance
 
 ## Benchmark Categories
@@ -51,13 +54,13 @@ Single-stage optimization problems with no randomness involved:
 - [`WarcraftBenchmark`](@ref): shortest path on image maps
 
 ### Stochastic Benchmarks (`AbstractStochasticBenchmark`)  
-Single-stage problems with random noise affecting the objective:
+Single-stage optimization problems under uncertainty:
 - [`StochasticVehicleSchedulingBenchmark`](@ref): stochastic vehicle scheduling under delay uncertainty
 
 ### Dynamic Benchmarks (`AbstractDynamicBenchmark`)
 Multi-stage sequential decision-making problems:
 - [`DynamicVehicleSchedulingBenchmark`](@ref): multi-stage vehicle scheduling under customer uncertainty
-- [`DynamicAssortmentBenchmark`](@ref): sequential product assortment selection
+- [`DynamicAssortmentBenchmark`](@ref): sequential product assortment selection with endogenous uncertainty
 
 ## Getting Started
 
@@ -82,6 +85,8 @@ maximizer = generate_maximizer(benchmark)
 # Evaluate performance
 gap = compute_gap(benchmark, dataset, model, maximizer)
 ```
+
+The only component you need to customize is the training algorithm itself.
 
 ## Related Packages
 

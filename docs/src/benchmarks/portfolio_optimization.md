@@ -10,3 +10,6 @@ The goal is to predict asset prices $c$ and maximize the expected return of a po
 & x \geq 0
 \end{aligned}
 ```
+
+!!! warning
+    Documentation for this benchmark is still under development. Please refer to the source code and API for more details.
