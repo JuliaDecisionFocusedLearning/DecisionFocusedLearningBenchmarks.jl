@@ -2,8 +2,6 @@ using Documenter
 using DecisionFocusedLearningBenchmarks
 using Literate
 
-cp(joinpath(@__DIR__, "..", "README.md"), joinpath(@__DIR__, "src", "index.md"); force=true)
-
 md_dir = joinpath(@__DIR__, "src")
 tutorial_dir = joinpath(@__DIR__, "src", "tutorials")
 benchmarks_dir = joinpath(@__DIR__, "src", "benchmarks")

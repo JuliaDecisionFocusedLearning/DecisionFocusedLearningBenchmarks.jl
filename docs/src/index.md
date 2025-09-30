@@ -6,9 +6,9 @@
 [![Coverage](https://codecov.io/gh/JuliaDecisionFocusedLearning/DecisionFocusedLearningBenchmarks.jl/branch/main/graph/badge.svg)](https://app.codecov.io/gh/JuliaDecisionFocusedLearning/DecisionFocusedLearningBenchmarks.jl)
 [![Code Style: Blue](https://img.shields.io/badge/code%20style-blue-4495d1.svg)](https://github.com/JuliaDiff/BlueStyle)
 
-> [!WARNING]  
->  This package is currently under active development. The API may change in future releases.
->  Please refer to the [documentation](https://JuliaDecisionFocusedLearning.github.io/DecisionFocusedLearningBenchmarks.jl/stable/) for the latest updates.
+!!! warning 
+    This package is currently under active development. The API may change in future releases.
+    Please refer to the [documentation](https://JuliaDecisionFocusedLearning.github.io/DecisionFocusedLearningBenchmarks.jl/stable/) for the latest updates.
 
 ## What is Decision-Focused Learning?
 
@@ -17,9 +17,7 @@ Decision-focused learning (DFL) is a paradigm that integrates machine learning p
 A typical DFL algorithm involves training a parametrized policy that combines a statistical predictor with an optimization component:
 
 ```math
-x \;\longrightarrow\; \boxed{\,\text{Statistical model } \varphi_w\,} 
-\;\xrightarrow{\theta}\; \boxed{\,\text{CO algorithm } f\,} 
-\;\longrightarrow\; y
+\xrightarrow{x} \boxed{\text{Statistical model } \varphi_w} \xrightarrow{\theta} \boxed{\text{CO algorithm } f} \xrightarrow{ y}
 ```
 
 Where:
