@@ -18,7 +18,7 @@ All benchmarks work with [`DataSample`](@ref) objects that encapsulate the data 
 end
 ```
 
-The `DataSample` provides flexibility - not all fields need to be populated depending on the benchmark type and use case.
+The `DataSample` provides flexibility, not all fields need to be populated depending on the benchmark type and use.
 
 ### Benchmark Type Hierarchy
 
