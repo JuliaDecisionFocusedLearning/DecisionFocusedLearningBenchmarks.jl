@@ -11,10 +11,10 @@ All benchmarks work with [`DataSample`](@ref) objects that encapsulate the data 
 
 ```julia
 @kwdef struct DataSample{I,F,S,C}
-    x::F = nothing           # Input features  
-    θ_true::C = nothing      # True cost/utility parameters
-    y_true::S = nothing      # True optimal solution
-    instance::I = nothing    # Problem instance object/additional data
+    x::F = nothing       # Input features of the policy
+    θ::C = nothing       # Intermediate cost/utility parameters
+    y::S = nothing       # Output solution
+    info::I = nothing    # Additional data information (e.g., problem instance)
 end
 ```
 
