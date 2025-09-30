@@ -92,14 +92,14 @@ function anticipative_solver(
     job_indices = 2:nb_nodes
     epoch_indices = T
 
-    @variable(model, y[i = 1:nb_nodes, j = 1:nb_nodes, t = epoch_indices]; binary=true)
+    @variable(model, y[i=1:nb_nodes, j=1:nb_nodes, t=epoch_indices]; binary=true)
 
     @objective(
         model,
         Max,
         sum(
-            -duration[i, j] * y[i, j, t] for
-            i in 1:nb_nodes, j in 1:nb_nodes, t in epoch_indices
+            -duration[i, j] * y[i, j, t] for i in 1:nb_nodes, j in 1:nb_nodes,
+            t in epoch_indices
         )
     )
 
@@ -171,12 +171,14 @@ function anticipative_solver(
         routes = epoch_routes[i]
         epoch_customers = epoch_indices[i]
 
-        y_true = VSPSolution(
-            Vector{Int}[
-                map(idx -> findfirst(==(idx), epoch_customers), route) for route in routes
-            ];
-            max_index=length(epoch_customers),
-        ).edge_matrix
+        y_true =
+            VSPSolution(
+                Vector{Int}[
+                    map(idx -> findfirst(==(idx), epoch_customers), route) for
+                    route in routes
+                ];
+                max_index=length(epoch_customers),
+            ).edge_matrix
 
         location_indices = customer_index[epoch_customers]
         new_coordinates = env.instance.static_instance.coordinate[location_indices]
@@ -200,8 +202,7 @@ function anticipative_solver(
             is_must_dispatch[2:end] .= true
         else
             is_must_dispatch[2:end] .=
-                planning_start_time .+ epoch_duration .+ @view(new_duration[1, 2:end]) .>
-                new_start_time[2:end]
+                planning_start_time .+ epoch_duration .+ @view(new_duration[1, 2:end]) .> new_start_time[2:end]
         end
         is_postponable[2:end] .= .!is_must_dispatch[2:end]
         # TODO: avoid code duplication with add_new_customers!
@@ -222,7 +223,7 @@ function anticipative_solver(
             compute_features(state, env.instance)
         end
 
-        return DataSample(; instance=(; state, reward), y_true, x)
+        return DataSample(; info=(; state, reward), y, x)
     end
 
     return obj, dataset

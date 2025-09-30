@@ -63,7 +63,7 @@ function Utils.generate_dataset(b::DynamicVehicleSchedulingBenchmark, dataset_si
     dataset_size = min(dataset_size, length(files))
     return [
         DataSample(;
-            instance=Instance(
+            info=Instance(
                 read_vsp_instance(files[i]);
                 max_requests_per_epoch,
                 Δ_dispatch,

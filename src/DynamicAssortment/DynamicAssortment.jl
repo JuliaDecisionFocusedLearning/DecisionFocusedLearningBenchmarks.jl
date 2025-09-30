@@ -83,7 +83,7 @@ Outputs a data sample containing an [`Instance`](@ref).
 function Utils.generate_sample(
     b::DynamicAssortmentBenchmark, rng::AbstractRNG=MersenneTwister(0)
 )
-    return DataSample(; instance=Instance(b, rng))
+    return DataSample(; info=Instance(b, rng))
 end
 
 """

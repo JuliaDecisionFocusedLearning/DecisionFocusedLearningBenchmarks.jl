@@ -66,9 +66,9 @@ Generate a labeled instance for the subset selection problem.
 function Utils.generate_sample(bench::SubsetSelectionBenchmark, rng::AbstractRNG)
     (; n, k, mapping) = bench
     features = randn(rng, Float32, n)
-    costs = mapping(features)
-    solution = top_k(costs, k)
-    return DataSample(; x=features, θ_true=costs, y_true=solution)
+    θ_true = mapping(features)
+    y_true = top_k(θ_true, k)
+    return DataSample(; x=features, θ=θ_true, y=y_true)
 end
 
 """

@@ -94,12 +94,12 @@ function Utils.generate_sample(
     features = randn(rng, type, p)
     B = rand(rng, Bernoulli(0.5), d, p)
     c̄ = (0.05 / type(sqrt(p)) .* B * features .+ 0.1^(1 / deg)) .^ deg
-    costs = c̄ .+ L * f .+ 0.01 * ν * randn(rng, type, d)
+    θ_true = c̄ .+ L * f .+ 0.01 * ν * randn(rng, type, d)
 
     maximizer = Utils.generate_maximizer(bench)
-    solution = maximizer(costs)
+    y_true = maximizer(θ_true)
 
-    return DataSample(; x=features, θ_true=costs, y_true=solution)
+    return DataSample(; x=features, θ=θ_true, y=y_true)
 end
 
 """

@@ -5,7 +5,7 @@ using Flux: softplus
 using HiGHS: HiGHS
 using JuMP: Model
 using LinearAlgebra: dot
-using Random: Random, MersenneTwister
+using Random: Random, MersenneTwister, AbstractRNG
 using SCIP: SCIP
 using SimpleWeightedGraphs: SimpleWeightedDiGraph
 using StatsBase: StatsBase

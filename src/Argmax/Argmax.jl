@@ -76,9 +76,9 @@ function Utils.generate_sample(
 )
     (; instance_dim, nb_features, encoder) = bench
     features = randn(rng, Float32, nb_features, instance_dim)
-    costs = encoder(features)
-    noisy_solution = one_hot_argmax(costs + noise_std * randn(rng, Float32, instance_dim))
-    return DataSample(; x=features, θ_true=costs, y_true=noisy_solution)
+    θ_true = encoder(features)
+    noisy_y_true = one_hot_argmax(θ_true + noise_std * randn(rng, Float32, instance_dim))
+    return DataSample(; x=features, θ=θ_true, y=noisy_y_true)
 end
 
 """

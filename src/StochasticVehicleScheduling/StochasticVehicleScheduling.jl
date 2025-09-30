@@ -67,7 +67,7 @@ end
 function Utils.objective_value(
     ::StochasticVehicleSchedulingBenchmark, sample::DataSample, y::BitVector
 )
-    return evaluate_solution(y, sample.instance)
+    return evaluate_solution(y, sample.info)
 end
 
 """
@@ -98,7 +98,7 @@ function Utils.generate_sample(
     else
         nothing
     end
-    return DataSample(; x, instance, y_true)
+    return DataSample(; x, info=instance, y=y_true)
 end
 
 """
@@ -147,9 +147,9 @@ $TYPEDSIGNATURES
 function plot_instance(
     ::StochasticVehicleSchedulingBenchmark, sample::DataSample{<:Instance{City}}; kwargs...
 )
-    (; tasks, district_width, width) = sample.instance.city
+    (; tasks, district_width, width) = sample.info.city
     ticks = 0:district_width:width
-    max_time = maximum(t.end_time for t in sample.instance.city.tasks[1:(end - 1)])
+    max_time = maximum(t.end_time for t in sample.info.city.tasks[1:(end - 1)])
     fig = plot(;
         xlabel="x",
         ylabel="y",
@@ -206,9 +206,9 @@ $TYPEDSIGNATURES
 function plot_solution(
     ::StochasticVehicleSchedulingBenchmark, sample::DataSample{<:Instance{City}}; kwargs...
 )
-    (; tasks, district_width, width) = sample.instance.city
+    (; tasks, district_width, width) = sample.info.city
     ticks = 0:district_width:width
-    solution = Solution(sample.y_true, sample.instance)
+    solution = Solution(sample.y_true, sample.info)
     path_list = compute_path_list(solution)
     fig = plot(;
         xlabel="x",
