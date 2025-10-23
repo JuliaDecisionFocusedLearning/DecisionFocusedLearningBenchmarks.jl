@@ -7,8 +7,8 @@ It uses time window values to compute task times as the middle of the interval.
 Round all values to `Int` if `rounded=true`.
 Normalize all time values by the `normalization` parameter.
 """
-function read_vsp_instance(filepath::String; rounded::Bool=false, normalization=3600.0)
-    type = rounded ? Int : Float64
+function read_vsp_instance(filepath::String; normalization=3600.0, digits=2)
+    type = Float64 #rounded ? Int : Float64
     mode = ""
     local edge_weight_type
     local edge_weight_format
@@ -84,12 +84,17 @@ function read_vsp_instance(filepath::String; rounded::Bool=false, normalization=
     duration = mapreduce(permutedims, vcat, duration_matrix)
 
     coordinate = [
-        Point(x / normalization, y / normalization) for
+        Point(round(x / normalization; digits), round(y / normalization; digits)) for
         (x, y) in zip(coordinates[:, 1], coordinates[:, 2])
     ]
     service_time ./= normalization
     start_time ./= normalization
     duration ./= normalization
 
-    return StaticInstance(; coordinate, service_time, start_time, duration)
+    return StaticInstance(;
+        coordinate,
+        service_time=round.(service_time; digits),
+        start_time=round.(start_time; digits),
+        duration=round.(duration; digits),
+    )
 end

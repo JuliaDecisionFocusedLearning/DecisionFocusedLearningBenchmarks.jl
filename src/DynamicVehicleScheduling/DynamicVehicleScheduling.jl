@@ -115,7 +115,7 @@ function Utils.generate_statistical_model(
     b::DynamicVehicleSchedulingBenchmark; seed=nothing
 )
     Random.seed!(seed)
-    return Chain(Dense((b.two_dimensional_features ? 2 : 14) => 1), vec)
+    return Chain(Dense((b.two_dimensional_features ? 2 : 27) => 1), vec)
 end
 
 export DynamicVehicleSchedulingBenchmark
