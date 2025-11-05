@@ -35,7 +35,7 @@ The state also implicitly includes (constant over time):
 - Travel duration matrix ``d_{ij}``: time to travel from location ``i`` to location ``j``
 - Depot location
 
-**Action Space** ``\mathcal{A}``: The action at time step ``t`` is a set of vehicle routes:
+**Action Space** ``\mathcal{A}(s_t)``: The action at time step ``t`` is a set of vehicle routes:
 ```math
 a_t = \{r_1, r_2, \ldots, r_k\}
 ```
@@ -124,15 +124,19 @@ The greedy policy serves all pending customers as soon as they arrive, without c
 ```math
 \xrightarrow[\text{State}]{s_t}
 \fbox{Neural network $\varphi_w$}
-\xrightarrow[\text{Priorities}]{\theta}
+\xrightarrow[\text{Prizes}]{\theta}
 \fbox{Prize-collecting VSP}
 \xrightarrow[\text{Routes}]{a_t}
 ```
 
 **Components**:
 
-1. **Neural Network** ``\varphi_w``: Takes current state features as input and predicts customer priorities ``\theta = (\theta_1, \ldots, \theta_n)``
-2. **Optimization Layer**: Solves the prize-collecting vehicle scheduling problem to determine optimal routes given the predicted priorities
+1. **Neural Network** ``\varphi_w``: Takes current state features as input and predicts customer prizes ``\theta = (\theta_1, \ldots, \theta_n)``, one value per postponable customer.
+2. **Optimization Layer**: Solves the prize-collecting vehicle scheduling problem to determine optimal routes given the predicted prizes, by maximizing total collected prizes minus travel costs:
+    ```math
+    \max_{a_t\in \mathcal{A}(s_t)} \sum_{r \in a_t} \left( \sum_{i \in r} \theta_i - \sum_{(i,j) \in r} d_{ij} \right)
+    ```
+    This can be modeled as a flow linear program on a directed acyclic graph (DAG) and is solved using standard LP solvers.
 
 The neural network architecture adapts to the feature dimensionality:
 - **2D features**: `Dense(2 => 1)`, applied in parallel to each postponable customer
