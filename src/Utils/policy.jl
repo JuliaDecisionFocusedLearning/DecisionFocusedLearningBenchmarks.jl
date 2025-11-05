@@ -64,7 +64,7 @@ By default, the environment is reset before running the policy.
 function evaluate_policy!(
     policy, env::AbstractEnvironment, episodes::Int; seed=get_seed(env), kwargs...
 )
-    total_reward = 0.0
+    rewards = zeros(Float64, episodes)
     datasets = map(1:episodes) do _i
         if _i == 1
             reset!(env; reset_rng=true, seed=seed)
@@ -72,10 +72,10 @@ function evaluate_policy!(
             reset!(env; reset_rng=false)
         end
         reward, dataset = evaluate_policy!(policy, env; reset_env=false, kwargs...)
-        total_reward += reward
+        rewards[_i] = reward
         return dataset
     end
-    return total_reward / episodes, vcat(datasets...)
+    return rewards, datasets
 end
 
 """
@@ -90,8 +90,9 @@ function evaluate_policy!(
     E = length(envs)
     rewards = zeros(Float64, E)
     datasets = map(1:E) do e
-        reward, dataset = evaluate_policy!(policy, envs[e], episodes; kwargs...)
-        rewards[e] = reward
+        rewards, datasets = evaluate_policy!(policy, envs[e], episodes; kwargs...)
+        rewards[e] = sum(reward) / episodes
+        dataset = vcat(datasets...)
         return dataset
     end
     return rewards, vcat(datasets...)
