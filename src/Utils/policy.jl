@@ -88,12 +88,12 @@ function evaluate_policy!(
     policy, envs::Vector{<:AbstractEnvironment}, episodes::Int=1; kwargs...
 )
     E = length(envs)
-    rewards = zeros(Float64, E)
+    avg_rewards = zeros(Float64, E)
     datasets = map(1:E) do e
         rewards, datasets = evaluate_policy!(policy, envs[e], episodes; kwargs...)
-        rewards[e] = sum(reward) / episodes
+        avg_rewards[e] = sum(rewards) / episodes
         dataset = vcat(datasets...)
         return dataset
     end
-    return rewards, vcat(datasets...)
+    return avg_rewards, vcat(datasets...)
 end
