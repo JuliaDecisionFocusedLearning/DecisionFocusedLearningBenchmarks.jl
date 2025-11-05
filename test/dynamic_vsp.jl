@@ -45,7 +45,7 @@
     θ2 = model2(x2)
     y2 = maximizer(θ2; instance=instance2)
     @test size(x, 1) == 2
-    @test size(x2, 1) == 14
+    @test size(x2, 1) == 27
 
     anticipative_value, solution = generate_anticipative_solution(b, env; reset_env=true)
     reset!(env; reset_rng=true)

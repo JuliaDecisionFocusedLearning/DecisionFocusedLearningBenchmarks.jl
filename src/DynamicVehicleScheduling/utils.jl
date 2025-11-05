@@ -8,6 +8,15 @@ sample_indices(rng::AbstractRNG, k, N) = randperm(rng, N)[1:k] .+ 1
 """
 $TYPEDSIGNATURES
 
+Sample k random time values between min_time and max_time.
+"""
+function sample_times(rng::AbstractRNG, k, min_time, max_time; digits=2)
+    return round.(min_time .+ (max_time - min_time) .* rand(rng, k); digits=digits)
+end
+
+"""
+$TYPEDSIGNATURES
+
 Compute the total cost of a set of routes given a distance matrix, i.e. the sum of the distances between each location in the route.
 Note that the first location is implicitly assumed to be the depot, and should not appear in the route.
 """
