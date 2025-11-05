@@ -57,6 +57,13 @@ $TYPEDFIELDS
     two_dimensional_features::Bool = false
 end
 
+"""
+$TYPEDSIGNATURES
+
+Generate a dataset for the dynamic vehicle scheduling benchmark.
+Returns a vector of [`DataSample`](@ref) objects, each containing an [`Instance`](@ref).
+The dataset is generated from pre-existing DVRPTW files.
+"""
 function Utils.generate_dataset(b::DynamicVehicleSchedulingBenchmark, dataset_size::Int=1)
     (; max_requests_per_epoch, Δ_dispatch, epoch_duration, two_dimensional_features) = b
     files = readdir(datadep"dvrptw"; join=true)
@@ -74,6 +81,12 @@ function Utils.generate_dataset(b::DynamicVehicleSchedulingBenchmark, dataset_si
     ]
 end
 
+"""
+$TYPEDSIGNATURES
+
+Creates an environment from an [`Instance`](@ref) of the dynamic vehicle scheduling benchmark.
+The seed of the environment is randomly generated using the provided random number generator.
+"""
 function Utils.generate_environment(
     ::DynamicVehicleSchedulingBenchmark, instance::Instance, rng::AbstractRNG; kwargs...
 )
@@ -81,14 +94,32 @@ function Utils.generate_environment(
     return DVSPEnv(instance; seed)
 end
 
+"""
+$TYPEDSIGNATURES
+
+Returns a linear maximizer for the dynamic vehicle scheduling benchmark, of the form:
+θ ↦ argmax_{y} θᵀg(y) + h(y)
+"""
 function Utils.generate_maximizer(::DynamicVehicleSchedulingBenchmark)
     return LinearMaximizer(oracle; g, h)
 end
 
+"""
+$TYPEDSIGNATURES
+
+Generate a scenario for the dynamic vehicle scheduling benchmark.
+This is a wrapper around the generic scenario generation function.
+"""
 function Utils.generate_scenario(b::DynamicVehicleSchedulingBenchmark, args...; kwargs...)
     return Utils.generate_scenario(args...; kwargs...)
 end
 
+"""
+$TYPEDSIGNATURES
+
+Generate an anticipative solution for the dynamic vehicle scheduling benchmark.
+The solution is computed using the anticipative solver with the benchmark's feature configuration.
+"""
 function Utils.generate_anticipative_solution(
     b::DynamicVehicleSchedulingBenchmark, args...; kwargs...
 )
@@ -97,6 +128,14 @@ function Utils.generate_anticipative_solution(
     )
 end
 
+"""
+$TYPEDSIGNATURES
+
+Generate baseline policies for the dynamic vehicle scheduling benchmark.
+Returns a tuple containing:
+- `lazy`: A policy that dispatches vehicles only when they are ready
+- `greedy`: A policy that dispatches vehicles to the nearest customer
+"""
 function Utils.generate_policies(b::DynamicVehicleSchedulingBenchmark)
     lazy = Policy(
         "Lazy",
@@ -111,6 +150,13 @@ function Utils.generate_policies(b::DynamicVehicleSchedulingBenchmark)
     return (lazy, greedy)
 end
 
+"""
+$TYPEDSIGNATURES
+
+Generate a statistical model for the dynamic vehicle scheduling benchmark.
+The model is a simple linear chain with a single dense layer that maps features to a scalar output.
+The input dimension depends on whether two-dimensional features are used (2 features) or not (27 features).
+"""
 function Utils.generate_statistical_model(
     b::DynamicVehicleSchedulingBenchmark; seed=nothing
 )
