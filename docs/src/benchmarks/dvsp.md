@@ -6,7 +6,7 @@ The Dynamic Vehicle Scheduling Problem (DVSP) is a sequential decision-making pr
 
 ### Overview
 
-In the dynamic vehicle scheduling problem, a fleet operator must decide at each time step which customer requests to serve immediately and which to postpone to future time steps.
+In the dynamic vehicle scheduling problem, a fleet operator must decide at each time step which customer to serve immediately and which to postpone to future time steps.
 The goal is to serve all customers by the end of the planning horizon while minimizing total travel time.
 
 This is a simplified version of the more complex Dynamic Vehicle Routing Problem with Time Windows (DVRPTW), focusing on the core sequential decision-making aspects without capacity or time window constraints.
@@ -24,11 +24,11 @@ The dynamic vehicle scheduling problem can be formulated as a finite-horizon Mar
 s_t = (R_t, D_t, t)
 ```
 where:
-- ``R_t`` are the pending customer requests (not yet served), where each request ``r_i \in R_t`` contains:
+- ``R_t`` are the pending customer (not yet served), where each customer ``r_i \in R_t`` contains:
   - ``x_i, y_i``: 2d spatial coordinates of the customer location
   - ``\tau_i``: start time when the customer needs to be served
   - ``s_i``: service time required to serve the customer
-- ``D_t`` indicates which requests must be dispatched this time step (i.e. that cannot be postponed further, otherwise they will be infeasible at the next time step because of their start time)
+- ``D_t`` indicates which customers must be dispatched this time step (i.e. that cannot be postponed further, otherwise they will be infeasible at the next time step because of their start time)
 - ``t \in \{1, 2, \ldots, T\}`` is the current time step
 
 The state also implicitly includes (constant over time):
@@ -47,7 +47,7 @@ A route is feasible if:
 
 **Transition Dynamics** ``\mathcal{P}(s_{t+1} | s_t, a_t)``: After executing routes ``a_t``:
 
-1. **Remove served customers** from the pending request set
+1. **Remove served customers** from the pending customer set
 2. **Generate new customer arrivals** according to the underlying exogenous distribution
 3. **Update must-dispatch set** based on postponement rules
 
@@ -70,7 +70,7 @@ where ``d_{ij}`` is the travel duration from location ``i`` to location ``j``, a
 
 The main benchmark configuration with the following parameters:
 
-- `max_requests_per_epoch`: Maximum number of new customer requests per time step (default: 10)
+- `max_requests_per_epoch`: Maximum number of new customers per time step (default: 10)
 - `Δ_dispatch`: Time delay between decision and vehicle dispatch (default: 1.0)
 - `epoch_duration`: Duration of each decision time step (default: 1.0)
 - `two_dimensional_features`: Whether to use simplified 2D features instead of full feature set (default: false)
@@ -82,35 +82,42 @@ Problem instances are generated from static vehicle routing datasets and include
 - **Customer locations**: Spatial coordinates for pickup/delivery points
 - **Depot location**: Central starting and ending point for all routes
 - **Travel times**: Distance/duration matrix between all location pairs
-- **Service requirements**: Time needed to serve each customer
+- **Service times**: Service time each customer
 
-The dynamic version samples new customer arrivals from the static instance, drawing new customers by independently sampling their locations and service times.
+The dynamic version samples new customer arrivals from the static instance, drawing new customers by independently sampling:
+- their locations from the set of static customer locations
+- service times, uniformly from the range of service times in the static instance
 
 ### Features
 
-The benchmark provides two feature representations:
+The benchmark provides two feature matrix representations, containing one column per postponable customer in the state:
 
-**Full Features** (14-dimensional):
-- Start times for postponable requests
-- End times (start + service time)
-- Travel time from depot to request
-- Travel time from request to depot  
-- Slack time until next time step
-- Quantile-based travel times to other requests (9 quantiles)
+**Full Features** (27-dimensional):
+- Start times for postponable customers (1)
+- End times (start + service time) (2)
+- Travel time from depot to customer (3)
+- Travel time from customer to depot (4)
+- Slack time until next time step (5)
+- % of must-dispatch customers that can reach this customer on time (6)
+- % of customers reachable from this customer on time (7)
+- % of customers that can reach this customer on time (8)
+- % of customers reachable or that can reach this customer on time (9)
+- Quantile-based travel times to other customers (9 quantiles) (10-18)
+- Quantiles of % of reachable new customers (9 quantiles) (19-27)
 
 **2D Features** (simplified):
-- Travel time from depot to request
-- Mean travel time to other requests
+- Travel time from depot to customer (1)
+- Mean travel time to other customers (2)
 
 ## Benchmark Policies
 
 ### Lazy Policy
 
-The lazy policy postpones all possible requests, serving only those that must be dispatched.
+The lazy policy postpones all possible customers, serving only those that must be dispatched.
 
 ### Greedy Policy  
 
-The greedy policy serves all pending requests as soon as they arrive, without considering future consequences. 
+The greedy policy serves all pending customers as soon as they arrive, without considering future consequences. 
 
 ## Decision-Focused Learning Policy
 
@@ -128,5 +135,7 @@ The greedy policy serves all pending requests as soon as they arrive, without co
 2. **Optimization Layer**: Solves the prize-collecting vehicle scheduling problem to determine optimal routes given the predicted priorities
 
 The neural network architecture adapts to the feature dimensionality:
-- **2D features**: `Dense(2 => 1)` followed by vectorization
-- **Full features**: `Dense(14 => 1)` followed by vectorization
+- **2D features**: `Dense(2 => 1)`, applied in parallel to each postponable customer
+- **Full features**: `Dense(27 => 1)` applied in parallel to each postponable customer
+
+**Note:** one can also use more complex architectures such as a deeper MLP or a graph neural network for better performance.
