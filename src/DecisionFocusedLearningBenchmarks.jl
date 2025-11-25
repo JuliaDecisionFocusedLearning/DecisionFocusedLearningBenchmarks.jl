@@ -70,7 +70,7 @@ export generate_sample, generate_dataset, generate_environments, generate_enviro
 export generate_scenario
 export generate_policies
 export generate_statistical_model
-export generate_maximizer, maximizer_kwargs
+export generate_maximizer
 export generate_anticipative_solution
 export is_exogenous, is_endogenous
 

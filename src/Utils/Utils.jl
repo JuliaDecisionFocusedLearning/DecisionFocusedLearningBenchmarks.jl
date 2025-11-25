@@ -35,7 +35,6 @@ export generate_policies
 export generate_anticipative_solution
 
 export plot_data, compute_gap
-export maximizer_kwargs
 export grid_graph, get_path, path_to_matrix
 export neg_tensor, squeeze_last_dims, average_tensor
 export scip_model, highs_model

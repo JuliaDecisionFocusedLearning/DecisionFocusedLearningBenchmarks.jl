@@ -32,7 +32,10 @@ end
 
     function random_sample()
         return DataSample(;
-            x=randn(rng, 10, 5), θ=rand(rng, 5), y=rand(rng, 10), info="this is an instance"
+            x=randn(rng, 10, 5),
+            θ=rand(rng, 5),
+            y=rand(rng, 10),
+            instance="this is an instance",
         )
     end
 
@@ -41,8 +44,11 @@ end
 
     io = IOBuffer()
     show(io, sample)
-    @test String(take!(io)) ==
-        "DataSample(x=$(sample.x), θ_true=$(sample.θ), y_true=$(sample.y), instance=$(sample.info))"
+    s = String(take!(io))
+    @test occursin("DataSample(", s)
+    @test occursin("θ_true", s)
+    @test occursin("y_true", s)
+    @test occursin("instance=\"this is an instance\"", s)
 
     # Test StatsBase methods
     using StatsBase:

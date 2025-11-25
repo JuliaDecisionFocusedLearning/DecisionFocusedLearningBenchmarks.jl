@@ -13,7 +13,7 @@
     fig1 = DVSP.plot_instance(env)
     @test fig1 isa Plots.Plot
 
-    instance = dataset[1].info
+    instance = dataset[1].instance
     scenario = generate_scenario(b, instance; seed=0)
     v, y = generate_anticipative_solution(b, env, scenario; nb_epochs=3, reset_env=true)
 

@@ -24,7 +24,7 @@
         y_true = sample.y
         @test size(x) == (96, 96, 3, 1)
         @test all(θ_true .<= 0)
-        @test isnothing(sample.info)
+        @test length(sample.info) == 0
 
         θ = model(x)
         @test size(θ) == size(θ_true)
