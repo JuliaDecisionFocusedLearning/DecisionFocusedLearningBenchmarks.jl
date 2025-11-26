@@ -62,13 +62,14 @@ function retrieve_routes(y::AbstractArray, graph::AbstractGraph)
         current_task = task
         while current_task != 1 # < nb_tasks
             push!(route, current_task)
-            local next_task
+            next_task = -1
             for i in outneighbors(graph, current_task)
                 if isapprox(y[current_task, i], 1; atol=0.1)
                     next_task = i
                     break
                 end
             end
+            @assert next_task != -1 "No next task found from task $current_task"
             current_task = next_task
         end
         push!(routes, route)
@@ -93,7 +94,7 @@ function prize_collecting_vsp(
     nb_nodes = nv(graph)
     job_indices = 2:(nb_nodes)
 
-    @variable(model, y[i = 1:nb_nodes, j = 1:nb_nodes; has_edge(graph, i, j)] >= 0)
+    @variable(model, y[i=1:nb_nodes, j=1:nb_nodes; has_edge(graph, i, j)] >= 0)
 
     θ_ext = fill(0.0, location_count(instance))  # no prize for must dispatch requests, only hard constraints
     θ_ext[instance.is_postponable] .= θ
@@ -129,7 +130,9 @@ end
 
 function oracle(θ; instance::DVSPState, kwargs...)
     routes = prize_collecting_vsp(θ; instance=instance, kwargs...)
-    return VSPSolution(routes; max_index=location_count(instance.state_instance)).edge_matrix
+    return VSPSolution(
+        routes; max_index=location_count(instance.state_instance)
+    ).edge_matrix
 end
 
 function g(y; instance, kwargs...)

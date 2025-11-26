@@ -1,6 +1,5 @@
-@testitem "Dynamic VSP Plots" begin
-    using DecisionFocusedLearningBenchmarks.DynamicVehicleScheduling
-    const DVSP = DecisionFocusedLearningBenchmarks.DynamicVehicleScheduling
+@testset "Dynamic VSP Plots" begin
+    import DecisionFocusedLearningBenchmarks.DynamicVehicleScheduling as DVSP
     using Plots
 
     # Create test benchmark and data (similar to scripts/a.jl)

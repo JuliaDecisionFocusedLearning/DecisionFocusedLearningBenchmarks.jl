@@ -1,4 +1,4 @@
-@testitem "Ranking" begin
+@testset "Ranking" begin
     using DecisionFocusedLearningBenchmarks
 
     instance_dim = 10

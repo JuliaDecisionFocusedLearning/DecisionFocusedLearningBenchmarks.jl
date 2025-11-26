@@ -1,4 +1,4 @@
-@testitem "DVSP" begin
+@testset "DVSP" begin
     using DecisionFocusedLearningBenchmarks.DynamicVehicleScheduling
     using Statistics: mean
 

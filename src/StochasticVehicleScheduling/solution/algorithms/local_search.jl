@@ -11,8 +11,8 @@ function solve_deterministic_VSP(
     (; city, graph) = instance
 
     travel_times = [
-        distance(task1.end_point, task2.start_point) for
-        task1 in city.tasks, task2 in city.tasks
+        distance(task1.end_point, task2.start_point) for task1 in city.tasks,
+        task2 in city.tasks
     ]
 
     model = model_builder()
@@ -21,7 +21,7 @@ function solve_deterministic_VSP(
     nb_nodes = nv(graph)
     job_indices = 2:(nb_nodes - 1)
 
-    @variable(model, x[i = 1:nb_nodes, j = 1:nb_nodes; has_edge(graph, i, j)], Bin)
+    @variable(model, x[i=1:nb_nodes, j=1:nb_nodes; has_edge(graph, i, j)], Bin)
 
     @objective(
         model,

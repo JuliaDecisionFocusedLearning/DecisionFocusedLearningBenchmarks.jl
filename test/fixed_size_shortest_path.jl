@@ -1,4 +1,4 @@
-@testitem "FixedSizeShortestPath" begin
+@testset "FixedSizeShortestPath" begin
     using DecisionFocusedLearningBenchmarks.FixedSizeShortestPath
     using Graphs
 

@@ -1,4 +1,4 @@
-@testitem "Warcraft" begin
+@testset "Warcraft" begin
     using DecisionFocusedLearningBenchmarks
     using DecisionFocusedLearningBenchmarks.Utils: objective_value
     using Plots

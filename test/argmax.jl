@@ -1,4 +1,4 @@
-@testitem "Argmax" begin
+@testset "Argmax" begin
     using DecisionFocusedLearningBenchmarks
 
     instance_dim = 10

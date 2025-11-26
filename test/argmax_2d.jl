@@ -1,4 +1,4 @@
-@testitem "Argmax2D" begin
+@testset "Argmax2D" begin
     using DecisionFocusedLearningBenchmarks
     using Plots
 

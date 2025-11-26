@@ -1,4 +1,4 @@
-@testitem "Subset selection" begin
+@testset "Subset selection" begin
     using DecisionFocusedLearningBenchmarks
 
     n = 25

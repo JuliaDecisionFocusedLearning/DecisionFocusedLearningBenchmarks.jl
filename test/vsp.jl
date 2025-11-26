@@ -1,4 +1,4 @@
-@testitem "Stochastic VSP" begin
+@testset "Stochastic VSP" begin
     using DecisionFocusedLearningBenchmarks
     using DecisionFocusedLearningBenchmarks.StochasticVehicleScheduling
     using Graphs

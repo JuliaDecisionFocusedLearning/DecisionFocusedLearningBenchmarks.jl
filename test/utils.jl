@@ -1,4 +1,4 @@
-@testitem "Grid graphs" begin
+@testset "Grid graphs" begin
     using DecisionFocusedLearningBenchmarks.Utils
     using DecisionFocusedLearningBenchmarks.Utils: count_edges, get_path, index_to_coord
     using Graphs
@@ -24,9 +24,17 @@
     end
 end
 
-@testitem "DataSample" begin
+@testset "DataSample" begin
     using DecisionFocusedLearningBenchmarks
     using StableRNGs
+    using StatsBase:
+        ZScoreTransform,
+        UnitRangeTransform,
+        fit,
+        transform,
+        transform!,
+        reconstruct,
+        reconstruct!
 
     rng = StableRNG(1234)
 
@@ -49,16 +57,6 @@ end
     @test occursin("θ_true", s)
     @test occursin("y_true", s)
     @test occursin("instance=\"this is an instance\"", s)
-
-    # Test StatsBase methods
-    using StatsBase:
-        ZScoreTransform,
-        UnitRangeTransform,
-        fit,
-        transform,
-        transform!,
-        reconstruct,
-        reconstruct!
 
     # Create a dataset for testing
     N = 5
@@ -119,7 +117,7 @@ end
     end
 end
 
-@testitem "Maximizers" begin
+@testset "Maximizers" begin
     using DecisionFocusedLearningBenchmarks.Utils: TopKMaximizer
     top_k = TopKMaximizer(3)
     @test top_k([1, 2, 3, 4, 5]) == [0, 0, 1, 1, 1]

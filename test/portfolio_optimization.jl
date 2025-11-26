@@ -1,4 +1,4 @@
-@testitem "Portfolio Optimization" begin
+@testset "Portfolio Optimization" begin
     using DecisionFocusedLearningBenchmarks
 
     d = 50
