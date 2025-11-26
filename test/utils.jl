@@ -58,6 +58,8 @@ end
     @test occursin("y_true", s)
     @test occursin("instance=\"this is an instance\"", s)
 
+    @test propertynames(sample) == (:x, :θ, :y, :info, :instance)
+
     # Create a dataset for testing
     N = 5
     dataset = [random_sample() for _ in 1:N]
