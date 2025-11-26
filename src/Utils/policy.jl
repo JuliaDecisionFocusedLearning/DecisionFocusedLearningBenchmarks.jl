@@ -38,17 +38,17 @@ function evaluate_policy!(
         reset!(env; reset_rng=true, seed=seed)
     end
     total_reward = 0.0
-    local labeled_dataset
+    labeled_dataset = DataSample[]
     while !is_terminated(env)
         y = policy(env; kwargs...)
         features, state = observe(env)
         state_copy = deepcopy(state)  # To avoid mutation issues
         reward = step!(env, y)
-        sample = DataSample(; x=features, y=y, info=(; state=state_copy, reward))
-        if @isdefined labeled_dataset
-            push!(labeled_dataset, sample)
+        sample = DataSample(; x=features, y=y, state=state_copy, reward=reward)
+        if isempty(labeled_dataset)
+            labeled_dataset = typeof(sample)[sample]
         else
-            labeled_dataset = [sample]
+            push!(labeled_dataset, sample)
         end
         total_reward += reward
     end

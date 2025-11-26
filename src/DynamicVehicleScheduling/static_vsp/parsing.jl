@@ -10,14 +10,14 @@ Normalize all time values by the `normalization` parameter.
 function read_vsp_instance(filepath::String; normalization=3600.0, digits=2)
     type = Float64 #rounded ? Int : Float64
     mode = ""
-    local edge_weight_type
-    local edge_weight_format
+    edge_weight_type = ""
+    edge_weight_format = ""
     duration_matrix = Vector{type}[]
     nb_locations = 0
-    local demand
-    local service_time
-    local coordinates
-    local start_time
+    demand = type[]
+    service_time = type[]
+    coordinates = Matrix{type}(undef, 0, 2)
+    start_time = type[]
 
     file = open(filepath, "r")
     for line in eachline(file)

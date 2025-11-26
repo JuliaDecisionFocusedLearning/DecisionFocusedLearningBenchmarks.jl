@@ -1,4 +1,4 @@
-@testitem "Subset selection" begin
+@testset "Subset selection" begin
     using DecisionFocusedLearningBenchmarks
 
     n = 25
@@ -23,7 +23,7 @@
         @test size(x) == (n,)
         @test length(θ_true) == n
         @test length(y_true) == n
-        @test isnothing(sample.info)
+        @test length(sample.info) == 0
         @test all(y_true .== maximizer(θ_true))
 
         # Features and true weights should be equal

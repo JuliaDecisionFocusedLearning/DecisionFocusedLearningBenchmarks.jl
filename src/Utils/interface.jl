@@ -99,26 +99,6 @@ function compute_gap end
 """
 $TYPEDSIGNATURES
 
-For simple benchmarks where there is no instance object, maximizer does not need any keyword arguments.
-"""
-function maximizer_kwargs(
-    ::AbstractBenchmark, sample::DataSample{Nothing,F,S,C}
-) where {F,S,C}
-    return NamedTuple()
-end
-
-"""
-$TYPEDSIGNATURES
-
-For benchmarks where there is an instance object, maximizer needs the instance object as a keyword argument.
-"""
-function maximizer_kwargs(::AbstractBenchmark, sample::DataSample)
-    return (; instance=sample.info)
-end
-
-"""
-$TYPEDSIGNATURES
-
 Default behaviour of `objective_value`.
 """
 function objective_value(::AbstractBenchmark, θ::AbstractArray, y::AbstractArray)
@@ -175,7 +155,7 @@ function compute_gap(
             target_obj = objective_value(bench, sample)
             x = sample.x
             θ = statistical_model(x)
-            y = maximizer(θ; maximizer_kwargs(bench, sample)...)
+            y = maximizer(θ; sample.info...)
             obj = objective_value(bench, sample, y)
             Δ = check ? obj - target_obj : target_obj - obj
             return Δ / abs(target_obj)
@@ -234,7 +214,7 @@ Uses the info field of the sample as the instance.
 function generate_environment(
     bench::AbstractDynamicBenchmark, sample::DataSample, rng::AbstractRNG; kwargs...
 )
-    return generate_environment(bench, sample.info, rng; kwargs...)
+    return generate_environment(bench, sample.instance, rng; kwargs...)
 end
 
 """
@@ -250,7 +230,7 @@ function generate_environments(
     kwargs...,
 )
     Random.seed!(rng, seed)
-    return map(dataset) do instance
-        generate_environment(bench, instance, rng; kwargs...)
+    return map(dataset) do sample
+        generate_environment(bench, sample, rng; kwargs...)
     end
 end

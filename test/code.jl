@@ -1,4 +1,4 @@
-@testitem "Aqua" begin
+@testset "Aqua" begin
     using Aqua
     Aqua.test_all(
         DecisionFocusedLearningBenchmarks;
@@ -7,19 +7,22 @@
     )
 end
 
-@testitem "JET" begin
+@testset "JET" begin
     using JET
-    JET.test_package(DecisionFocusedLearningBenchmarks; target_defined_modules=true)
+    JET.test_package(
+        DecisionFocusedLearningBenchmarks;
+        target_modules=[DecisionFocusedLearningBenchmarks],
+    )
 end
 
-@testitem "JuliaFormatter" begin
+@testset "JuliaFormatter" begin
     using JuliaFormatter
     @test JuliaFormatter.format(
         DecisionFocusedLearningBenchmarks; verbose=false, overwrite=false
     )
 end
 
-@testitem "Documenter" begin
+@testset "Documenter" begin
     using Documenter
     Documenter.doctest(DecisionFocusedLearningBenchmarks)
 end

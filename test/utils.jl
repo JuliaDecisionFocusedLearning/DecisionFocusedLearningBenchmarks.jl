@@ -1,4 +1,4 @@
-@testitem "Grid graphs" begin
+@testset "Grid graphs" begin
     using DecisionFocusedLearningBenchmarks.Utils
     using DecisionFocusedLearningBenchmarks.Utils: count_edges, get_path, index_to_coord
     using Graphs
@@ -24,27 +24,9 @@
     end
 end
 
-@testitem "DataSample" begin
+@testset "DataSample" begin
     using DecisionFocusedLearningBenchmarks
     using StableRNGs
-
-    rng = StableRNG(1234)
-
-    function random_sample()
-        return DataSample(;
-            x=randn(rng, 10, 5), θ=rand(rng, 5), y=rand(rng, 10), info="this is an instance"
-        )
-    end
-
-    sample = random_sample()
-    @test sample isa DataSample
-
-    io = IOBuffer()
-    show(io, sample)
-    @test String(take!(io)) ==
-        "DataSample(x=$(sample.x), θ_true=$(sample.θ), y_true=$(sample.y), instance=$(sample.info))"
-
-    # Test StatsBase methods
     using StatsBase:
         ZScoreTransform,
         UnitRangeTransform,
@@ -53,6 +35,30 @@ end
         transform!,
         reconstruct,
         reconstruct!
+
+    rng = StableRNG(1234)
+
+    function random_sample()
+        return DataSample(;
+            x=randn(rng, 10, 5),
+            θ=rand(rng, 5),
+            y=rand(rng, 10),
+            instance="this is an instance",
+        )
+    end
+
+    sample = random_sample()
+    @test sample isa DataSample
+
+    io = IOBuffer()
+    show(io, sample)
+    s = String(take!(io))
+    @test occursin("DataSample(", s)
+    @test occursin("θ_true", s)
+    @test occursin("y_true", s)
+    @test occursin("instance=\"this is an instance\"", s)
+
+    @test propertynames(sample) == (:x, :θ, :y, :info, :instance)
 
     # Create a dataset for testing
     N = 5
@@ -113,7 +119,7 @@ end
     end
 end
 
-@testitem "Maximizers" begin
+@testset "Maximizers" begin
     using DecisionFocusedLearningBenchmarks.Utils: TopKMaximizer
     top_k = TopKMaximizer(3)
     @test top_k([1, 2, 3, 4, 5]) == [0, 0, 1, 1, 1]

@@ -67,7 +67,7 @@ end
 function Utils.objective_value(
     ::StochasticVehicleSchedulingBenchmark, sample::DataSample, y::BitVector
 )
-    return evaluate_solution(y, sample.info)
+    return evaluate_solution(y, sample.instance)
 end
 
 """
@@ -98,7 +98,7 @@ function Utils.generate_sample(
     else
         nothing
     end
-    return DataSample(; x, info=instance, y=y_true)
+    return DataSample(; x, instance, y=y_true)
 end
 
 """
@@ -145,11 +145,12 @@ end
 $TYPEDSIGNATURES
 """
 function plot_instance(
-    ::StochasticVehicleSchedulingBenchmark, sample::DataSample{<:Instance{City}}; kwargs...
+    ::StochasticVehicleSchedulingBenchmark, sample::DataSample; kwargs...
 )
-    (; tasks, district_width, width) = sample.info.city
+    @assert hasproperty(sample.instance, :city) "Sample does not contain city information."
+    (; tasks, district_width, width) = sample.instance.city
     ticks = 0:district_width:width
-    max_time = maximum(t.end_time for t in sample.info.city.tasks[1:(end - 1)])
+    max_time = maximum(t.end_time for t in sample.instance.city.tasks[1:(end - 1)])
     fig = plot(;
         xlabel="x",
         ylabel="y",
@@ -204,11 +205,12 @@ end
 $TYPEDSIGNATURES
 """
 function plot_solution(
-    ::StochasticVehicleSchedulingBenchmark, sample::DataSample{<:Instance{City}}; kwargs...
+    ::StochasticVehicleSchedulingBenchmark, sample::DataSample; kwargs...
 )
-    (; tasks, district_width, width) = sample.info.city
+    @assert hasproperty(sample.instance, :city) "Sample does not contain city information."
+    (; tasks, district_width, width) = sample.instance.city
     ticks = 0:district_width:width
-    solution = Solution(sample.y, sample.info)
+    solution = Solution(sample.y, sample.instance)
     path_list = compute_path_list(solution)
     fig = plot(;
         xlabel="x",
