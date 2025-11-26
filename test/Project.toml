@@ -22,4 +22,6 @@ DecisionFocusedLearningBenchmarks = {path = ".."}
 
 [compat]
 Aqua = "0.8.14"
+JET = "0.11"
+JuliaFormatter = "1"
 Test = "1"
