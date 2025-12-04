@@ -1,7 +1,7 @@
 name = "DecisionFocusedLearningBenchmarks"
 uuid = "2fbe496a-299b-4c81-bab5-c44dfc55cf20"
 authors = ["Members of JuliaDecisionFocusedLearning"]
-version = "0.3.0"
+version = "0.4.0"
 
 [workspace]
 projects = ["docs", "test"]
