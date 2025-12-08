@@ -1,4 +1,4 @@
-@testitem "DVSP" begin
+@testset "DVSP" begin
     using DecisionFocusedLearningBenchmarks.DynamicVehicleScheduling
     using Statistics: mean
 
@@ -26,7 +26,7 @@
     @test mean(r_lazy) <= mean(r_greedy)
 
     env = environments[1]
-    instance = dataset[1].info
+    instance = dataset[1].instance
     scenario = generate_scenario(b, instance)
     v, y = generate_anticipative_solution(b, env, scenario; nb_epochs=2, reset_env=true)
 
@@ -45,7 +45,7 @@
     θ2 = model2(x2)
     y2 = maximizer(θ2; instance=instance2)
     @test size(x, 1) == 2
-    @test size(x2, 1) == 14
+    @test size(x2, 1) == 27
 
     anticipative_value, solution = generate_anticipative_solution(b, env; reset_env=true)
     reset!(env; reset_rng=true)

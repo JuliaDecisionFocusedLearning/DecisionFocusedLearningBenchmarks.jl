@@ -1,4 +1,4 @@
-@testitem "Stochastic VSP" begin
+@testset "Stochastic VSP" begin
     using DecisionFocusedLearningBenchmarks
     using DecisionFocusedLearningBenchmarks.StochasticVehicleScheduling
     using Graphs
@@ -42,7 +42,7 @@
 
     for sample in dataset
         x = sample.x
-        instance = sample.info
+        instance = sample.instance
         E = ne(instance.graph)
         @test size(x) == (20, E)
         θ = model(x)

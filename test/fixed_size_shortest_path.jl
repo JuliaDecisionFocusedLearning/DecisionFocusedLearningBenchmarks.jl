@@ -1,4 +1,4 @@
-@testitem "FixedSizeShortestPath" begin
+@testset "FixedSizeShortestPath" begin
     using DecisionFocusedLearningBenchmarks.FixedSizeShortestPath
     using Graphs
 
@@ -25,7 +25,7 @@
         @test size(x) == (p,)
         @test length(θ_true) == A
         @test length(y_true) == A
-        @test isnothing(sample.info)
+        @test length(sample.info) == 0
         @test all(y_true .== maximizer(θ_true))
         θ = model(x)
         @test length(θ) == length(θ_true)

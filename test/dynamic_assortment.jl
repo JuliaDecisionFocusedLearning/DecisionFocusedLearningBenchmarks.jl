@@ -1,8 +1,6 @@
-@testsnippet DAPSetup begin
-    const DAP = DecisionFocusedLearningBenchmarks.DynamicAssortment
-end
+const DAP = DecisionFocusedLearningBenchmarks.DynamicAssortment
 
-@testitem "DynamicAssortment - Benchmark Construction" setup = [Imports, DAPSetup] begin
+@testset "DynamicAssortment - Benchmark Construction" begin
     # Test default constructor
     b = DynamicAssortmentBenchmark()
     @test b.N == 20
@@ -28,7 +26,7 @@ end
     @test DAP.max_steps(b) == 80
 end
 
-@testitem "DynamicAssortment - Instance Generation" setup = [Imports, DAPSetup] begin
+@testset "DynamicAssortment - Instance Generation" begin
     b = DynamicAssortmentBenchmark(; N=5, d=3, K=2)
     rng = MersenneTwister(42)
 
@@ -53,7 +51,7 @@ end
     @test DAP.prices(instance) == instance.prices
 end
 
-@testitem "DynamicAssortment - Environment Initialization" setup = [Imports, DAPSetup] begin
+@testset "DynamicAssortment - Environment Initialization" begin
     b = DynamicAssortmentBenchmark(; N=5, d=2, K=2, max_steps=10)
     instance = DAP.Instance(b, MersenneTwister(42))
 
@@ -80,7 +78,7 @@ end
     @test DAP.prices(env) == instance.prices
 end
 
-@testitem "DynamicAssortment - Environment Reset" setup = [Imports, DAPSetup] begin
+@testset "DynamicAssortment - Environment Reset" begin
     b = DynamicAssortmentBenchmark(; N=3, d=1, K=2, max_steps=5)
     instance = DAP.Instance(b, MersenneTwister(42))
     env = DAP.Environment(instance; seed=123)
@@ -107,7 +105,7 @@ end
     @test env.features ≈ expected_features
 end
 
-@testitem "DynamicAssortment - Hype Update Logic" setup = [Imports, DAPSetup] begin
+@testset "DynamicAssortment - Hype Update Logic" begin
     b = DynamicAssortmentBenchmark(; N=5, d=1, K=2)
     instance = DAP.Instance(b, MersenneTwister(42))
     env = DAP.Environment(instance; seed=123)
@@ -135,7 +133,7 @@ end
     @test all(hype .== 1.0)  # Should not affect any item hype
 end
 
-@testitem "DynamicAssortment - Choice Probabilities" setup = [Imports, DAPSetup] begin
+@testset "DynamicAssortment - Choice Probabilities" begin
     b = DynamicAssortmentBenchmark(; N=3, d=1, K=2)
     instance = DAP.Instance(b, MersenneTwister(42))
     env = DAP.Environment(instance; seed=123)
@@ -167,7 +165,7 @@ end
     @test probs[4] ≈ 1.0  # Only no-purchase available
 end
 
-@testitem "DynamicAssortment - Expected Revenue" setup = [Imports, DAPSetup] begin
+@testset "DynamicAssortment - Expected Revenue" begin
     b = DynamicAssortmentBenchmark(; N=3, d=1, K=2)
     instance = DAP.Instance(b, MersenneTwister(42))
     env = DAP.Environment(instance; seed=123)
@@ -183,7 +181,7 @@ end
     @test revenue == 0.0  # Only no-purchase available with price 0
 end
 
-@testitem "DynamicAssortment - Environment Step" setup = [Imports, DAPSetup] begin
+@testset "DynamicAssortment - Environment Step" begin
     b = DynamicAssortmentBenchmark(; N=3, d=1, K=2, max_steps=5)
     instance = DAP.Instance(b, MersenneTwister(42))
     env = DAP.Environment(instance; seed=123)
@@ -219,7 +217,7 @@ end
     @test_throws AssertionError step!(env, assortment)
 end
 
-@testitem "DynamicAssortment - Endogenous vs Exogenous" setup = [Imports, DAPSetup] begin
+@testset "DynamicAssortment - Endogenous vs Exogenous" begin
     # Test endogenous environment (features change with purchases)
     b_endo = DynamicAssortmentBenchmark(; N=3, d=1, K=2, exogenous=false)
     instance_endo = DAP.Instance(b_endo, MersenneTwister(42))
@@ -243,7 +241,7 @@ end
     @test all(env_exo.d_features .== 0.0)  # Delta features should remain zero
 end
 
-@testitem "DynamicAssortment - Observation" setup = [Imports, DAPSetup] begin
+@testset "DynamicAssortment - Observation" begin
     b = DynamicAssortmentBenchmark(; N=3, d=2, max_steps=10)
     instance = DAP.Instance(b, MersenneTwister(42))
     env = DAP.Environment(instance; seed=123)
@@ -266,7 +264,7 @@ end
     @test obs1 != obs2  # Observations should differ after purchase
 end
 
-@testitem "DynamicAssortment - Policies" setup = [Imports, DAPSetup] begin
+@testset "DynamicAssortment - Policies" begin
     using Statistics: mean
 
     b = DynamicAssortmentBenchmark(; N=5, d=2, K=3, max_steps=20)
@@ -307,7 +305,7 @@ end
     @test sum(greedy_action) == DAP.assortment_size(env)
 end
 
-@testitem "DynamicAssortment - Model and Maximizer Integration" setup = [Imports, DAPSetup] begin
+@testset "DynamicAssortment - Model and Maximizer Integration" begin
     b = DynamicAssortmentBenchmark(; N=4, d=3, K=2)
 
     # Test statistical model generation

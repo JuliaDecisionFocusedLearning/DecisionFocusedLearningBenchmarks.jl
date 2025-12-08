@@ -39,8 +39,8 @@ function create_VSP_graph(city::City)
     job_tasks = 2:(city.nb_tasks + 1)
 
     travel_times = [
-        distance(task1.end_point, task2.start_point) for
-        task1 in city.tasks, task2 in city.tasks
+        distance(task1.end_point, task2.start_point) for task1 in city.tasks,
+        task2 in city.tasks
     ]
 
     # Create existing edges

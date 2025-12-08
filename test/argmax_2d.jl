@@ -1,4 +1,4 @@
-@testitem "Argmax2D" begin
+@testset "Argmax2D" begin
     using DecisionFocusedLearningBenchmarks
     using Plots
 
@@ -24,7 +24,7 @@
         x = sample.x
         θ_true = sample.θ
         y_true = sample.y
-        instance = sample.info
+        instance = sample.instance
         @test length(x) == nb_features
         @test length(θ_true) == 2
         @test length(y_true) == 2
