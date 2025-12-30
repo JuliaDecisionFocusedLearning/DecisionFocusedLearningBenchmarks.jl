@@ -197,16 +197,21 @@ Features observed by the agent at current step, as a concatenation of:
 - change in hype and saturation features from the starting state
 - normalized current step (divided by max steps and multiplied by 10)
 All features are normalized by dividing by 10.
+
+State
 """
 function Utils.observe(env::Environment)
     delta_features = env.features[2:3, :] .- env.instance.starting_hype_and_saturation
-    return vcat(
+    features = vcat(
         env.features,
         env.d_features,
         delta_features,
         ones(1, item_count(env)) .* (env.step / max_steps(env) * 10),
-    ) ./ 10,
-    nothing
+    ) ./ 10
+
+    state = (env.features, env.purchase_history)
+
+    return features, state
 end
 
 """

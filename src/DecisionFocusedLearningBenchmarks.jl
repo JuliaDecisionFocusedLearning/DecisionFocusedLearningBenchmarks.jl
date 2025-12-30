@@ -57,6 +57,7 @@ include("PortfolioOptimization/PortfolioOptimization.jl")
 include("StochasticVehicleScheduling/StochasticVehicleScheduling.jl")
 include("DynamicVehicleScheduling/DynamicVehicleScheduling.jl")
 include("DynamicAssortment/DynamicAssortment.jl")
+include("Maintenance/Maintenance.jl")
 
 using .Utils
 
@@ -89,6 +90,7 @@ using .PortfolioOptimization
 using .StochasticVehicleScheduling
 using .DynamicVehicleScheduling
 using .DynamicAssortment
+using .Maintenance
 
 export Argmax2DBenchmark
 export ArgmaxBenchmark
@@ -100,5 +102,6 @@ export RankingBenchmark
 export StochasticVehicleSchedulingBenchmark
 export SubsetSelectionBenchmark
 export WarcraftBenchmark
+export MaintenanceBenchmark
 
 end # module DecisionFocusedLearningBenchmarks
