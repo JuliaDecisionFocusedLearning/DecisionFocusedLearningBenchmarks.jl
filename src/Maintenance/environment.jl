@@ -157,11 +157,11 @@ Draw random degradations for components that are not maintained.
 """
 function Utils.step!(env::Environment, maintenance::BitVector)
     @assert !Utils.is_terminated(env) "Environment is terminated, cannot act!"
-    reward = maintenance_cost(env, maintenance) + degradation_cost(env)
+    cost = maintenance_cost(env, maintenance) + degradation_cost(env)
     degrad!(env)
     maintain!(env, maintenance)
     env.step += 1
-    return reward
+    return cost
 end
 
 

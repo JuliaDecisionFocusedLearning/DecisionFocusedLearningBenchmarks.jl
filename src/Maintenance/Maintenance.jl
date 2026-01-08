@@ -64,7 +64,7 @@ function MaintenanceBenchmark(;
     p=0.2,
     c_f=10.0,
     c_m=3.0,
-    max_steps=10,
+    max_steps=80,
 )
     return MaintenanceBenchmark(
         N, K, n, p, c_f, c_m, max_steps
@@ -142,7 +142,7 @@ function Utils.generate_policies(::MaintenanceBenchmark)
         "policy that maintains components when they are in the last state before failure, up to the maintenance capacity",
         greedy_policy,
     )
-    return (greedy)
+    return (greedy,)
 end
 
 export MaintenanceBenchmark
