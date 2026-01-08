@@ -61,6 +61,7 @@ Single-stage optimization problems under uncertainty:
 Multi-stage sequential decision-making problems:
 - [`DynamicVehicleSchedulingBenchmark`](@ref): multi-stage vehicle scheduling under customer uncertainty
 - [`DynamicAssortmentBenchmark`](@ref): sequential product assortment selection with endogenous uncertainty
+- [`MaintenanceBenchmark`](@ref): maintenance problem with resource constraint
 
 ## Getting Started
 
