@@ -6,10 +6,10 @@ Environment for the maintenance problem.
 # Fields
 $TYPEDFIELDS
 """
-@kwdef mutable struct Environment{I<:Instance,R<:AbstractRNG,S<:Union{Nothing,Int}} <:
-                      Utils.AbstractEnvironment
+@kwdef mutable struct Environment{R<:AbstractRNG,S<:Union{Nothing,Int}} <:
+                      AbstractEnvironment
     "associated instance"
-    instance::I
+    instance::Instance
     "current step"
     step::Int
     "degradation state"

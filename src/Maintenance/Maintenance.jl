@@ -44,7 +44,6 @@ struct MaintenanceBenchmark <: AbstractDynamicBenchmark{true}
         @assert K <= N "number of maintained components $K > number of components $N"
         @assert K >= 0 && N >= 0 "number of components should be positive"
         @assert 0 <= p <= 1 "degradation probability $p is not in [0, 1]"
-        # ...
         return new(N, K, n, p, c_f, c_m, max_steps)
     end
 end

@@ -7,7 +7,7 @@ Environment for the dynamic assortment problem.
 $TYPEDFIELDS
 """
 @kwdef mutable struct Environment{I<:Instance,R<:AbstractRNG,S<:Union{Nothing,Int}} <:
-                      Utils.AbstractEnvironment
+                      AbstractEnvironment
     "associated instance"
     instance::I
     "current step"
