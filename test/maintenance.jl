@@ -47,8 +47,8 @@ end
     @test state1 != state2
 
     # Test instance structure
-    @test length(instance.starting_state) == 10 
-    @test all(1.0 ≤ s ≤ 5 for s in instance.starting_state)  
+    @test length(instance.starting_state) == 10
+    @test all(1.0 ≤ s ≤ 5 for s in instance.starting_state)
 
     # Test accessor functions
     @test maintenance.component_count(instance) == 10
@@ -101,18 +101,18 @@ end
     instance = maintenance.Instance(b, MersenneTwister(42))
     env = maintenance.Environment(instance; seed=123)
 
-    env.degradation_state = [1,1]
-    @test maintenance.maintenance_cost(env, BitVector([false, false])) == 0.0 
-    @test maintenance.maintenance_cost(env, BitVector([false, true])) == 3.0 
-    @test maintenance.maintenance_cost(env, BitVector([true, true])) == 6.0 
+    env.degradation_state = [1, 1]
+    @test maintenance.maintenance_cost(env, BitVector([false, false])) == 0.0
+    @test maintenance.maintenance_cost(env, BitVector([false, true])) == 3.0
+    @test maintenance.maintenance_cost(env, BitVector([true, true])) == 6.0
 
-    @test maintenance.degradation_cost(env) == 0.0 
-    env.degradation_state = [2,2]
-    @test maintenance.degradation_cost(env) == 0.0 
-    env.degradation_state = [3,2]
-    @test maintenance.degradation_cost(env) == 10.0 
-    env.degradation_state = [3,3]
-    @test maintenance.degradation_cost(env) == 20.0 
+    @test maintenance.degradation_cost(env) == 0.0
+    env.degradation_state = [2, 2]
+    @test maintenance.degradation_cost(env) == 0.0
+    env.degradation_state = [3, 2]
+    @test maintenance.degradation_cost(env) == 10.0
+    env.degradation_state = [3, 3]
+    @test maintenance.degradation_cost(env) == 20.0
 end
 
 @testset "Maintenance - Environment Step" begin
@@ -146,19 +146,18 @@ end
     b = MaintenanceBenchmark()
     instance = maintenance.Instance(b, MersenneTwister(42))
     env = maintenance.Environment(instance; seed=123)
-    env.degradation_state = [1,1]
+    env.degradation_state = [1, 1]
 
     state, features = observe(env)
 
-    @test state == [1,1]
+    @test state == [1, 1]
     @test features === state
 
-    env.degradation_state = [2,3]
+    env.degradation_state = [2, 3]
     state2, _ = observe(env)
 
     @test state != state2  # Observations should differ after purchase
 end
-
 
 @testset "Maintenance - Policies" begin
     using Statistics: mean
@@ -189,7 +188,6 @@ end
     @test greedy_action isa BitVector && length(greedy_action) == 2
 end
 
-
 @testset "Maintenance - Model and Maximizer Integration" begin
     b = MaintenanceBenchmark()
 
@@ -217,15 +215,14 @@ end
 
     @test length(θ) == 2
 
-    θ = [1,2]
+    θ = [1, 2]
     @test maximizer(θ) == BitVector([false, true])
 
     b = MaintenanceBenchmark(; N=10, K=3, n=5, p=0.3, c_f=5.0, c_m=3.0, max_steps=50)
     θ = [i for i in 1:10]
     maximizer = generate_maximizer(b)
-    @test maximizer(θ) == BitVector([false, false, false, false, false, false, false, true, true, true])
-
-
+    @test maximizer(θ) ==
+        BitVector([false, false, false, false, false, false, false, true, true, true])
 
     #test maximizer output
 end

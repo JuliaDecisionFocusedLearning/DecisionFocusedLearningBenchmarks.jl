@@ -199,17 +199,21 @@ Features observed by the agent at current step, as a concatenation of:
 All features are normalized by dividing by 10.
 
 State
+Return as a tuple:
+- `env.features`: the current feature matrix (feature vector for all items).
+- `env.purchase_history`: the purchase history over the most recent steps.
 """
 function Utils.observe(env::Environment)
     delta_features = env.features[2:3, :] .- env.instance.starting_hype_and_saturation
-    features = vcat(
-        env.features,
-        env.d_features,
-        delta_features,
-        ones(1, item_count(env)) .* (env.step / max_steps(env) * 10),
-    ) ./ 10
+    features =
+        vcat(
+            env.features,
+            env.d_features,
+            delta_features,
+            ones(1, item_count(env)) .* (env.step / max_steps(env) * 10),
+        ) ./ 10
 
-    state = (env.features, env.purchase_history)
+    state = (copy(env.features), copy(env.purchase_history))
 
     return features, state
 end

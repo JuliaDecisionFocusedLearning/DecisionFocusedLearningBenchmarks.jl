@@ -246,22 +246,28 @@ end
     instance = DAP.Instance(b, MersenneTwister(42))
     env = DAP.Environment(instance; seed=123)
 
-    obs, info = observe(env)
+    features, state = observe(env)
 
     # Check observation dimensions: (d + 8, N)
     # Features: prices(1) + hype_sat(2) + static(d) + d_features(2) + delta_features(2) + step(1)
     expected_rows = 2 + 8  # d + 8 where d=2
-    @test size(obs) == (expected_rows, 3)
-    @test info === nothing
+    @test size(features) == (expected_rows, 3)
 
-    @test all(-1.0 ≤ x ≤ 1.0 for x in obs)
+    v, purchase_history = state
+    @test size(v) == (5, 3)
+
+    @test all(-1.0 ≤ x ≤ 1.0 for x in features)
 
     # Test observation changes with step
-    obs1, _ = observe(env)
-    DAP.buy_item!(env, 1)
-    obs2, _ = observe(env)
+    features1, state1 = observe(env)
+    v, purchase_history1 = state1
 
-    @test obs1 != obs2  # Observations should differ after purchase
+    DAP.buy_item!(env, 1)
+    features2, state2 = observe(env)
+    _, purchase_history2 = state2
+
+    @test purchase_history1 != purchase_history2  # Observations should differ after purchase
+    @test features1 != features2
 end
 
 @testset "DynamicAssortment - Policies" begin

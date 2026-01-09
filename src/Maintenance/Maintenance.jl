@@ -15,7 +15,7 @@ using Combinatorics: combinations
 $TYPEDEF
 
 Benchmark for a standard maintenance problem with resource constraints.
-Components are identical and degrade idependently over time.
+Components are identical and degrade independently over time.
 A high cost is incurred for each component that reaches the final degradation level. 
 A cost is also incurred for maintaining a component. 
 The number of simultaneous maintenance operations is limited by a maintenance capacity constraint.
@@ -39,6 +39,14 @@ struct MaintenanceBenchmark <: AbstractDynamicBenchmark{true}
     c_m::Float64
     "number of steps per episode"
     max_steps::Int
+
+    function MaintenanceBenchmark(N, K, n, p, c_f, c_m, max_steps)
+        @assert K <= N "number of maintained components $K > number of components $N"
+        @assert K >= 0 && N >= 0 "number of components should be positive"
+        @assert 0 <= p <= 1 "degradation probability $p is not in [0, 1]"
+        # ...
+        return new(N, K, n, p, c_f, c_m, max_steps)
+    end
 end
 
 """
@@ -49,26 +57,15 @@ end
         p=0.2
         c_f=10.0,
         c_m=3.0,
-        max_steps=10,
+        max_steps=80,
     )
 
 Constructor for [`MaintenanceBenchmark`](@ref).
 By default, the benchmark has 2 components, maintenance capacity 1, number of degradation levels 3, 
-degradation probability 0.2, failure cost 10.0, maintenance cost 3.0, 10 steps per episode, and is exogenous.
+degradation probability 0.2, failure cost 10.0, maintenance cost 3.0, 80 steps per episode, and is exogenous.
 """
-
-function MaintenanceBenchmark(;
-    N=2,
-    K=1,
-    n=3,
-    p=0.2,
-    c_f=10.0,
-    c_m=3.0,
-    max_steps=80,
-)
-    return MaintenanceBenchmark(
-        N, K, n, p, c_f, c_m, max_steps
-    )
+function MaintenanceBenchmark(; N=2, K=1, n=3, p=0.2, c_f=10.0, c_m=3.0, max_steps=80)
+    return MaintenanceBenchmark(N, K, n, p, c_f, c_m, max_steps)
 end
 
 # Accessor functions
@@ -90,9 +87,7 @@ $TYPEDSIGNATURES
 
 Outputs a data sample containing an [`Instance`](@ref).
 """
-function Utils.generate_sample(
-    b::MaintenanceBenchmark, rng::AbstractRNG=MersenneTwister(0)
-)
+function Utils.generate_sample(b::MaintenanceBenchmark, rng::AbstractRNG)
     return DataSample(; instance=Instance(b, rng))
 end
 
@@ -105,7 +100,7 @@ The model is a small neural network with one hidden layer no activation function
 function Utils.generate_statistical_model(b::MaintenanceBenchmark; seed=nothing)
     Random.seed!(seed)
     N = component_count(b)
-    return Chain(Dense(N  => N), Dense(N => N), vec)
+    return Chain(Dense(N => N), Dense(N => N), vec)
 end
 
 """
