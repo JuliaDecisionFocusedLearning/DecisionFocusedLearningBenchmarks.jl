@@ -224,5 +224,6 @@ end
     @test maximizer(θ) ==
         BitVector([false, false, false, false, false, false, false, true, true, true])
 
-    #test maximizer output
+    θ = fill(-1.0, 10)
+    @test maximizer(θ) == falses(10)
 end
