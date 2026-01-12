@@ -14,6 +14,7 @@ using Random
     include("ranking.jl")
     include("subset_selection.jl")
     include("fixed_size_shortest_path.jl")
+    include("maintenance.jl")
     include("warcraft.jl")
     include("vsp.jl")
     include("portfolio_optimization.jl")

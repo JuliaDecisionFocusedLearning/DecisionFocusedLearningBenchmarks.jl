@@ -72,6 +72,18 @@ Modules = [DecisionFocusedLearningBenchmarks.FixedSizeShortestPath]
 Public = false
 ```
 
+## Maintenance
+
+```@autodocs
+Modules = [DecisionFocusedLearningBenchmarks.Maintenance]
+Private = false
+```
+
+```@autodocs
+Modules = [DecisionFocusedLearningBenchmarks.Maintenance]
+Public = false
+```
+
 ## Portfolio Optimization
 
 ```@autodocs
