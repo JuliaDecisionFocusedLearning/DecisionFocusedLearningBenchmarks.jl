@@ -22,7 +22,7 @@
     policies = generate_policies(b)
     lazy = policies[1]
     _, d = evaluate_policy!(lazy, env)
-    fig3 = DVSP.plot_routes(d[1].info.state, d[1].y)
+    fig3 = DVSP.plot_routes(d[1].instance, d[1].y)
     @test fig3 isa Plots.Plot
 
     # Test animation

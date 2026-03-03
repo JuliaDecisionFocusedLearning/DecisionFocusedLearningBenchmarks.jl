@@ -50,7 +50,7 @@
     anticipative_value, solution = generate_anticipative_solution(b, env; reset_env=true)
     reset!(env; reset_rng=true)
     cost = sum(step!(env, sample.y) for sample in solution)
-    cost2 = sum(sample.info.reward for sample in solution)
+    cost2 = sum(sample.reward for sample in solution)
     @test isapprox(cost, anticipative_value; atol=1e-5)
     @test isapprox(cost, cost2; atol=1e-5)
 end

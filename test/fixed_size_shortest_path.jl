@@ -25,7 +25,7 @@
         @test size(x) == (p,)
         @test length(θ_true) == A
         @test length(y_true) == A
-        @test length(sample.info) == 0
+        @test isempty(sample.context)
         @test all(y_true .== maximizer(θ_true))
         θ = model(x)
         @test length(θ) == length(θ_true)

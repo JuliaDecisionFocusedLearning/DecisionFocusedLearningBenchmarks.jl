@@ -111,8 +111,8 @@ $TYPEDSIGNATURES
 Compute the objective value of given solution `y`.
 """
 function objective_value(
-    bench::AbstractBenchmark, sample::DataSample{I,F,S,C}, y::AbstractArray
-) where {I,F,S,C<:AbstractArray}
+    bench::AbstractBenchmark, sample::DataSample{CTX,EX,F,S,C}, y::AbstractArray
+) where {CTX,EX,F,S,C<:AbstractArray}
     return objective_value(bench, sample.θ, y)
 end
 
@@ -122,8 +122,8 @@ $TYPEDSIGNATURES
 Compute the objective value of the target in the sample (needs to exist).
 """
 function objective_value(
-    bench::AbstractBenchmark, sample::DataSample{I,F,S,C}
-) where {I,F,S<:AbstractArray,C}
+    bench::AbstractBenchmark, sample::DataSample{CTX,EX,F,S,C}
+) where {CTX,EX,F,S<:AbstractArray,C}
     return objective_value(bench, sample, sample.y)
 end
 
@@ -155,7 +155,7 @@ function compute_gap(
             target_obj = objective_value(bench, sample)
             x = sample.x
             θ = statistical_model(x)
-            y = maximizer(θ; sample.info...)
+            y = maximizer(θ; sample.context...)
             obj = objective_value(bench, sample, y)
             Δ = check ? obj - target_obj : target_obj - obj
             return Δ / abs(target_obj)

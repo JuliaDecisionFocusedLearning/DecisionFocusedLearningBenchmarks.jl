@@ -44,7 +44,7 @@ function evaluate_policy!(
         features, state = observe(env)
         state_copy = deepcopy(state)  # To avoid mutation issues
         reward = step!(env, y)
-        sample = DataSample(; x=features, y=y, state=state_copy, reward=reward)
+        sample = DataSample(; x=features, y=y, instance=state_copy, extra=(; reward))
         if isempty(labeled_dataset)
             labeled_dataset = typeof(sample)[sample]
         else
