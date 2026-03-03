@@ -321,7 +321,7 @@ end
 
     # Test integration with sample data
     sample = generate_sample(b, MersenneTwister(42))
-    @test hasfield(typeof(sample), :info)
+    @test hasfield(typeof(sample), :context)
 
     dataset = generate_dataset(b, 3; seed=42)
     environments = generate_environments(b, dataset)

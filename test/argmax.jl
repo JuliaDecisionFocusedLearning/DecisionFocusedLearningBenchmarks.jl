@@ -24,7 +24,7 @@
         @test size(x) == (nb_features, instance_dim)
         @test length(θ_true) == instance_dim
         @test length(y_true) == instance_dim
-        @test length(sample.info) == 0
+        @test isempty(sample.context)
         @test all(y_true .== maximizer(θ_true))
 
         θ = model(x)

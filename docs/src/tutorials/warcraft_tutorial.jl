@@ -29,8 +29,8 @@ x = sample.x
 θ_true = sample.θ
 # `y` correspond to the optimal shortest path, encoded as a binary matrix:
 y_true = sample.y
-# `info` is not used in this benchmark, therefore set to nothing:
-isnothing(sample.info)
+# `context` is not used in this benchmark (no solver kwargs needed), so it is empty:
+isempty(sample.context)
 
 # For some benchmarks, we provide the following plotting method [`plot_data`](@ref) to visualize the data:
 plot_data(b, sample)
