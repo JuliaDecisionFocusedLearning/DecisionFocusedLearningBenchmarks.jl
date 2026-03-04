@@ -23,6 +23,17 @@ function DVSPEnv(instance::Instance; seed=nothing)
     return DVSPEnv(instance, initial_state, scenario, rng, seed)
 end
 
+"""
+$TYPEDSIGNATURES
+
+Constructor for [`DVSPEnv`](@ref) from a pre-existing scenario.
+"""
+function DVSPEnv(instance::Instance, scenario::Scenario; seed=nothing)
+    rng = MersenneTwister(seed)
+    initial_state = DVSPState(instance; scenario[1]...)
+    return DVSPEnv(instance, initial_state, scenario, rng, seed)
+end
+
 currrent_epoch(env::DVSPEnv) = current_epoch(env.state)
 epoch_duration(env::DVSPEnv) = epoch_duration(env.instance)
 last_epoch(env::DVSPEnv) = last_epoch(env.instance)

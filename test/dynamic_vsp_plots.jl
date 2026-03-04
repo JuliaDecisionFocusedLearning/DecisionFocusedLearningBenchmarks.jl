@@ -4,16 +4,14 @@
 
     # Create test benchmark and data (similar to scripts/a.jl)
     b = DynamicVehicleSchedulingBenchmark(; two_dimensional_features=true)
-    dataset = generate_dataset(b, 3)
-    environments = generate_environments(b, dataset; seed=0)
+    environments = generate_environments(b, 3; seed=0)
     env = environments[1]
 
     # Test basic plotting functions
     fig1 = DVSP.plot_instance(env)
     @test fig1 isa Plots.Plot
 
-    instance = dataset[1].instance
-    scenario = generate_scenario(b, instance; seed=0)
+    scenario = env.scenario
     v, y = generate_anticipative_solution(b, env, scenario; nb_epochs=3, reset_env=true)
 
     fig2 = DVSP.plot_epochs(y)

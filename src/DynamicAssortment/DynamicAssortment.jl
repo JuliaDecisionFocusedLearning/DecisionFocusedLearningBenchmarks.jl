@@ -110,12 +110,13 @@ end
 """
 $TYPEDSIGNATURES
 
-Creates an [`Environment`](@ref) from an [`Instance`](@ref) of the dynamic assortment benchmark.
-The seed of the environment is randomly generated using the provided random number generator.
+Creates an [`Environment`](@ref) for the dynamic assortment benchmark.
+The instance and seed are randomly generated using the provided random number generator.
 """
 function Utils.generate_environment(
-    ::DynamicAssortmentBenchmark, instance::Instance, rng::AbstractRNG; kwargs...
+    b::DynamicAssortmentBenchmark, rng::AbstractRNG; kwargs...
 )
+    instance = Instance(b, rng)
     seed = rand(rng, 1:typemax(Int))
     return Environment(instance; seed)
 end

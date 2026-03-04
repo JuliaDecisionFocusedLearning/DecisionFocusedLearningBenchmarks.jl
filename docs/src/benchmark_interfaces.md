@@ -10,15 +10,16 @@ Understanding this interface is essential for using existing benchmarks and impl
 All benchmarks work with [`DataSample`](@ref) objects that encapsulate the data needed for decision-focused learning:
 
 ```julia
-@kwdef struct DataSample{I,F,S,C}
-    x::F = nothing       # Input features of the policy
-    θ::C = nothing       # Intermediate cost/utility parameters
-    y::S = nothing       # Output solution
-    info::I = nothing    # Additional data information (e.g., problem instance)
+@kwdef struct DataSample{CTX,EX,F,S,C}
+    x::F = nothing        # Input features
+    θ::C = nothing        # Intermediate parameters
+    y::S = nothing        # Output solution
+    context::CTX = (;)    # Additional context for the sample, passed to the solver (e.g., instance data, etc.)
+    extra::EX = (;)       # Non-solver data (scenario, reward, etc.), not passed to the solver
 end
 ```
 
-The `DataSample` provides flexibility, not all fields need to be populated depending on the benchmark type and use.
+The `DataSample` provides flexibility: not all fields need to be populated.
 
 ### Benchmark Type Hierarchy
 
@@ -60,15 +61,15 @@ The default `generate_dataset` implementation calls `generate_sample` repeatedly
 Benchmarks provide the building blocks for decision-focused learning policies:
 
 ```julia
-# Create a statistical model (e.g., a neural network)
+# Initialize a statistical model (e.g., a neural network)
 generate_statistical_model(benchmark::AbstractBenchmark; kwargs...)
 
 # Create an optimization maximizer/solver
 generate_maximizer(benchmark::AbstractBenchmark; kwargs...)
 ```
 
-The statistical model typically maps features `x` to cost parameters `θ`.
-The maximizer solves optimization problems given cost parameters `θ` (and potentially additional problem dependent keyword arguments), returning decision `y`.
+The statistical model typically maps features `x` to parameters `θ`.
+The maximizer solves optimization problems given parameters `θ` (and potentially additional problem dependent context as keyword arguments), returning decision `y`.
 
 ### Benchmark Policies
 
@@ -79,7 +80,7 @@ Benchmarks can provide baseline policies for comparison and evaluation:
 generate_policies(benchmark::AbstractBenchmark) -> Tuple{Policy}
 ```
 This returns a tuple of `Policy` objects representing different benchmark-specific policies.
-A `Policy` is just a function with a name and description:
+A `Policy` is just a callable with a name and description:
 ```julia
 struct Policy{F}
     name::String
@@ -121,13 +122,22 @@ Static benchmarks follow the basic interface above.
 Exogenous stochastic benchmarks add methods for scenario generation and anticipative solutions:
 
 ```julia
-# Generate uncertainty scenarios (for exogenous benchmarks)
-generate_scenario(benchmark::AbstractStochasticBenchmark{true}, instance; kwargs...)
+# Draw a random scenario for the instance encoded in `sample`
+generate_scenario(benchmark::AbstractStochasticBenchmark{true}, sample::DataSample,
+                  rng::AbstractRNG) -> scenario
 
-# Solve anticipative optimization problem for given scenario
-generate_anticipative_solution(benchmark::AbstractStochasticBenchmark{true}, 
-                               instance, scenario; kwargs...)
+# Returns a callable (scenario; kwargs...) -> y for anticipative solutions
+# Called as: solver = generate_anticipative_solver(bench); solver(scenario; sample.context...)
+generate_anticipative_solver(benchmark::AbstractStochasticBenchmark) -> callable
 ```
+
+[`generate_dataset`](@ref) supports three dataset structures via `nb_scenarios_per_instance`:
+
+| Setting | Call |
+|---------|------|
+| N instances, 1 scenario each | `generate_dataset(bench, N)` (default) |
+| N instances, K scenarios each | `generate_dataset(bench, N; nb_scenarios_per_instance=K)` |
+| 1 instance, K scenarios | `generate_dataset(bench, 1; nb_scenarios_per_instance=K)` |
 
 ### Dynamic Benchmarks
 
