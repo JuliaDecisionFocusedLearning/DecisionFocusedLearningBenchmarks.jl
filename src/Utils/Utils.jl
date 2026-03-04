@@ -33,6 +33,7 @@ export generate_scenario
 export generate_environment, generate_environments
 export generate_policies
 export generate_anticipative_solution
+export generate_instance_samples, generate_environment_samples
 
 export plot_data, compute_gap
 export grid_graph, get_path, path_to_matrix

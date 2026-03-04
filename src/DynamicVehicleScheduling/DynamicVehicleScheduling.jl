@@ -18,6 +18,25 @@ using Random: Random, AbstractRNG, MersenneTwister, seed!, randperm
 using Requires: @require
 using Statistics: mean, quantile
 
+"""
+$TYPEDEF
+
+Abstract type for dynamic vehicle scheduling benchmarks.
+
+# Fields
+$TYPEDFIELDS
+"""
+@kwdef struct DynamicVehicleSchedulingBenchmark <: AbstractDynamicBenchmark{true}
+    "maximum number of customers entering the system per epoch"
+    max_requests_per_epoch::Int = 10
+    "time between decision and dispatch of a vehicle"
+    Δ_dispatch::Float64 = 1.0
+    "duration of an epoch"
+    epoch_duration::Float64 = 1.0
+    "whether to use two-dimensional features"
+    two_dimensional_features::Bool = false
+end
+
 include("utils.jl")
 
 # static vsp stuff
@@ -39,45 +58,34 @@ include("features.jl")
 include("policy.jl")
 
 """
-$TYPEDEF
-
-Abstract type for dynamic vehicle scheduling benchmarks.
-
-# Fields
-$TYPEDFIELDS
-"""
-@kwdef struct DynamicVehicleSchedulingBenchmark <: AbstractDynamicBenchmark{true}
-    "maximum number of customers entering the system per epoch"
-    max_requests_per_epoch::Int = 10
-    "time between decision and dispatch of a vehicle"
-    Δ_dispatch::Float64 = 1.0
-    "duration of an epoch"
-    epoch_duration::Float64 = 1.0
-    "whether to use two-dimensional features"
-    two_dimensional_features::Bool = false
-end
-
-"""
 $TYPEDSIGNATURES
 
-Generate a dataset for the dynamic vehicle scheduling benchmark.
-Returns a vector of [`DataSample`](@ref) objects, each containing an [`Instance`](@ref).
-The dataset is generated from pre-existing DVRPTW files.
+Generate environments for the dynamic vehicle scheduling benchmark.
+Reads from pre-existing DVRPTW files and creates [`DVSPEnv`](@ref) environments.
 """
-function Utils.generate_dataset(b::DynamicVehicleSchedulingBenchmark, dataset_size::Int=1)
+function Utils.generate_environments(
+    b::DynamicVehicleSchedulingBenchmark,
+    n::Int;
+    seed=nothing,
+    rng=MersenneTwister(seed),
+    kwargs...,
+)
     (; max_requests_per_epoch, Δ_dispatch, epoch_duration, two_dimensional_features) = b
     files = readdir(datadep"dvrptw"; join=true)
-    dataset_size = min(dataset_size, length(files))
+    n = min(n, length(files))
     return [
-        DataSample(;
-            instance=Instance(
+        generate_environment(
+            b,
+            Instance(
                 read_vsp_instance(files[i]);
                 max_requests_per_epoch,
                 Δ_dispatch,
                 epoch_duration,
                 two_dimensional_features,
             ),
-        ) for i in 1:dataset_size
+            rng;
+            kwargs...,
+        ) for i in 1:n
     ]
 end
 
@@ -87,7 +95,7 @@ $TYPEDSIGNATURES
 Creates an environment from an [`Instance`](@ref) of the dynamic vehicle scheduling benchmark.
 The seed of the environment is randomly generated using the provided random number generator.
 """
-function Utils.generate_environment(
+function generate_environment(
     ::DynamicVehicleSchedulingBenchmark, instance::Instance, rng::AbstractRNG; kwargs...
 )
     seed = rand(rng, 1:typemax(Int))
@@ -107,16 +115,6 @@ end
 """
 $TYPEDSIGNATURES
 
-Generate a scenario for the dynamic vehicle scheduling benchmark.
-This is a wrapper around the generic scenario generation function.
-"""
-function Utils.generate_scenario(b::DynamicVehicleSchedulingBenchmark, args...; kwargs...)
-    return Utils.generate_scenario(args...; kwargs...)
-end
-
-"""
-$TYPEDSIGNATURES
-
 Generate an anticipative solution for the dynamic vehicle scheduling benchmark.
 The solution is computed using the anticipative solver with the benchmark's feature configuration.
 """
@@ -126,6 +124,21 @@ function Utils.generate_anticipative_solution(
     return anticipative_solver(
         args...; kwargs..., two_dimensional_features=b.two_dimensional_features
     )
+end
+
+"""
+$TYPEDSIGNATURES
+
+Return the anticipative solver for the dynamic vehicle scheduling benchmark.
+The callable takes a scenario and solver kwargs (including `instance`) and returns a
+training trajectory as a `Vector{DataSample}`.
+"""
+function Utils.generate_anticipative_solver(::DynamicVehicleSchedulingBenchmark)
+    return (scenario; instance, kwargs...) -> begin
+        env = DVSPEnv(instance, scenario)
+        _, trajectory = anticipative_solver(env; reset_env=false, kwargs...)
+        return trajectory
+    end
 end
 
 """

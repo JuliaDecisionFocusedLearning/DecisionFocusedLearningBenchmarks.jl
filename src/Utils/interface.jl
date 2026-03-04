@@ -37,7 +37,8 @@ function generate_sample end
 Generate a `Vector` of [`DataSample`](@ref) of length `dataset_size` for given benchmark.
 Content of the dataset can be visualized using [`plot_data`](@ref), when it applies.
 
-By default, it uses [`generate_sample`](@ref) to create each sample in the dataset, and passes any keyword arguments to it.
+By default, it uses [`generate_sample`](@ref) to create each sample in the dataset, and passes any
+keyword arguments to it.
 """
 function generate_dataset(
     bench::AbstractBenchmark,
@@ -183,9 +184,8 @@ anticipative targets and compute objective values.
 - [`generate_sample`](@ref)`(bench, rng)`: returns a [`DataSample`](@ref) with instance
   and features but **no scenario**. Scenarios are added later by [`generate_dataset`](@ref)
   via [`generate_scenario`](@ref).
-- [`generate_scenario`](@ref)`(bench, sample, rng)`: draws a random scenario for the
-  instance encoded in `sample`.  The full sample is passed (not just the instance)
-  so implementations can access any context field.
+- [`generate_scenario`](@ref)`(bench, rng; kwargs...)`: draws a random scenario.
+  Instance and context fields are passed as keyword arguments spread from `sample.context`.
 
 # Optional methods
 - [`generate_anticipative_solver`](@ref)`(bench)`: returns a callable
@@ -217,29 +217,28 @@ is_exogenous(::AbstractStochasticBenchmark{exogenous}) where {exogenous} = exoge
 is_endogenous(::AbstractStochasticBenchmark{exogenous}) where {exogenous} = !exogenous
 
 """
-    generate_scenario(::AbstractStochasticBenchmark{true}, sample::DataSample,
-                      rng::AbstractRNG) -> scenario
+    generate_scenario(::AbstractStochasticBenchmark{true}, rng::AbstractRNG; kwargs...) -> scenario
 
-Draw a random scenario for the instance encoded in `sample`.
-Called once per scenario by the specialised [`generate_dataset`](@ref).
+Draw a random scenario. Instance and context fields are passed as keyword arguments,
+spread from `sample.context`:
 
-The full `sample` is passed (not just `sample.instance`) because both the scenario
-and the context are tied to the same instance.
+    scenario = generate_scenario(bench, rng; sample.context...)
 """
 function generate_scenario end
-
-# function generate_scenario(b::AbstractStochasticBenchmark{true}, sample::DataSample, rng::AbstractRNG)
-#     return generate_scenario(b, rng; sample.context...)
-# end
 
 """
     generate_anticipative_solver(::AbstractStochasticBenchmark) -> callable
 
-Return a callable `(scenario; kwargs...) -> y` that computes the anticipative solution for a given
-scenario. The instance and other solver-relevant fields are spread from the sample context:
+Return a callable that computes the anticipative solution for a given scenario.
+The instance and other solver-relevant fields are spread from the sample context.
+
+- For [`AbstractStochasticBenchmark`](@ref): returns `(scenario; kwargs...) -> y`.
+- For [`AbstractDynamicBenchmark`](@ref): returns
+  `(scenario; kwargs...) -> Vector{DataSample}` — a full training trajectory.
 
     solver = generate_anticipative_solver(bench)
-    y = solver(scenario; sample.context...)
+    y          = solver(scenario; sample.context...)  # stochastic
+    trajectory = solver(scenario; sample.context...)  # dynamic
 """
 function generate_anticipative_solver(bench::AbstractStochasticBenchmark)
     return (scenario; kwargs...) -> error(
@@ -350,7 +349,8 @@ function generate_dataset(
     for _ in 1:nb_instances
         sample = generate_sample(bench, rng)
         scenarios = [
-            generate_scenario(bench, sample, rng) for _ in 1:nb_scenarios_per_instance
+            generate_scenario(bench, rng; sample.context...) for
+            _ in 1:nb_scenarios_per_instance
         ]
         append!(
             samples,
@@ -366,83 +366,139 @@ $TYPEDEF
 Abstract type interface for multi-stage stochastic (dynamic) benchmark problems.
 
 Extends [`AbstractStochasticBenchmark`](@ref). The `{exogenous}` parameter retains its
-meaning (whether uncertainty is independent of decisions). For exogenous benchmarks,
-a **scenario** is a full multi-stage realization of uncertainty, embedded in the
-environment rather than drawn via [`generate_scenario`](@ref) — hence that method raises
-an error for all dynamic benchmarks.
+meaning (whether uncertainty is independent of decisions).
 
-# Differences from [`AbstractStochasticBenchmark`](@ref)
-- [`generate_sample`](@ref) returns a [`DataSample`](@ref) holding the problem **instance**
-  (initial configuration for rollout). No (instance, scenario) decomposition.
-- [`generate_scenario`](@ref) raises an error — the full multi-stage scenario unfolds through
-  [`generate_environment`](@ref).
-- [`generate_dataset`](@ref) uses the standard independent-sample loop.
+# Primary entry point
+- [`generate_environments`](@ref)`(bench, n; rng)`: mandatory (or implement
+  [`generate_environment`](@ref)`(bench, rng)`). The count-based default calls
+  [`generate_environment`](@ref) once per environment.
 
 # Additional optional methods
-- [`generate_environment`](@ref)`(bench, instance, rng)` — initialize a rollout environment
-  (holds the multi-stage scenario for exogenous benchmarks).
-- [`generate_environments`](@ref)`(bench, dataset; rng)` — batch version (default provided).
+- [`generate_environment`](@ref)`(bench, rng)`: initialize a single rollout environment.
+  Implement this instead of overriding [`generate_environments`](@ref) when environments
+  can be drawn independently.
+- [`generate_scenario`](@ref)`(bench, rng; kwargs...)`: for `{true}` (exogenous) benchmarks:
+  draw a full multi-stage scenario. Instance is passed as `instance=env.instance` keyword.
+  Required only when using [`generate_dataset`](@ref)`(bench, environments; ...)`.
+- [`generate_anticipative_solver`](@ref)`(bench)`: returns a callable
+  `(scenario; kwargs...) -> Vector{DataSample}` that runs the anticipative solver on a
+  full scenario and returns a training trajectory. Required only when using
+  [`generate_dataset`](@ref)`(bench, environments; ...)`.
+- [`generate_dataset`](@ref)`(bench, environments; nb_scenarios_per_env, ...)`: optional;
+  generates training-ready [`DataSample`](@ref)s from environments via anticipative rollouts.
+  Requires [`generate_scenario`](@ref) and [`generate_anticipative_solver`](@ref).
 """
 abstract type AbstractDynamicBenchmark{exogenous} <: AbstractStochasticBenchmark{exogenous} end
 
 """
-$TYPEDSIGNATURES
+    generate_environment(::AbstractDynamicBenchmark, rng::AbstractRNG; kwargs...)
 
-Override of [`generate_dataset`](@ref) for dynamic benchmarks: generates each sample
-independently via [`generate_sample`](@ref), bypassing the stochastic scenario loop.
-"""
-function generate_dataset(
-    bench::AbstractDynamicBenchmark,
-    dataset_size::Int;
-    seed=nothing,
-    rng=MersenneTwister(seed),
-    kwargs...,
-)
-    Random.seed!(rng, seed)
-    return [generate_sample(bench, rng; kwargs...) for _ in 1:dataset_size]
-end
-
-function generate_scenario(
-    bench::AbstractDynamicBenchmark, sample::DataSample, rng::AbstractRNG; kwargs...
-)
-    return error(
-        "`generate_scenario` is not applicable to dynamic benchmarks ($(typeof(bench))). " *
-        "Dynamic benchmarks generate complete trajectories via `generate_sample`.",
-    )
-end
-
-"""
-    generate_environment(::AbstractDynamicBenchmark, instance, rng::AbstractRNG; kwargs...)
-
-Initialize an environment for the given dynamic benchmark instance.
+Initialize a single environment for the given dynamic benchmark.
+Primary implementation target for the count-based [`generate_environments`](@ref) default.
+Override [`generate_environments`](@ref) directly when environments cannot be drawn
+independently (e.g. loading from files).
 """
 function generate_environment end
 
 """
 $TYPEDSIGNATURES
 
-Delegates to `generate_environment(bench, sample.instance, rng; kwargs...)`.
-"""
-function generate_environment(
-    bench::AbstractDynamicBenchmark, sample::DataSample, rng::AbstractRNG; kwargs...
-)
-    return generate_environment(bench, sample.instance, rng; kwargs...)
-end
-
-"""
-$TYPEDSIGNATURES
-
-Generate a vector of environments for the given dynamic benchmark and dataset.
+Generate `n` environments for the given dynamic benchmark.
+Primary entry point for dynamic training algorithms.
+Override when environments cannot be drawn independently (e.g. loading from files).
 """
 function generate_environments(
     bench::AbstractDynamicBenchmark,
-    dataset::AbstractArray;
+    n::Int;
     seed=nothing,
     rng=MersenneTwister(seed),
     kwargs...,
 )
     Random.seed!(rng, seed)
-    return map(dataset) do sample
-        generate_environment(bench, sample, rng; kwargs...)
+    return [generate_environment(bench, rng; kwargs...) for _ in 1:n]
+end
+
+"""
+$TYPEDSIGNATURES
+
+Map K scenarios to training [`DataSample`](@ref)s for a single environment.
+
+Key customisation point for scenario→sample mapping in
+[`generate_dataset`](@ref)`(bench, environments; nb_scenarios_per_env)`.
+
+**Default:** Calls [`generate_anticipative_solver`](@ref) on each scenario,
+returning the concatenated trajectories.
+
+**Override for custom strategies** (e.g. averaging trajectories, sub-sampling steps).
+"""
+function generate_environment_samples(
+    bench::AbstractDynamicBenchmark{true}, env, scenarios::AbstractVector; kwargs...
+)
+    solver = generate_anticipative_solver(bench)
+    samples = DataSample[]
+    for scenario in scenarios
+        trajectory = solver(scenario; instance=env.instance, kwargs...)
+        append!(samples, trajectory)
     end
+    return samples
+end
+
+"""
+$TYPEDSIGNATURES
+
+Generate a training dataset from pre-built environments for an exogenous dynamic benchmark.
+
+For each environment, draws `nb_scenarios_per_env` independent scenarios via
+[`generate_scenario`](@ref) and maps them to [`DataSample`](@ref)s via
+[`generate_environment_samples`](@ref).
+
+Mirrors [`generate_dataset`](@ref) for [`AbstractStochasticBenchmark{true}`](@ref)
+with `nb_scenarios_per_instance`.
+
+| | Stochastic | Dynamic |
+|---|---|---|
+| Unit | instance (`DataSample`) | environment |
+| Customisation hook | `generate_instance_samples` | `generate_environment_samples` |
+"""
+function generate_dataset(
+    bench::AbstractDynamicBenchmark{true},
+    environments::AbstractVector;
+    nb_scenarios_per_env::Int=1,
+    seed=nothing,
+    rng=MersenneTwister(seed),
+    kwargs...,
+)
+    Random.seed!(rng, seed)
+    samples = DataSample[]
+    for env in environments
+        scenarios = [
+            generate_scenario(bench, rng; instance=env.instance) for
+            _ in 1:nb_scenarios_per_env
+        ]
+        append!(samples, generate_environment_samples(bench, env, scenarios; kwargs...))
+    end
+    return samples
+end
+
+"""
+$TYPEDSIGNATURES
+
+Convenience wrapper for exogenous dynamic benchmarks: generates `n` environments
+via [`generate_environments`](@ref), then calls
+[`generate_dataset`](@ref)`(bench, environments; nb_scenarios_per_env, ...)`.
+
+Gives dynamic benchmarks the same top-level API as static/stochastic:
+
+    dataset = generate_dataset(bench, n)
+    dataset = generate_dataset(bench, n; nb_scenarios_per_env=5)
+"""
+function generate_dataset(
+    bench::AbstractDynamicBenchmark{true},
+    n::Int;
+    nb_scenarios_per_env::Int=1,
+    seed=nothing,
+    kwargs...,
+)
+    environments = generate_environments(bench, n; seed)
+    return generate_dataset(bench, environments; nb_scenarios_per_env, seed, kwargs...)
 end

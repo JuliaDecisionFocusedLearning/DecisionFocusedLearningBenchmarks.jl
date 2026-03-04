@@ -8,8 +8,7 @@
     @test is_exogenous(b)
     @test !is_endogenous(b)
 
-    dataset = generate_dataset(b, 10)
-    environments = generate_environments(b, dataset; seed=0)
+    environments = generate_environments(b, 10; seed=0)
 
     env = environments[1]
     get_seed(env)
@@ -26,8 +25,7 @@
     @test mean(r_lazy) <= mean(r_greedy)
 
     env = environments[1]
-    instance = dataset[1].instance
-    scenario = generate_scenario(b, instance)
+    scenario = env.scenario
     v, y = generate_anticipative_solution(b, env, scenario; nb_epochs=2, reset_env=true)
 
     maximizer = generate_maximizer(b)
@@ -37,8 +35,7 @@
     θ = model(x)
     y = maximizer(θ; instance)
 
-    dataset2 = generate_dataset(b2, 10)
-    environments2 = generate_environments(b2, dataset2; seed=0)
+    environments2 = generate_environments(b2, 10; seed=0)
     env2 = environments2[1]
     x2, instance2 = observe(env2)
     model2 = generate_statistical_model(b2)
