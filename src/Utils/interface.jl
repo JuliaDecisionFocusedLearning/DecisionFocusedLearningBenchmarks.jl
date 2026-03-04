@@ -3,27 +3,31 @@ $TYPEDEF
 
 Abstract type interface for benchmark problems.
 
-The following methods are mandatory for benchmarks:
-- [`generate_dataset`](@ref) or [`generate_sample`](@ref)
+# Mandatory methods to implement for any benchmark:
+- [`generate_sample`](@ref): primary entry point, called by the default [`generate_dataset`](@ref)
 - [`generate_statistical_model`](@ref)
 - [`generate_maximizer`](@ref)
 
-The following methods are optional:
-- [`plot_data`](@ref)
-- [`objective_value`](@ref)
-- [`compute_gap`](@ref)
+Override [`generate_dataset`](@ref) directly only when samples cannot be drawn independently.
+
+# Optional methods (defaults provided)
+- [`is_minimization_problem`](@ref): defaults to `true`
+- [`objective_value`](@ref): defaults to `dot(θ, y)`
+- [`compute_gap`](@ref): default implementation provided; override for custom evaluation
+
+# Optional methods (no default)
+- [`plot_data`](@ref), [`plot_instance`](@ref), [`plot_solution`](@ref)
+- [`generate_policies`](@ref)
 """
 abstract type AbstractBenchmark end
 
 """
     generate_sample(::AbstractBenchmark, rng::AbstractRNG; kwargs...) -> DataSample
 
-Generate a single [`DataSample`](@ref) for given benchmark.
-This is a low-level function that is used by [`generate_dataset`](@ref) to create
-a dataset of samples. It is not mandatory to implement this method, but it is
-recommended for benchmarks that have a well-defined way to generate individual samples.
-An alternative is to directly implement [`generate_dataset`](@ref) to create a dataset
-without generating individual samples.
+Generate a single [`DataSample`](@ref) for the benchmark.
+This is the primary implementation target: the default [`generate_dataset`](@ref) calls
+it repeatedly. Override [`generate_dataset`](@ref) directly only when samples cannot be
+drawn independently (e.g. when the full dataset must be loaded at once).
 """
 function generate_sample end
 
@@ -49,21 +53,22 @@ end
 """
     generate_maximizer(::AbstractBenchmark; kwargs...)
 
-Generates a maximizer function.
-Returns a callable f: (θ; kwargs...) -> y, where θ is a cost array and y is a solution.
+Returns a callable `f(θ; kwargs...) -> y`, solving a maximization problem.
 """
 function generate_maximizer end
 
 """
     generate_statistical_model(::AbstractBenchmark; kwargs...)
 
-Initializes and return an untrained statistical model of the CO-ML pipeline.
-It's usually a Flux model, that takes a feature matrix x as input, and returns a cost array θ as output.
+Returns an untrained statistical model (usually a Flux neural network) that maps a
+feature matrix `x` to an output array `θ`.
 """
 function generate_statistical_model end
 
 """
     generate_policies(::AbstractBenchmark) -> Vector{Policy}
+
+Return a list of named baseline policies for the benchmark.
 """
 function generate_policies end
 
@@ -99,7 +104,7 @@ function compute_gap end
 """
 $TYPEDSIGNATURES
 
-Default behaviour of `objective_value`.
+Compute `dot(θ, y)`. Override for non-linear objectives.
 """
 function objective_value(::AbstractBenchmark, θ::AbstractArray, y::AbstractArray)
     return dot(θ, y)
@@ -139,7 +144,8 @@ end
 """
 $TYPEDSIGNATURES
 
-Default behaviour of `compute_gap` for a benchmark problem where `features`, `solutions` and `costs` are all defined.
+Default implementation of [`compute_gap`](@ref): average relative optimality gap over `dataset`.
+Requires samples with `x`, `θ`, and `y` fields. Override for custom evaluation logic.
 """
 function compute_gap(
     bench::AbstractBenchmark,
@@ -168,19 +174,18 @@ $TYPEDEF
 
 Abstract type interface for single-stage stochastic benchmark problems.
 
-A stochastic benchmark separates the problem into a **deterministic instance** (the
+A stochastic benchmark separates the problem into an **instance** (the
 context known before the scenario is revealed) and a **random scenario** (the uncertain
-part). The combinatorial oracle sees only the instance; scenarios are used to evaluate
-anticipative solutions, generate targets, and compute objective values.
+part). Decisions are taken by seeing only the instance. Scenarios are used to generate
+anticipative targets and compute objective values.
 
 # Required methods (exogenous benchmarks, `{true}` only)
 - [`generate_sample`](@ref)`(bench, rng)`: returns a [`DataSample`](@ref) with instance
-  and features but **no scenario**.  The scenario is omitted so that
-  [`generate_dataset`](@ref) can draw K independent scenarios from the same instance.
+  and features but **no scenario**. Scenarios are added later by [`generate_dataset`](@ref)
+  via [`generate_scenario`](@ref).
 - [`generate_scenario`](@ref)`(bench, sample, rng)`: draws a random scenario for the
   instance encoded in `sample`.  The full sample is passed (not just the instance)
-  because context is tied to the instance and implementations may need fields beyond
-  `sample.instance`.
+  so implementations can access any context field.
 
 # Optional methods
 - [`generate_anticipative_solver`](@ref)`(bench)`: returns a callable
@@ -202,13 +207,9 @@ supports all three standard structures via `nb_scenarios_per_instance`:
 | N instances with 1 scenario  | `generate_dataset(bench, N)` (default) |
 | N instances with K scenarios | `generate_dataset(bench, N; nb_scenarios_per_instance=K)` |
 
-Extra keyword arguments are forwarded to [`generate_instance_samples`](@ref), enabling
-solver choice to reach target computation (e.g. `algorithm=compact_mip`).
-
 By default, each [`DataSample`](@ref) has `context` holding the instance (solver kwargs)
 and `extra=(; scenario)` holding one scenario.  Override
-[`generate_instance_samples`](@ref) to store scenarios differently (e.g.
-`extra=(; scenarios=[ξ₁,…,ξ_K])` for SAA).
+[`generate_instance_samples`](@ref) to store scenarios differently.
 """
 abstract type AbstractStochasticBenchmark{exogenous} <: AbstractBenchmark end
 
@@ -223,10 +224,13 @@ Draw a random scenario for the instance encoded in `sample`.
 Called once per scenario by the specialised [`generate_dataset`](@ref).
 
 The full `sample` is passed (not just `sample.instance`) because both the scenario
-and the context are tied to the same instance — implementations may need any field
-of the sample.  Consistent with [`generate_environment`](@ref) for dynamic benchmarks.
+and the context are tied to the same instance.
 """
 function generate_scenario end
+
+# function generate_scenario(b::AbstractStochasticBenchmark{true}, sample::DataSample, rng::AbstractRNG)
+#     return generate_scenario(b, rng; sample.context...)
+# end
 
 """
     generate_anticipative_solver(::AbstractStochasticBenchmark) -> callable
@@ -236,11 +240,6 @@ scenario. The instance and other solver-relevant fields are spread from the samp
 
     solver = generate_anticipative_solver(bench)
     y = solver(scenario; sample.context...)
-
-This mirrors the maximizer calling convention `maximizer(θ; sample.context...)`.
-
-Used by Imitating Anticipative and DAgger algorithms.  Replaces the deprecated
-[`generate_anticipative_solution`](@ref).
 """
 function generate_anticipative_solver(bench::AbstractStochasticBenchmark)
     return (scenario; kwargs...) -> error(
@@ -260,13 +259,6 @@ parametric anticipative subproblem:
 
 The scenario comes first (it defines the stochastic cost function); `θ` is the
 perturbation added on top, coupling the benchmark to the model output.
-
-The κ weight from the Alternating Minimization algorithm is not a parameter of this
-solver.  Since the subproblem is linear in `θ`, the algorithm scales θ by κ before
-calling: `solver(κ * θ, scenario; sample.context...)`.
-
-Partially apply `scenario` to obtain a `(θ; kwargs...) -> y` closure, then wrap in
-`PerturbedAdditive` (InferOpt) to compute targets `μᵢ` during the decomposition step.
 """
 function generate_parametric_anticipative_solver end
 
@@ -288,7 +280,7 @@ Map K scenarios to [`DataSample`](@ref)s for a single instance (encoded in `samp
 This is the key customisation point for scenario→sample mapping in
 [`generate_dataset`](@ref).
 
-**Default** (anticipative / DAgger — 1:1 mapping):
+**Default** (1:1 mapping):
 Returns K samples, each with one scenario in `extra=(; scenario=ξ)`.
 When `compute_targets=true`, calls [`generate_anticipative_solver`](@ref) to compute
 an independent anticipative target per scenario.
@@ -371,17 +363,34 @@ end
 """
 $TYPEDEF
 
-Abstract type interface for dynamic benchmark problems.
-This type should be used for benchmarks that involve multi-stage stochastic optimization problems.
+Abstract type interface for multi-stage stochastic (dynamic) benchmark problems.
 
-It follows the same interface as [`AbstractStochasticBenchmark`](@ref), with the addition of the following methods:
-TODO
+Extends [`AbstractStochasticBenchmark`](@ref). The `{exogenous}` parameter retains its
+meaning (whether uncertainty is independent of decisions). For exogenous benchmarks,
+a **scenario** is a full multi-stage realization of uncertainty, embedded in the
+environment rather than drawn via [`generate_scenario`](@ref) — hence that method raises
+an error for all dynamic benchmarks.
+
+# Differences from [`AbstractStochasticBenchmark`](@ref)
+- [`generate_sample`](@ref) returns a [`DataSample`](@ref) holding the problem **instance**
+  (initial configuration for rollout). No (instance, scenario) decomposition.
+- [`generate_scenario`](@ref) raises an error — the full multi-stage scenario unfolds through
+  [`generate_environment`](@ref).
+- [`generate_dataset`](@ref) uses the standard independent-sample loop.
+
+# Additional optional methods
+- [`generate_environment`](@ref)`(bench, instance, rng)` — initialize a rollout environment
+  (holds the multi-stage scenario for exogenous benchmarks).
+- [`generate_environments`](@ref)`(bench, dataset; rng)` — batch version (default provided).
 """
 abstract type AbstractDynamicBenchmark{exogenous} <: AbstractStochasticBenchmark{exogenous} end
 
-# Dynamic benchmarks do not use the stochastic dataset generation (which draws independent
-# scenarios per instance). They generate each sample independently via `generate_sample`,
-# using the standard AbstractBenchmark default.
+"""
+$TYPEDSIGNATURES
+
+Override of [`generate_dataset`](@ref) for dynamic benchmarks: generates each sample
+independently via [`generate_sample`](@ref), bypassing the stochastic scenario loop.
+"""
 function generate_dataset(
     bench::AbstractDynamicBenchmark,
     dataset_size::Int;
@@ -393,9 +402,6 @@ function generate_dataset(
     return [generate_sample(bench, rng; kwargs...) for _ in 1:dataset_size]
 end
 
-# Dynamic benchmarks generate complete trajectories via `generate_sample` and do not
-# decompose problems into (instance, scenario) pairs. `generate_scenario` is not
-# applicable to them; this method exists only to provide a clear error.
 function generate_scenario(
     bench::AbstractDynamicBenchmark, sample::DataSample, rng::AbstractRNG; kwargs...
 )
@@ -415,8 +421,7 @@ function generate_environment end
 """
 $TYPEDSIGNATURES
 
-Default behaviour of `generate_environment` applied to a data sample.
-Uses the info field of the sample as the instance.
+Delegates to `generate_environment(bench, sample.instance, rng; kwargs...)`.
 """
 function generate_environment(
     bench::AbstractDynamicBenchmark, sample::DataSample, rng::AbstractRNG; kwargs...
