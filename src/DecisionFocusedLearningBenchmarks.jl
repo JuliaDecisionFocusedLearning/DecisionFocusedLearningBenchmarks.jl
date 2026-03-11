@@ -67,9 +67,10 @@ export AbstractEnvironment, get_seed, is_terminated, observe, reset!, step!
 
 export Policy, evaluate_policy!
 
-export generate_sample, generate_dataset, generate_environments, generate_environment
+export generate_instance,
+    generate_sample, generate_dataset, generate_environments, generate_environment
 export generate_scenario
-export generate_policies
+export generate_baseline_policies
 export generate_statistical_model
 export generate_maximizer
 export generate_anticipative_solution

@@ -279,7 +279,7 @@ end
     environments = generate_environments(b, 10; seed=0)
 
     # Get policies
-    policies = generate_policies(b)
+    policies = generate_baseline_policies(b)
     expert = policies[1]
     greedy = policies[2]
 
@@ -325,7 +325,7 @@ end
     environments = generate_environments(b, 3; seed=42)
 
     # Evaluate policy to get data samples
-    policies = generate_policies(b)
+    policies = generate_baseline_policies(b)
     _, data_samples = evaluate_policy!(policies[1], environments)
 
     # Test model-maximizer pipeline

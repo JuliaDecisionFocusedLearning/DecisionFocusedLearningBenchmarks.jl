@@ -4,11 +4,16 @@ $TYPEDEF
 Abstract type interface for benchmark problems.
 
 # Mandatory methods to implement for any benchmark:
-- [`generate_sample`](@ref): primary entry point, called by the default [`generate_dataset`](@ref)
+Choose one of three primary implementation strategies:
+- Implement [`generate_instance`](@ref) (returns a [`DataSample`](@ref) with `y=nothing`).
+  The default [`generate_sample`](@ref) then applies `target_policy` if provided.
+- Override [`generate_sample`](@ref) directly when the sample requires custom logic. In this case,
+  [`generate_dataset`](@ref) applies `target_policy` to the result after the call returns.
+- Override [`generate_dataset`](@ref) directly when samples cannot be drawn independently.
+
+Also implement:
 - [`generate_statistical_model`](@ref)
 - [`generate_maximizer`](@ref)
-
-Override [`generate_dataset`](@ref) directly only when samples cannot be drawn independently.
 
 # Optional methods (defaults provided)
 - [`is_minimization_problem`](@ref): defaults to `true`
@@ -17,38 +22,59 @@ Override [`generate_dataset`](@ref) directly only when samples cannot be drawn i
 
 # Optional methods (no default)
 - [`plot_data`](@ref), [`plot_instance`](@ref), [`plot_solution`](@ref)
-- [`generate_policies`](@ref)
+- [`generate_baseline_policies`](@ref)
 """
 abstract type AbstractBenchmark end
 
 """
-    generate_sample(::AbstractBenchmark, rng::AbstractRNG; kwargs...) -> DataSample
+    generate_instance(::AbstractBenchmark, rng::AbstractRNG; kwargs...) -> DataSample
+
+Generate a single unlabeled [`DataSample`](@ref) (with `y=nothing`) for the benchmark.
+"""
+function generate_instance end
+
+"""
+    generate_sample(::AbstractBenchmark, rng::AbstractRNG; target_policy=nothing, kwargs...) -> DataSample
 
 Generate a single [`DataSample`](@ref) for the benchmark.
-This is the primary implementation target: the default [`generate_dataset`](@ref) calls
-it repeatedly. Override [`generate_dataset`](@ref) directly only when samples cannot be
-drawn independently (e.g. when the full dataset must be loaded at once).
+
+**Framework default** (when [`generate_instance`](@ref) is implemented):
+Calls [`generate_instance`](@ref), then applies `target_policy(sample)` if provided.
+
+Override directly (instead of implementing [`generate_instance`](@ref)) when the sample
+requires custom logic. In this case, [`generate_dataset`](@ref) applies `target_policy`
+after the call returns.
 """
-function generate_sample end
+function generate_sample(bench::AbstractBenchmark, rng; target_policy=nothing, kwargs...)
+    sample = generate_instance(bench, rng; kwargs...)
+    return isnothing(target_policy) ? sample : target_policy(sample)
+end
 
 """
-    generate_dataset(::AbstractBenchmark, dataset_size::Int; kwargs...) -> Vector{<:DataSample}
+    generate_dataset(::AbstractBenchmark, dataset_size::Int; target_policy=nothing, kwargs...) -> Vector{<:DataSample}
 
 Generate a `Vector` of [`DataSample`](@ref) of length `dataset_size` for given benchmark.
 Content of the dataset can be visualized using [`plot_data`](@ref), when it applies.
 
 By default, it uses [`generate_sample`](@ref) to create each sample in the dataset, and passes any
-keyword arguments to it.
+keyword arguments to it. If `target_policy` is provided, it is applied to each sample after
+[`generate_sample`](@ref) returns.
 """
 function generate_dataset(
     bench::AbstractBenchmark,
     dataset_size::Int;
+    target_policy=nothing,
     seed=nothing,
     rng=MersenneTwister(seed),
     kwargs...,
 )
     Random.seed!(rng, seed)
-    return [generate_sample(bench, rng; kwargs...) for _ in 1:dataset_size]
+    return [
+        begin
+            sample = generate_sample(bench, rng; kwargs...)
+            isnothing(target_policy) ? sample : target_policy(sample)
+        end for _ in 1:dataset_size
+    ]
 end
 
 """
@@ -59,19 +85,23 @@ Returns a callable `f(θ; kwargs...) -> y`, solving a maximization problem.
 function generate_maximizer end
 
 """
-    generate_statistical_model(::AbstractBenchmark; kwargs...)
+    generate_statistical_model(::AbstractBenchmark, seed=nothing; kwargs...)
 
 Returns an untrained statistical model (usually a Flux neural network) that maps a
-feature matrix `x` to an output array `θ`.
+feature matrix `x` to an output array `θ`. The `seed` parameter controls initialization
+randomness for reproducibility.
 """
 function generate_statistical_model end
 
 """
-    generate_policies(::AbstractBenchmark) -> Vector{Policy}
+    generate_baseline_policies(::AbstractBenchmark) -> NamedTuple or Tuple
 
-Return a list of named baseline policies for the benchmark.
+Return named baseline policies for the benchmark. Each policy is a callable.
+
+- For static/stochastic benchmarks: signature `(sample) -> DataSample`.
+- For dynamic benchmarks: signature `(env) -> Vector{DataSample}` (full trajectory).
 """
-function generate_policies end
+function generate_baseline_policies end
 
 """
     plot_data(::AbstractBenchmark, ::DataSample; kwargs...)
@@ -181,7 +211,7 @@ part). Decisions are taken by seeing only the instance. Scenarios are used to ge
 anticipative targets and compute objective values.
 
 # Required methods (exogenous benchmarks, `{true}` only)
-- [`generate_sample`](@ref)`(bench, rng)`: returns a [`DataSample`](@ref) with instance
+- [`generate_instance`](@ref)`(bench, rng)`: returns a [`DataSample`](@ref) with instance
   and features but **no scenario**. Scenarios are added later by [`generate_dataset`](@ref)
   via [`generate_scenario`](@ref).
 - [`generate_scenario`](@ref)`(bench, rng; kwargs...)`: draws a random scenario.
@@ -193,23 +223,23 @@ anticipative targets and compute objective values.
 - [`generate_parametric_anticipative_solver`](@ref)`(bench)`: returns a callable
   `(θ, scenario; kwargs...) -> y` for the parametric anticipative subproblem
   `argmin_{y ∈ Y} c(y, scenario) + θᵀy`.
-- [`generate_instance_samples`](@ref)`(bench, sample, scenarios; compute_targets,
-  kwargs...)`: maps K scenarios to `DataSample`s for one instance. Override to change
-  the scenario→sample mapping (e.g. SAA: K scenarios → 1 sample with shared target).
 
 # Dataset generation (exogenous only)
 [`generate_dataset`](@ref) is specialised for `AbstractStochasticBenchmark{true}` and
-supports all three standard structures via `nb_scenarios_per_instance`:
+supports all three standard structures via `nb_scenarios`:
 
 | Setting | Call |
 |---------|------|
-| 1 instance with K scenarios  | `generate_dataset(bench, 1; nb_scenarios_per_instance=K)` |
+| 1 instance with K scenarios  | `generate_dataset(bench, 1; nb_scenarios=K)` |
 | N instances with 1 scenario  | `generate_dataset(bench, N)` (default) |
-| N instances with K scenarios | `generate_dataset(bench, N; nb_scenarios_per_instance=K)` |
+| N instances with K scenarios | `generate_dataset(bench, N; nb_scenarios=K)` |
 
-By default, each [`DataSample`](@ref) has `context` holding the instance (solver kwargs)
-and `extra=(; scenario)` holding one scenario.  Override
-[`generate_instance_samples`](@ref) to store scenarios differently.
+By default (no `target_policy`), each [`DataSample`](@ref) has `context` holding the
+instance (solver kwargs) and `extra=(; scenario)` holding one scenario.
+
+Provide a `target_policy(sample, scenarios) -> Vector{DataSample}` to compute labels.
+This covers both anticipative (K samples, one per scenario) and SAA (1 sample from all K
+scenarios) labeling strategies.
 """
 abstract type AbstractStochasticBenchmark{exogenous} <: AbstractBenchmark end
 
@@ -227,37 +257,34 @@ spread from `sample.context`:
 function generate_scenario end
 
 """
-    generate_anticipative_solver(::AbstractStochasticBenchmark) -> callable
+    generate_anticipative_solver(::AbstractStochasticBenchmark{true}) -> callable
 
 Return a callable that computes the anticipative solution for a given scenario.
 The instance and other solver-relevant fields are spread from the sample context.
 
-- For [`AbstractStochasticBenchmark`](@ref): returns `(scenario; kwargs...) -> y`.
+- For [`AbstractStochasticBenchmark`](@ref): returns `(scenario; context...) -> y`.
 - For [`AbstractDynamicBenchmark`](@ref): returns
-  `(scenario; kwargs...) -> Vector{DataSample}` — a full training trajectory.
+  `(scenario; context...) -> Vector{DataSample}` — a full training trajectory.
 
     solver = generate_anticipative_solver(bench)
     y          = solver(scenario; sample.context...)  # stochastic
     trajectory = solver(scenario; sample.context...)  # dynamic
 """
-function generate_anticipative_solver(bench::AbstractStochasticBenchmark)
+function generate_anticipative_solver(bench::AbstractStochasticBenchmark{true})
     return (scenario; kwargs...) -> error(
         "`generate_anticipative_solver` is not implemented for $(typeof(bench)). " *
         "Implement `generate_anticipative_solver(::$(typeof(bench))) -> (scenario; kwargs...) -> y` " *
-        "to use `compute_targets=true`.",
+        "to use it.",
     )
 end
 
 """
-    generate_parametric_anticipative_solver(::AbstractStochasticBenchmark) -> callable
+    generate_parametric_anticipative_solver(::AbstractStochasticBenchmark{true}) -> callable
 
 **Optional.** Return a callable `(θ, scenario; kwargs...) -> y` that solves the
 parametric anticipative subproblem:
 
     argmin_{y ∈ Y(instance)}  c(y, scenario) + θᵀy
-
-The scenario comes first (it defines the stochastic cost function); `θ` is the
-perturbation added on top, coupling the benchmark to the model output.
 """
 function generate_parametric_anticipative_solver end
 
@@ -274,46 +301,34 @@ function generate_anticipative_solution end
 """
 $TYPEDSIGNATURES
 
-Map K scenarios to [`DataSample`](@ref)s for a single instance (encoded in `sample`).
+Default [`generate_sample`](@ref) for exogenous stochastic benchmarks.
 
-This is the key customisation point for scenario→sample mapping in
-[`generate_dataset`](@ref).
+Calls [`generate_instance`](@ref), draws `nb_scenarios` scenarios via
+[`generate_scenario`](@ref), then:
+- Without `target_policy`: returns K unlabeled samples, each with one scenario in
+  `extra=(; scenario=ξ)`.
+- With `target_policy`: calls `target_policy(sample, scenarios)` and returns the result.
 
-**Default** (1:1 mapping):
-Returns K samples, each with one scenario in `extra=(; scenario=ξ)`.
-When `compute_targets=true`, calls [`generate_anticipative_solver`](@ref) to compute
-an independent anticipative target per scenario.
-
-**Override for batch strategies** (e.g. SAA):
-Return fewer samples (or one) using all K scenarios together.  Extra keyword arguments
-forwarded from [`generate_dataset`](@ref) reach here, enabling solver choice:
-
-```julia
-function generate_instance_samples(bench::MySAABench, sample, scenarios;
-                                    compute_targets=false, algorithm=my_solver, kwargs...)
-    y = compute_targets ? algorithm(sample.instance, scenarios; kwargs...) : nothing
-    return [DataSample(; x=sample.x, θ=sample.θ, y, sample.context...,
-                        extra=(; scenarios))]
-end
-```
+`target_policy(sample, scenarios) -> Vector{DataSample}` enables anticipative labeling
+(K samples, one per scenario) or SAA (1 sample aggregating all K scenarios).
 """
-function generate_instance_samples(
+function generate_sample(
     bench::AbstractStochasticBenchmark{true},
-    sample::DataSample,
-    scenarios::AbstractVector;
-    compute_targets::Bool=false,
+    rng;
+    target_policy=nothing,
+    nb_scenarios::Int=1,
     kwargs...,
 )
-    solver = generate_anticipative_solver(bench)
-    return [
-        DataSample(;
-            x=sample.x,
-            θ=sample.θ,
-            y=compute_targets ? solver(ξ; sample.context...) : nothing,
-            sample.context...,
-            extra=(; scenario=ξ),
-        ) for ξ in scenarios
-    ]
+    sample = generate_instance(bench, rng; kwargs...)
+    scenarios = [generate_scenario(bench, rng; sample.context...) for _ in 1:nb_scenarios]
+    if isnothing(target_policy)
+        return [
+            DataSample(; x=sample.x, θ=sample.θ, sample.context..., extra=(; scenario=ξ))
+            for ξ in scenarios
+        ]
+    else
+        return target_policy(sample, scenarios)
+    end
 end
 
 """
@@ -321,25 +336,25 @@ $TYPEDSIGNATURES
 
 Specialised [`generate_dataset`](@ref) for exogenous stochastic benchmarks.
 
-Generates `nb_instances` problem instances, each with `nb_scenarios_per_instance`
-independent scenario draws.  The scenario→sample mapping is controlled by
-[`generate_instance_samples`](@ref): by default K scenarios produce K samples
-(1:1, anticipative), but overriding it enables batch strategies such as SAA
-(K scenarios → 1 sample with a shared target).
+Generates `nb_instances` problem instances, each with `nb_scenarios` independent
+scenario draws. The scenario→sample mapping is controlled by the `target_policy`:
+- Without `target_policy` (default): K scenarios produce K unlabeled samples (1:1).
+- With `target_policy(sample, scenarios) -> Vector{DataSample}`: enables anticipative
+  labeling (K labeled samples) or SAA (1 sample aggregating all K scenarios).
 
 # Keyword arguments
-- `nb_scenarios_per_instance::Int = 1` — scenarios per instance (K).
-- `compute_targets::Bool = false` — when `true`, passed to
-  [`generate_instance_samples`](@ref) to trigger target computation.
-- `seed` — passed to `MersenneTwister` when `rng` is not provided.
-- `rng` — random number generator; overrides `seed` when provided.
-- `kwargs...` — forwarded to [`generate_instance_samples`](@ref) (e.g. `algorithm=...`).
+- `nb_scenarios::Int = 1`: scenarios per instance (K).
+- `target_policy`: when provided, called as `target_policy(sample, scenarios)` to
+  compute labels. Defaults to `nothing` (unlabeled samples).
+- `seed`: passed to `MersenneTwister` when `rng` is not provided.
+- `rng`: random number generator; overrides `seed` when provided.
+- `kwargs...`: forwarded to [`generate_sample`](@ref).
 """
 function generate_dataset(
     bench::AbstractStochasticBenchmark{true},
     nb_instances::Int;
-    nb_scenarios_per_instance::Int=1,
-    compute_targets::Bool=false,
+    target_policy=nothing,
+    nb_scenarios::Int=1,
     seed=nothing,
     rng=MersenneTwister(seed),
     kwargs...,
@@ -347,15 +362,8 @@ function generate_dataset(
     Random.seed!(rng, seed)
     samples = DataSample[]
     for _ in 1:nb_instances
-        sample = generate_sample(bench, rng)
-        scenarios = [
-            generate_scenario(bench, rng; sample.context...) for
-            _ in 1:nb_scenarios_per_instance
-        ]
-        append!(
-            samples,
-            generate_instance_samples(bench, sample, scenarios; compute_targets, kwargs...),
-        )
+        new_samples = generate_sample(bench, rng; target_policy, nb_scenarios, kwargs...)
+        append!(samples, new_samples)
     end
     return samples
 end
@@ -377,16 +385,11 @@ meaning (whether uncertainty is independent of decisions).
 - [`generate_environment`](@ref)`(bench, rng)`: initialize a single rollout environment.
   Implement this instead of overriding [`generate_environments`](@ref) when environments
   can be drawn independently.
-- [`generate_scenario`](@ref)`(bench, rng; kwargs...)`: for `{true}` (exogenous) benchmarks:
-  draw a full multi-stage scenario. Instance is passed as `instance=env.instance` keyword.
-  Required only when using [`generate_dataset`](@ref)`(bench, environments; ...)`.
-- [`generate_anticipative_solver`](@ref)`(bench)`: returns a callable
-  `(scenario; kwargs...) -> Vector{DataSample}` that runs the anticipative solver on a
-  full scenario and returns a training trajectory. Required only when using
-  [`generate_dataset`](@ref)`(bench, environments; ...)`.
-- [`generate_dataset`](@ref)`(bench, environments; nb_scenarios_per_env, ...)`: optional;
-  generates training-ready [`DataSample`](@ref)s from environments via anticipative rollouts.
-  Requires [`generate_scenario`](@ref) and [`generate_anticipative_solver`](@ref).
+- [`generate_baseline_policies`](@ref)`(bench)`: returns named baseline callables of
+  signature `(env) -> Vector{DataSample}` (full trajectory rollout).
+- [`generate_dataset`](@ref)`(bench, environments; target_policy, ...)`: generates
+  training-ready [`DataSample`](@ref)s by calling `target_policy(env)` for each environment.
+  Requires `target_policy` as a mandatory keyword argument.
 """
 abstract type AbstractDynamicBenchmark{exogenous} <: AbstractStochasticBenchmark{exogenous} end
 
@@ -421,49 +424,23 @@ end
 """
 $TYPEDSIGNATURES
 
-Map K scenarios to training [`DataSample`](@ref)s for a single environment.
-
-Key customisation point for scenario→sample mapping in
-[`generate_dataset`](@ref)`(bench, environments; nb_scenarios_per_env)`.
-
-**Default:** Calls [`generate_anticipative_solver`](@ref) on each scenario,
-returning the concatenated trajectories.
-
-**Override for custom strategies** (e.g. averaging trajectories, sub-sampling steps).
-"""
-function generate_environment_samples(
-    bench::AbstractDynamicBenchmark{true}, env, scenarios::AbstractVector; kwargs...
-)
-    solver = generate_anticipative_solver(bench)
-    samples = DataSample[]
-    for scenario in scenarios
-        trajectory = solver(scenario; instance=env.instance, kwargs...)
-        append!(samples, trajectory)
-    end
-    return samples
-end
-
-"""
-$TYPEDSIGNATURES
-
 Generate a training dataset from pre-built environments for an exogenous dynamic benchmark.
 
-For each environment, draws `nb_scenarios_per_env` independent scenarios via
-[`generate_scenario`](@ref) and maps them to [`DataSample`](@ref)s via
-[`generate_environment_samples`](@ref).
+For each environment, calls `target_policy(env)` to obtain a training trajectory
+(`Vector{DataSample}`). The trajectories are concatenated into a flat dataset.
 
-Mirrors [`generate_dataset`](@ref) for [`AbstractStochasticBenchmark{true}`](@ref)
-with `nb_scenarios_per_instance`.
+`target_policy` is a **required** keyword argument. Use [`generate_baseline_policies`](@ref)
+to obtain standard baseline callables (e.g. the anticipative solver).
 
-| | Stochastic | Dynamic |
-|---|---|---|
-| Unit | instance (`DataSample`) | environment |
-| Customisation hook | `generate_instance_samples` | `generate_environment_samples` |
+# Keyword arguments
+- `target_policy`: **required** callable `(env) -> Vector{DataSample}`.
+- `seed`: passed to `MersenneTwister` when `rng` is not provided.
+- `rng`: random number generator.
 """
 function generate_dataset(
     bench::AbstractDynamicBenchmark{true},
     environments::AbstractVector;
-    nb_scenarios_per_env::Int=1,
+    target_policy,
     seed=nothing,
     rng=MersenneTwister(seed),
     kwargs...,
@@ -471,11 +448,8 @@ function generate_dataset(
     Random.seed!(rng, seed)
     samples = DataSample[]
     for env in environments
-        scenarios = [
-            generate_scenario(bench, rng; instance=env.instance) for
-            _ in 1:nb_scenarios_per_env
-        ]
-        append!(samples, generate_environment_samples(bench, env, scenarios; kwargs...))
+        trajectory = target_policy(env)
+        append!(samples, trajectory)
     end
     return samples
 end
@@ -485,20 +459,13 @@ $TYPEDSIGNATURES
 
 Convenience wrapper for exogenous dynamic benchmarks: generates `n` environments
 via [`generate_environments`](@ref), then calls
-[`generate_dataset`](@ref)`(bench, environments; nb_scenarios_per_env, ...)`.
+[`generate_dataset`](@ref)`(bench, environments; target_policy, ...)`.
 
-Gives dynamic benchmarks the same top-level API as static/stochastic:
-
-    dataset = generate_dataset(bench, n)
-    dataset = generate_dataset(bench, n; nb_scenarios_per_env=5)
+`target_policy` is a **required** keyword argument.
 """
 function generate_dataset(
-    bench::AbstractDynamicBenchmark{true},
-    n::Int;
-    nb_scenarios_per_env::Int=1,
-    seed=nothing,
-    kwargs...,
+    bench::AbstractDynamicBenchmark{true}, n::Int; target_policy, seed=nothing, kwargs...
 )
     environments = generate_environments(bench, n; seed)
-    return generate_dataset(bench, environments; nb_scenarios_per_env, seed, kwargs...)
+    return generate_dataset(bench, environments; target_policy, seed, kwargs...)
 end

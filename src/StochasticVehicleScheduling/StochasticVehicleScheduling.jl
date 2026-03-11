@@ -73,32 +73,29 @@ end
 """
 $TYPEDSIGNATURES
 
-Generate a sample for the given `StochasticVehicleSchedulingBenchmark`.
-If you want to not add label solutions in the sample, set `compute_solutions=false`.
-By default, they will be computed using column generation.
-Note that computing solutions can be time-consuming, especially for large instances.
-You can also use instead `compact_mip` or `compact_linearized_mip` as the algorithm to compute solutions.
-If you want to provide a custom algorithm to compute solutions, you can pass it as the `algorithm` keyword argument.
-If `algorithm` takes keyword arguments, you can pass them as well directly in `kwargs...`.
-If `store_city=false`, the coordinates and unnecessary information about instances will not be stored in the sample.
+Generate an unlabeled instance for the given `StochasticVehicleSchedulingBenchmark`.
+Returns a [`DataSample`](@ref) with features `x` and `instance` set, but `y=nothing`.
+
+To obtain labeled samples, pass a `target_policy` to [`generate_dataset`](@ref):
+
+```julia
+policy = sample -> DataSample(; sample.context..., x=sample.x,
+                                y=column_generation_algorithm(sample.instance))
+dataset = generate_dataset(benchmark, N; target_policy=policy)
+```
+
+If `store_city=false`, coordinates and city information are not stored in the instance.
 """
-function Utils.generate_sample(
+function Utils.generate_instance(
     benchmark::StochasticVehicleSchedulingBenchmark,
     rng::AbstractRNG;
     store_city=true,
-    compute_solutions=true,
-    algorithm=column_generation_algorithm,
     kwargs...,
 )
     (; nb_tasks, nb_scenarios) = benchmark
     instance = Instance(; nb_tasks, nb_scenarios, rng, store_city)
     x = get_features(instance)
-    y_true = if compute_solutions
-        algorithm(instance; kwargs...)
-    else
-        nothing
-    end
-    return DataSample(; x, instance, y=y_true)
+    return DataSample(; x, instance)
 end
 
 """

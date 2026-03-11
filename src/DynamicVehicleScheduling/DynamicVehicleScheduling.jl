@@ -149,7 +149,7 @@ Returns a tuple containing:
 - `lazy`: A policy that dispatches vehicles only when they are ready
 - `greedy`: A policy that dispatches vehicles to the nearest customer
 """
-function Utils.generate_policies(b::DynamicVehicleSchedulingBenchmark)
+function Utils.generate_baseline_policies(::DynamicVehicleSchedulingBenchmark)
     lazy = Policy(
         "Lazy",
         "Lazy policy that dispatches vehicles only when they are ready.",

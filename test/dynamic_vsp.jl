@@ -13,7 +13,7 @@
     env = environments[1]
     get_seed(env)
 
-    policies = generate_policies(b)
+    policies = generate_baseline_policies(b)
     lazy = policies[1]
     greedy = policies[2]
 

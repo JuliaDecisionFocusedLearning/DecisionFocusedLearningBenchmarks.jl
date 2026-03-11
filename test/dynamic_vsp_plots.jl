@@ -17,7 +17,7 @@
     fig2 = DVSP.plot_epochs(y)
     @test fig2 isa Plots.Plot
 
-    policies = generate_policies(b)
+    policies = generate_baseline_policies(b)
     lazy = policies[1]
     _, d = evaluate_policy!(lazy, env)
     fig3 = DVSP.plot_routes(d[1].instance, d[1].y)

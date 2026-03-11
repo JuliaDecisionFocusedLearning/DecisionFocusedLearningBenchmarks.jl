@@ -128,7 +128,7 @@ Returns two policies for the dynamic assortment benchmark:
 - `Greedy`: selects the assortment containing items with the highest prices
 - `Expert`: selects the assortment with the highest expected revenue (through brute-force enumeration)
 """
-function Utils.generate_policies(::DynamicAssortmentBenchmark)
+function Utils.generate_baseline_policies(::DynamicAssortmentBenchmark)
     greedy = Policy(
         "Greedy",
         "policy that selects the assortment with items with the highest prices",
