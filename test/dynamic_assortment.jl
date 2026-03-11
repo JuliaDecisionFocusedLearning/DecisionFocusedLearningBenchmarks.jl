@@ -310,6 +310,28 @@ end
     @test sum(greedy_action) == DAP.assortment_size(env)
 end
 
+@testset "DynamicAssortment - generate_dataset with environments (exogenous)" begin
+    b = DynamicAssortmentBenchmark(; N=4, d=2, K=2, max_steps=10, exogenous=true)
+    envs = generate_environments(b, 4; seed=0)
+    policies = generate_baseline_policies(b)
+    expert = policies[1]
+
+    # target_policy: env -> Vector{DataSample} (full trajectory)
+    target_policy = env -> evaluate_policy!(expert, env)[2]
+
+    # vector-of-environments overload
+    dataset = generate_dataset(b, envs; target_policy=target_policy)
+    @test dataset isa Vector{DataSample}
+    @test !isempty(dataset)
+    @test all(!isnothing(s.x) for s in dataset)
+    @test all(!isnothing(s.y) for s in dataset)
+
+    # count-based wrapper
+    dataset2 = generate_dataset(b, 3; seed=7, target_policy=target_policy)
+    @test dataset2 isa Vector{DataSample}
+    @test !isempty(dataset2)
+end
+
 @testset "DynamicAssortment - Model and Maximizer Integration" begin
     b = DynamicAssortmentBenchmark(; N=4, d=3, K=2)
 

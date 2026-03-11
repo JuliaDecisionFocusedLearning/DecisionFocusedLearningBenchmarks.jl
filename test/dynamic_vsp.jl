@@ -51,3 +51,32 @@
     @test isapprox(cost, anticipative_value; atol=1e-5)
     @test isapprox(cost, cost2; atol=1e-5)
 end
+
+@testset "DVSP - generate_dataset with environments" begin
+    using DecisionFocusedLearningBenchmarks.DynamicVehicleScheduling
+
+    b = DynamicVehicleSchedulingBenchmark(; two_dimensional_features=true)
+    envs = generate_environments(b, 5; seed=0)
+    policies = generate_baseline_policies(b)
+    lazy = policies[1]
+
+    # target_policy takes env -> Vector{DataSample} (full trajectory)
+    target_policy = env -> evaluate_policy!(lazy, env)[2]
+
+    # vector-of-environments overload
+    dataset = generate_dataset(b, envs; target_policy=target_policy)
+    @test dataset isa Vector{DataSample}
+    @test !isempty(dataset)
+    @test all(!isnothing(s.x) for s in dataset)
+    @test all(!isnothing(s.y) for s in dataset)
+
+    # count-based wrapper
+    dataset2 = generate_dataset(b, 3; seed=1, target_policy=target_policy)
+    @test dataset2 isa Vector{DataSample}
+    @test !isempty(dataset2)
+
+    # seed keyword is forwarded: same seed → same dataset
+    dataset3a = generate_dataset(b, 3; seed=42, target_policy=target_policy)
+    dataset3b = generate_dataset(b, 3; seed=42, target_policy=target_policy)
+    @test length(dataset3a) == length(dataset3b)
+end

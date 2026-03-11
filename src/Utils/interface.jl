@@ -276,13 +276,7 @@ The instance and other solver-relevant fields are spread from the sample context
     y          = solver(scenario; sample.context...)  # stochastic
     trajectory = solver(scenario; sample.context...)  # dynamic
 """
-function generate_anticipative_solver(bench::AbstractStochasticBenchmark{true})
-    return (scenario; kwargs...) -> error(
-        "`generate_anticipative_solver` is not implemented for $(typeof(bench)). " *
-        "Implement `generate_anticipative_solver(::$(typeof(bench))) -> (scenario; kwargs...) -> y` " *
-        "to use it.",
-    )
-end
+function generate_anticipative_solver end
 
 """
     generate_parametric_anticipative_solver(::AbstractStochasticBenchmark{true}) -> callable
