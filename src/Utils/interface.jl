@@ -31,7 +31,13 @@ abstract type AbstractBenchmark end
 
 Generate a single unlabeled [`DataSample`](@ref) (with `y=nothing`) for the benchmark.
 """
-function generate_instance end
+function generate_instance(bench::AbstractBenchmark, rng::AbstractRNG; kwargs...)
+    return error(
+        "`generate_instance` is not implemented for $(typeof(bench)). " *
+        "Implement `generate_instance(::$(typeof(bench)), rng; kwargs...) -> DataSample` " *
+        "or override `generate_sample` directly.",
+    )
+end
 
 """
     generate_sample(::AbstractBenchmark, rng::AbstractRNG; target_policy=nothing, kwargs...) -> DataSample
