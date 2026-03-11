@@ -7,7 +7,7 @@ using Flux: Chain, Dense
 using Ipopt: Ipopt
 using JuMP: @variable, @objective, @constraint, optimize!, value, Model, set_silent
 using LinearAlgebra: I
-using Random: AbstractRNG, MersenneTwister
+using Random: Random, AbstractRNG, MersenneTwister
 
 """
 $TYPEDEF
@@ -107,7 +107,10 @@ $TYPEDSIGNATURES
 
 Initialize a linear model for `bench` using `Flux`.
 """
-function Utils.generate_statistical_model(bench::PortfolioOptimizationBenchmark)
+function Utils.generate_statistical_model(
+    bench::PortfolioOptimizationBenchmark; seed=nothing
+)
+    Random.seed!(seed)
     (; p, d) = bench
     return Dense(p, d)
 end

@@ -1,4 +1,3 @@
-
 struct Scenario
     "indices of the new requests in each epoch"
     indices::Vector{Vector{Int}}
@@ -51,6 +50,8 @@ function Utils.generate_scenario(
     return Scenario(new_indices, new_service_time, new_start_time)
 end
 
-function Utils.generate_scenario(sample::DataSample; kwargs...)
-    return Utils.generate_scenario(sample.instance; kwargs...)
+function Utils.generate_scenario(
+    ::DynamicVehicleSchedulingBenchmark, rng::AbstractRNG; instance, kwargs...
+)
+    return generate_scenario(instance; rng)
 end

@@ -114,12 +114,11 @@ end
 """
 $TYPEDSIGNATURES
 
-Creates an [`Environment`](@ref) from an [`Instance`](@ref) of the maintenance benchmark.
-The seed of the environment is randomly generated using the provided random number generator.
+Creates an [`Environment`](@ref) for the maintenance benchmark.
+The instance and seed are randomly generated using the provided random number generator.
 """
-function Utils.generate_environment(
-    ::MaintenanceBenchmark, instance::Instance, rng::AbstractRNG; kwargs...
-)
+function Utils.generate_environment(b::MaintenanceBenchmark, rng::AbstractRNG; kwargs...)
+    instance = Instance(b, rng)
     seed = rand(rng, 1:typemax(Int))
     return Environment(instance; seed)
 end
@@ -130,7 +129,7 @@ $TYPEDSIGNATURES
 Returns two policies for the dynamic assortment benchmark:
 - `Greedy`: maintains components when they are in the last state before failure, up to the maintenance capacity
 """
-function Utils.generate_policies(::MaintenanceBenchmark)
+function Utils.generate_baseline_policies(::MaintenanceBenchmark)
     greedy = Policy(
         "Greedy",
         "policy that maintains components when they are in the last state before failure, up to the maintenance capacity",

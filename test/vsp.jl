@@ -8,16 +8,29 @@
     b = StochasticVehicleSchedulingBenchmark(; nb_tasks=25, nb_scenarios=10)
 
     N = 5
-    dataset = generate_dataset(b, N; seed=0, rng=StableRNG(0))
-    mip_dataset = generate_dataset(b, N; seed=0, rng=StableRNG(0), algorithm=compact_mip)
+
+    # Helper to build a target_policy that wraps a given algorithm
+    function make_svs_target_policy(algorithm)
+        return sample ->
+            DataSample(; sample.context..., x=sample.x, y=algorithm(sample.instance))
+    end
+
+    col_gen_policy = make_svs_target_policy(column_generation_algorithm)
+    mip_policy = make_svs_target_policy(compact_mip)
+    mipl_policy = make_svs_target_policy(compact_linearized_mip)
+    local_search_policy = make_svs_target_policy(local_search)
+    deterministic_policy = make_svs_target_policy(deterministic_mip)
+
+    dataset = generate_dataset(b, N; seed=0, rng=StableRNG(0), target_policy=col_gen_policy)
+    mip_dataset = generate_dataset(b, N; seed=0, rng=StableRNG(0), target_policy=mip_policy)
     mipl_dataset = generate_dataset(
-        b, N; seed=0, rng=StableRNG(0), algorithm=compact_linearized_mip
+        b, N; seed=0, rng=StableRNG(0), target_policy=mipl_policy
     )
     local_search_dataset = generate_dataset(
-        b, N; seed=0, rng=StableRNG(0), algorithm=local_search
+        b, N; seed=0, rng=StableRNG(0), target_policy=local_search_policy
     )
     deterministic_dataset = generate_dataset(
-        b, N; seed=0, rng=StableRNG(0), algorithm=deterministic_mip
+        b, N; seed=0, rng=StableRNG(0), target_policy=deterministic_policy
     )
     @test length(dataset) == N
 

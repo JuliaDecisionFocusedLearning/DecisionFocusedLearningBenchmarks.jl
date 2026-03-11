@@ -165,11 +165,10 @@ end
     b = MaintenanceBenchmark()
 
     # Generate test data
-    dataset = generate_dataset(b, 10; seed=0)
-    environments = generate_environments(b, dataset)
+    environments = generate_environments(b, 10; seed=0)
 
     # Get policies
-    policies = generate_policies(b)
+    policies = generate_baseline_policies(b)
     greedy = policies[1]
 
     @test greedy.name == "Greedy"
@@ -200,11 +199,10 @@ end
     sample = generate_sample(b, MersenneTwister(42))
     @test hasfield(typeof(sample), :context)
 
-    dataset = generate_dataset(b, 3; seed=42)
-    environments = generate_environments(b, dataset)
+    environments = generate_environments(b, 3; seed=42)
 
     # Evaluate policy to get data samples
-    policies = generate_policies(b)
+    policies = generate_baseline_policies(b)
     _, data_samples = evaluate_policy!(policies[1], environments)
 
     # Test model-maximizer pipeline

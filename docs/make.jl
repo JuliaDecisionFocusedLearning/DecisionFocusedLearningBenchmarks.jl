@@ -26,9 +26,10 @@ makedocs(;
     sitename="DecisionFocusedLearningBenchmarks.jl",
     format=Documenter.HTML(; size_threshold=typemax(Int)),
     pages=[
-        "Home" => [
-            "Getting started" => "index.md",
-            "Understanding Benchmark Interfaces" => "benchmark_interfaces.md",
+        "Home" => "index.md",
+        "Guides" => [
+            "Using benchmarks" => "using_benchmarks.md",
+            "Creating custom benchmarks" => "custom_benchmarks.md",
         ],
         "Tutorials" => include_tutorial ? md_tutorial_files : [],
         "Benchmark problems list" => benchmark_files,

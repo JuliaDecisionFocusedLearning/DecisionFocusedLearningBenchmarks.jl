@@ -133,7 +133,10 @@ $TYPEDSIGNATURES
 
 Initialize a linear model for `bench` using `Flux`.
 """
-function Utils.generate_statistical_model(bench::FixedSizeShortestPathBenchmark)
+function Utils.generate_statistical_model(
+    bench::FixedSizeShortestPathBenchmark; seed=nothing
+)
+    Random.seed!(seed)
     (; p, graph) = bench
     return Chain(Dense(p, ne(graph)))
 end

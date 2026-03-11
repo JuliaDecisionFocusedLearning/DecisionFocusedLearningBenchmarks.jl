@@ -27,11 +27,11 @@ export TopKMaximizer
 export AbstractEnvironment, get_seed, is_terminated, observe, reset!, step!
 
 export AbstractBenchmark, AbstractStochasticBenchmark, AbstractDynamicBenchmark
-export generate_sample, generate_dataset
+export generate_instance, generate_sample, generate_dataset
 export generate_statistical_model, generate_maximizer
 export generate_scenario
 export generate_environment, generate_environments
-export generate_policies
+export generate_baseline_policies
 export generate_anticipative_solution
 
 export plot_data, compute_gap
