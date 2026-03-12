@@ -6,8 +6,9 @@ Abstract type interface for benchmark problems.
 # Mandatory methods to implement for any benchmark:
 Choose one of three primary implementation strategies:
 - Implement [`generate_instance`](@ref) (returns a [`DataSample`](@ref) with `y=nothing`).
-  The default [`generate_sample`](@ref) then applies `target_policy` if provided.
-- Override [`generate_sample`](@ref) directly when the sample requires custom logic. In this case,
+  The default [`generate_sample`](@ref) forwards the call directly; [`generate_dataset`](@ref)
+  applies `target_policy` afterwards if provided.
+- Override [`generate_sample`](@ref) directly when the sample requires custom logic.
   [`generate_dataset`](@ref) applies `target_policy` to the result after the call returns.
 - Override [`generate_dataset`](@ref) directly when samples cannot be drawn independently.
 
@@ -40,20 +41,18 @@ function generate_instance(bench::AbstractBenchmark, rng::AbstractRNG; kwargs...
 end
 
 """
-    generate_sample(::AbstractBenchmark, rng::AbstractRNG; target_policy=nothing, kwargs...) -> DataSample
+    generate_sample(::AbstractBenchmark, rng::AbstractRNG; kwargs...) -> DataSample
 
 Generate a single [`DataSample`](@ref) for the benchmark.
 
-**Framework default** (when [`generate_instance`](@ref) is implemented):
-Calls [`generate_instance`](@ref), then applies `target_policy(sample)` if provided.
+**Default** (when [`generate_instance`](@ref) is implemented):
+Calls [`generate_instance`](@ref) and returns the result directly.
 
-Override directly (instead of implementing [`generate_instance`](@ref)) when the sample
-requires custom logic. In this case, [`generate_dataset`](@ref) applies `target_policy`
-after the call returns.
+Override this method when sample generation requires custom logic. Labeling via
+`target_policy` is always applied by [`generate_dataset`](@ref) after this call returns.
 """
-function generate_sample(bench::AbstractBenchmark, rng; target_policy=nothing, kwargs...)
-    sample = generate_instance(bench, rng; kwargs...)
-    return isnothing(target_policy) ? sample : target_policy(sample)
+function generate_sample(bench::AbstractBenchmark, rng; kwargs...)
+    return generate_instance(bench, rng; kwargs...)
 end
 
 """
@@ -63,8 +62,8 @@ Generate a `Vector` of [`DataSample`](@ref) of length `dataset_size` for given b
 Content of the dataset can be visualized using [`plot_data`](@ref), when it applies.
 
 By default, it uses [`generate_sample`](@ref) to create each sample in the dataset, and passes any
-keyword arguments to it. If `target_policy` is provided, it is applied to each sample after
-[`generate_sample`](@ref) returns.
+keyword arguments to it. `target_policy is applied if provided, it is called on each sample
+after [`generate_sample`](@ref) returns.
 """
 function generate_dataset(
     bench::AbstractBenchmark,

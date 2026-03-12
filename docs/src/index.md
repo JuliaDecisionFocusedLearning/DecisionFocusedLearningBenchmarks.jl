@@ -32,7 +32,7 @@ Where:
 
 ## Package Overview
 
-**DecisionFocusedLearningBenchmarks.jl** provides a comprehensive collection of benchmark problems for evaluating decision-focused learning algorithms. The package offers:
+**DecisionFocusedLearningBenchmarks.jl** provides a collection of benchmark problems for evaluating decision-focused learning algorithms. The package offers:
 
 - **Standardized benchmark problems** spanning diverse application domains
 - **Common interfaces** for creating datasets, statistical models, and optimization algorithms

@@ -15,8 +15,8 @@ All data in the package is represented as [`DataSample`](@ref) objects.
 | `x` | any | Input features (fed to the statistical model) |
 | `θ` | any | Intermediate cost parameters |
 | `y` | any | Output decision / solution |
-| `context` | `NamedTuple` | Solver kwargs — spread into `maximizer(θ; sample.context...)` |
-| `extra` | `NamedTuple` | Non-solver data (scenario, reward, step, …) — never passed to the solver |
+| `context` | `NamedTuple` | Solver kwargs spread into `maximizer(θ; sample.context...)` |
+| `extra` | `NamedTuple` | Non-solver data (scenario, reward, step, …), never passed to the solver |
 
 Not all fields are populated in every sample. For convenience, named entries inside
 `context` and `extra` can be accessed directly on the sample via property forwarding:

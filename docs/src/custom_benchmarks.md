@@ -18,7 +18,7 @@ AbstractBenchmark
 |------|----------|
 | `AbstractBenchmark` | Static, single-stage optimization (e.g. shortest path, portfolio) |
 | `AbstractStochasticBenchmark{true}` | Single-stage with exogenous uncertainty (scenarios drawn independently of decisions) |
-| `AbstractStochasticBenchmark{false}` | Single-stage with endogenous uncertainty (not yet used) |
+| `AbstractStochasticBenchmark{false}` | Single-stage with endogenous uncertainty |
 | `AbstractDynamicBenchmark{true}` | Multi-stage sequential decisions with exogenous uncertainty |
 | `AbstractDynamicBenchmark{false}` | Multi-stage sequential decisions with endogenous uncertainty |
 

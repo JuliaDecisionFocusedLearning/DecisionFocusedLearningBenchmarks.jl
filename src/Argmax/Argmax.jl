@@ -60,7 +60,7 @@ $TYPEDSIGNATURES
 
 Return an argmax maximizer.
 """
-function Utils.generate_maximizer(bench::ArgmaxBenchmark)
+function Utils.generate_maximizer(::ArgmaxBenchmark)
     return one_hot_argmax
 end
 
