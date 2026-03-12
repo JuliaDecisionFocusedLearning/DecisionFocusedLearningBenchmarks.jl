@@ -1,8 +1,42 @@
 # Using Benchmarks
 
-This guide covers everything you need to work with existing benchmarks in
-DecisionFocusedLearningBenchmarks.jl: generating datasets, assembling DFL pipeline
-components, and evaluating results.
+This guide covers everything you need to work with existing benchmarks in DecisionFocusedLearningBenchmarks.jl: generating datasets, assembling DFL pipeline components, applying algorithms, and evaluating results.
+
+---
+
+## What is a benchmark?
+
+A benchmark bundles a problem family (an instance generator, a combinatorial solver, and a statistical model architecture) into a single object. It provides everything needed to run a Decision-Focused Learning experiment out of the box, without having to create each component from scratch.
+Three abstract types cover the main settings:
+- **`AbstractBenchmark`**: static problems (one instance, one decision)
+- **`AbstractStochasticBenchmark{exogenous}`**: stochastic problems (type parameter indicates whether uncertainty is exogenous)
+- **`AbstractDynamicBenchmark`**: sequential / multi-stage problems
+
+The sections below explain what changes between these settings. For most purposes, start with a static benchmark to understand the core workflow.
+
+---
+
+## Core workflow
+
+Every benchmark exposes three key methods. For any static benchmark:
+
+```julia
+bench = ArgmaxBenchmark()
+model = generate_statistical_model(bench; seed=0)   # Flux model
+maximizer = generate_maximizer(bench)               # combinatorial oracle
+dataset = generate_dataset(bench, 100; seed=0)      # Vector{DataSample}
+```
+
+- **`generate_statistical_model`**: returns an untrained neural network that maps input features `x` to cost parameters `θ`.
+- **`generate_maximizer`**: returns a callable `(θ; context...) -> y` that solves the combinatorial problem given cost parameters.
+- **`generate_dataset`**: returns labeled training data as a `Vector{DataSample}`.
+
+At inference time these two pieces compose naturally as an end-to-end policy:
+
+```julia
+θ = model(sample.x)                  # predict cost parameters
+y = maximizer(θ; sample.context...)  # solve the optimization problem
+```
 
 ---
 
@@ -18,8 +52,7 @@ All data in the package is represented as [`DataSample`](@ref) objects.
 | `context` | `NamedTuple` | Solver kwargs spread into `maximizer(θ; sample.context...)` |
 | `extra` | `NamedTuple` | Non-solver data (scenario, reward, step, …), never passed to the solver |
 
-Not all fields are populated in every sample. For convenience, named entries inside
-`context` and `extra` can be accessed directly on the sample via property forwarding:
+Not all fields are populated in every sample, depending on the setting. For convenience, named entries inside `context` and `extra` can be accessed directly on the sample via property forwarding:
 
 ```julia
 sample.instance   # looks up :instance in context first, then in extra
@@ -28,12 +61,11 @@ sample.scenario   # looks up :scenario in context first, then in extra
 
 ---
 
-## Generating datasets for training
+## Benchmark type specifics
 
 ### Static benchmarks
 
-For static benchmarks (`<:AbstractBenchmark`) the framework already computes the
-ground-truth label `y`:
+For static benchmarks (`<:AbstractBenchmark`), `generate_dataset` may compute a default ground-truth label `y` if the benchmark implements it:
 
 ```julia
 bench = ArgmaxBenchmark()
@@ -43,15 +75,13 @@ dataset = generate_dataset(bench, 100; seed=0)   # Vector{DataSample} with x, y,
 You can override the labels by providing a `target_policy`:
 
 ```julia
-my_policy = sample -> DataSample(; sample.context..., x=sample.x,
-                                   y=my_algorithm(sample.instance))
+my_policy = sample -> DataSample(; sample.context..., x=sample.x, y=my_algorithm(sample.instance))
 dataset = generate_dataset(bench, 100; seed=0, target_policy=my_policy)
 ```
 
 ### Stochastic benchmarks (exogenous)
 
-For `AbstractStochasticBenchmark{true}` benchmarks the default call returns
-*unlabeled* samples, each sample carries one scenario in `sample.extra.scenario`:
+For `AbstractStochasticBenchmark{true}` benchmarks the default call returns *unlabeled* samples, each sample carries one scenario in `sample.extra.scenario`:
 
 ```julia
 bench   = StochasticVehicleSchedulingBenchmark()
@@ -85,20 +115,22 @@ Dynamic benchmarks use a two-step workflow:
 ```julia
 bench = DynamicVehicleSchedulingBenchmark()
 
-# Step 1 — create environments (reusable across experiments)
+# Step 1: create environments (reusable across experiments)
 envs = generate_environments(bench, 10; seed=0)
 
-# Step 2 — roll out a policy to collect training trajectories
+# Step 2: roll out a policy to collect training trajectories
 policy = generate_baseline_policies(bench)[1]          # e.g. lazy policy
 dataset = generate_dataset(bench, envs; target_policy=policy)
 # dataset is a flat Vector{DataSample} of all steps across all trajectories
 ```
 
-`target_policy` is **required** for dynamic benchmarks (there is no default label).
+`target_policy` is **required** to create datasets for dynamic benchmarks (there is no default label).
 It must be a callable `(env) -> Vector{DataSample}` that performs a full episode
 rollout and returns the resulting trajectory.
 
-### Seed / RNG control
+---
+
+## Seed / RNG control
 
 All `generate_dataset` and `generate_environments` calls accept either `seed`
 (creates an internal `MersenneTwister`) or `rng` for full control:
@@ -107,22 +139,6 @@ All `generate_dataset` and `generate_environments` calls accept either `seed`
 using Random
 rng = MersenneTwister(42)
 dataset = generate_dataset(bench, 50; rng=rng)
-```
-
----
-
-## DFL pipeline components
-
-```julia
-model = generate_statistical_model(bench; seed=0)   # untrained Flux model
-maximizer = generate_maximizer(bench)                   # combinatorial oracle
-```
-
-These two pieces compose naturally:
-
-```julia
-θ = model(sample.x)                  # predict cost parameters
-y = maximizer(θ; sample.context...)      # solve the optimization problem
 ```
 
 ---

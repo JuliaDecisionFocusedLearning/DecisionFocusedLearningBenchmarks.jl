@@ -139,7 +139,7 @@ function Utils.generate_baseline_policies(::DynamicAssortmentBenchmark)
         "policy that selects the assortment with the highest expected revenue",
         expert_policy,
     )
-    return (expert, greedy)
+    return (; expert, greedy)
 end
 
 export DynamicAssortmentBenchmark

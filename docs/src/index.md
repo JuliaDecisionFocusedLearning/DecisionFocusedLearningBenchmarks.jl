@@ -24,20 +24,20 @@ x \;\longrightarrow\; \boxed{\,\text{Statistical model } \varphi_w\,}
 ```
 
 Where:
-- **Statistical model** $\varphi_w$: machine learning predictor (e.g., neural network)
-- **CO algorithm** $f$: combinatorial optimization solver
 - **Instance** $x$: input data (e.g., features, context)
+- **Statistical model** $\varphi_w$: machine learning predictor (e.g., neural network)
 - **Parameters** $\theta$: predicted parameters for the optimization problem solved by `f`
+- **CO algorithm** $f$: combinatorial optimization solver
 - **Solution** $y$: output decision/solution
 
 ## Package Overview
 
 **DecisionFocusedLearningBenchmarks.jl** provides a collection of benchmark problems for evaluating decision-focused learning algorithms. The package offers:
 
-- **Standardized benchmark problems** spanning diverse application domains
-- **Common interfaces** for creating datasets, statistical models, and optimization algorithms
-- **Ready-to-use DFL policies** compatible with [InferOpt.jl](https://github.com/JuliaDecisionFocusedLearning/InferOpt.jl) and the whole [JuliaDecisionFocusedLearning](https://github.com/JuliaDecisionFocusedLearning) ecosystem
-- **Evaluation tools** for comparing algorithm performance
+- **Collection of benchmark problems** spanning diverse applications
+- **Common tools** for creating datasets, statistical models, and optimization algorithms
+- **Generic interface** for building custom benchmarks
+- Compatibility with [InferOpt.jl](https://github.com/JuliaDecisionFocusedLearning/InferOpt.jl) and the whole [JuliaDecisionFocusedLearning](https://github.com/JuliaDecisionFocusedLearning) ecosystem
 
 ## Benchmark Categories
 

@@ -76,13 +76,11 @@ $TYPEDSIGNATURES
 
 Initialize a linear model for `bench` using `Flux`.
 """
-function Utils.generate_statistical_model(bench::SubsetSelectionBenchmark; seed=0)
+function Utils.generate_statistical_model(bench::SubsetSelectionBenchmark; seed=nothing)
     Random.seed!(seed)
     (; n) = bench
     return Dense(n => n; bias=false)
 end
 
 export SubsetSelectionBenchmark
-export generate_dataset, generate_maximizer, generate_statistical_model
-
 end

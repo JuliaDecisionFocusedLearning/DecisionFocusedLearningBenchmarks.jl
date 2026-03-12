@@ -115,20 +115,6 @@ end
 """
 $TYPEDSIGNATURES
 
-Generate an anticipative solution for the dynamic vehicle scheduling benchmark.
-The solution is computed using the anticipative solver with the benchmark's feature configuration.
-"""
-function Utils.generate_anticipative_solution(
-    b::DynamicVehicleSchedulingBenchmark, args...; kwargs...
-)
-    return anticipative_solver(
-        args...; kwargs..., two_dimensional_features=b.two_dimensional_features
-    )
-end
-
-"""
-$TYPEDSIGNATURES
-
 Return the anticipative solver for the dynamic vehicle scheduling benchmark.
 The callable takes a scenario and solver kwargs (including `instance`) and returns a
 training trajectory as a `Vector{DataSample}`.
@@ -160,7 +146,7 @@ function Utils.generate_baseline_policies(::DynamicVehicleSchedulingBenchmark)
         "Greedy policy that dispatches vehicles to the nearest customer.",
         greedy_policy,
     )
-    return (lazy, greedy)
+    return (; lazy, greedy)
 end
 
 """

@@ -22,7 +22,6 @@ The number of simultaneous maintenance operations is limited by a maintenance ca
 
 # Fields
 $TYPEDFIELDS
-
 """
 struct MaintenanceBenchmark <: AbstractDynamicBenchmark{true}
     "number of components"
@@ -126,7 +125,7 @@ end
 """
 $TYPEDSIGNATURES
 
-Returns two policies for the dynamic assortment benchmark:
+Returns a policy for the maintenance benchmark:
 - `Greedy`: maintains components when they are in the last state before failure, up to the maintenance capacity
 """
 function Utils.generate_baseline_policies(::MaintenanceBenchmark)
@@ -135,7 +134,7 @@ function Utils.generate_baseline_policies(::MaintenanceBenchmark)
         "policy that maintains components when they are in the last state before failure, up to the maintenance capacity",
         greedy_policy,
     )
-    return (greedy,)
+    return (; greedy)
 end
 
 export MaintenanceBenchmark
