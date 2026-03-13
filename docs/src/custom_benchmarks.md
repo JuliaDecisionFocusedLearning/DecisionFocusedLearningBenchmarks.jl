@@ -18,7 +18,7 @@ AbstractBenchmark
 |------|----------|
 | `AbstractBenchmark` | Static, single-stage optimization (e.g. shortest path, portfolio) |
 | `AbstractStochasticBenchmark{true}` | Single-stage with exogenous uncertainty (scenarios drawn independently of decisions) |
-| `AbstractStochasticBenchmark{false}` | Single-stage with endogenous uncertainty (not yet used) |
+| `AbstractStochasticBenchmark{false}` | Single-stage with endogenous uncertainty |
 | `AbstractDynamicBenchmark{true}` | Multi-stage sequential decisions with exogenous uncertainty |
 | `AbstractDynamicBenchmark{false}` | Multi-stage sequential decisions with endogenous uncertainty |
 
@@ -90,13 +90,8 @@ generate_instance(bench::MyStochasticBenchmark, rng::AbstractRNG; kwargs...) -> 
 
 # Draw one scenario given the instance encoded in context
 generate_scenario(bench::MyStochasticBenchmark, rng::AbstractRNG; context...) -> scenario
-# Note: sample.context is spread as kwargs when called by the framework
+# Note: sample.context is spread as kwargs when called
 ```
-
-The framework `generate_sample` calls `generate_instance`, draws `nb_scenarios`
-scenarios via `generate_scenario`, then:
-- If `target_policy` is provided: calls `target_policy(sample, scenarios) -> Vector{DataSample}`.
-- Otherwise: returns unlabeled samples with `extra=(; scenario=ξ)` for each scenario.
 
 #### Anticipative solver (optional)
 
@@ -189,89 +184,3 @@ DataSample(; x=feat, y=nothing, instance=inst, extra=(; scenario=ξ))
 ```
 
 Keys must not appear in both `context` and `extra`, the constructor raises an error.
-
----
-
-## Small examples
-
-### Static benchmark
-
-```julia
-using DecisionFocusedLearningBenchmarks
-const DFLBenchmarks = DecisionFocusedLearningBenchmarks
-
-struct MyStaticBenchmark <: AbstractBenchmark end
-
-function DFLBenchmarks.generate_instance(bench::MyStaticBenchmark, rng::AbstractRNG; kwargs...)
-    instance = build_my_instance(rng)
-    x = compute_features(instance)
-    return DataSample(; x=x, instance=instance)   # y = nothing
-end
-
-
-DFLBenchmarks.generate_statistical_model(bench::MyStaticBenchmark; seed=nothing) =
-    Chain(Dense(10 => 32, relu), Dense(32 => 5))
-
-DFLBenchmarks.generate_maximizer(bench::MyStaticBenchmark) =
-    (θ; instance, kwargs...) -> solve_my_problem(θ, instance)
-```
-
-### Stochastic benchmark
-
-```julia
-
-struct MyStochasticBenchmark <: AbstractStochasticBenchmark{true} end
-
-function DFLBenchmarks.generate_instance(bench::MyStochasticBenchmark, rng::AbstractRNG; kwargs...)
-    instance = build_my_instance(rng)
-    x = compute_features(instance)
-    return DataSample(; x=x, instance=instance)
-end
-
-function DFLBenchmarks.generate_scenario(bench::MyStochasticBenchmark, rng::AbstractRNG; instance, kwargs...)
-    return sample_scenario(instance, rng)
-end
-
-DFLBenchmarks.generate_anticipative_solver(bench::MyStochasticBenchmark) =
-    (scenario; instance, kwargs...) -> solve_with_scenario(instance, scenario)
-```
-
-### Dynamic benchmark
-
-```julia
-struct MyDynamicBenchmark <: AbstractDynamicBenchmark{true} end
-
-mutable struct MyEnv <: AbstractEnvironment
-    const instance::MyInstance
-    const seed::Int
-    state::MyState
-end
-
-DFLBenchmarks.get_seed(env::MyEnv) = env.seed
-DFLBenchmarks.reset!(env::MyEnv; reset_rng=true, seed=env.seed) = (env.state = initial_state(env.instance))
-DFLBenchmarks.observe(env::MyEnv) = (env.state, nothing)
-DFLBenchmarks.step!(env::MyEnv, action) = apply_action!(env.state, action)
-DFLBenchmarks.is_terminated(env::MyEnv) = env.state.done
-
-function DFLBenchmarks.generate_environment(bench::MyDynamicBenchmark, rng::AbstractRNG; kwargs...)
-    inst = build_my_instance(rng)
-    seed = rand(rng, Int)
-    return MyEnv(inst, seed, initial_state(inst))
-end
-
-function DFLBenchmarks.generate_baseline_policies(bench::MyDynamicBenchmark)
-    greedy = function(env)
-        samples = DataSample[]
-        reset!(env)
-        while !is_terminated(env)
-            obs, _ = observe(env)
-            x = compute_features(obs)
-            y = greedy_action(obs)
-            r = step!(env, y)
-            push!(samples, DataSample(; x=x, y=y, instance=obs, extra=(; reward=r)))
-        end
-        return samples
-    end
-    return (; greedy)
-end
-```

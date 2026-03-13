@@ -64,7 +64,7 @@ The embedding is made as follows:
 4) The element-wize `neg_tensor` function to get cell weights of proper sign to apply shortest path algorithms.
 5) A squeeze function to forget the two last dimensions.
 """
-function Utils.generate_statistical_model(::WarcraftBenchmark; seed=0)
+function Utils.generate_statistical_model(::WarcraftBenchmark; seed=nothing)
     Random.seed!(seed)
     resnet18 = ResNet(18; pretrain=false, nclasses=1)
     model_embedding = Chain(

@@ -12,7 +12,7 @@
     @test fig1 isa Plots.Plot
 
     scenario = env.scenario
-    v, y = generate_anticipative_solution(b, env, scenario; nb_epochs=3, reset_env=true)
+    y = generate_anticipative_solver(b)(env; nb_epochs=3)
 
     fig2 = DVSP.plot_epochs(y)
     @test fig2 isa Plots.Plot

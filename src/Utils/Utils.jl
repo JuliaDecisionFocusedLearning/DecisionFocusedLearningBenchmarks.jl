@@ -32,7 +32,7 @@ export generate_statistical_model, generate_maximizer
 export generate_scenario
 export generate_environment, generate_environments
 export generate_baseline_policies
-export generate_anticipative_solution
+export generate_anticipative_solver, generate_parametric_anticipative_solver
 
 export plot_data, compute_gap
 export grid_graph, get_path, path_to_matrix
