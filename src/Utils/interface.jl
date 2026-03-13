@@ -62,7 +62,7 @@ Generate a `Vector` of [`DataSample`](@ref) of length `dataset_size` for given b
 Content of the dataset can be visualized using [`plot_data`](@ref), when it applies.
 
 By default, it uses [`generate_sample`](@ref) to create each sample in the dataset, and passes any
-keyword arguments to it. `target_policy is applied if provided, it is called on each sample
+keyword arguments to it. `target_policy` is applied if provided, it is called on each sample
 after [`generate_sample`](@ref) returns.
 """
 function generate_dataset(

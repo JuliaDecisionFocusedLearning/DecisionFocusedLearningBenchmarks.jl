@@ -11,7 +11,6 @@
     fig1 = DVSP.plot_instance(env)
     @test fig1 isa Plots.Plot
 
-    scenario = env.scenario
     y = generate_anticipative_solver(b)(env; nb_epochs=3)
 
     fig2 = DVSP.plot_epochs(y)
