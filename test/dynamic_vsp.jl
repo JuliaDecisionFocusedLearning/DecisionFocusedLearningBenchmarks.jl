@@ -25,8 +25,7 @@
     @test mean(r_lazy) <= mean(r_greedy)
 
     env = environments[1]
-    scenario = env.scenario
-    v, y = generate_anticipative_solution(b, env, scenario; nb_epochs=2, reset_env=true)
+    y = generate_anticipative_solver(b)(env; nb_epochs=2)
 
     maximizer = generate_maximizer(b)
 
@@ -44,11 +43,10 @@
     @test size(x, 1) == 2
     @test size(x2, 1) == 27
 
-    anticipative_value, solution = generate_anticipative_solution(b, env; reset_env=true)
+    solution = generate_anticipative_solver(b)(env)
     reset!(env; reset_rng=true)
     cost = sum(step!(env, sample.y) for sample in solution)
     cost2 = sum(sample.reward for sample in solution)
-    @test isapprox(cost, anticipative_value; atol=1e-5)
     @test isapprox(cost, cost2; atol=1e-5)
 end
 

@@ -262,18 +262,15 @@ spread from `sample.context`:
 function generate_scenario end
 
 """
-    generate_anticipative_solver(::AbstractStochasticBenchmark{true}) -> callable
+    generate_anticipative_solver(::AbstractBenchmark) -> callable
 
-Return a callable that computes the anticipative solution for a given scenario.
-The instance and other solver-relevant fields are spread from the sample context.
+Return a callable that computes the anticipative solution.
 
 - For [`AbstractStochasticBenchmark`](@ref): returns `(scenario; context...) -> y`.
 - For [`AbstractDynamicBenchmark`](@ref): returns
-  `(scenario; context...) -> Vector{DataSample}` — a full training trajectory.
-
-    solver = generate_anticipative_solver(bench)
-    y          = solver(scenario; sample.context...)  # stochastic
-    trajectory = solver(scenario; sample.context...)  # dynamic
+  `(env; reset_env=true, kwargs...) -> Vector{DataSample}`, a full training trajectory.
+  `reset_env=true` resets the env before solving (initial dataset building);
+  `reset_env=false` starts from the current env state.
 """
 function generate_anticipative_solver end
 
@@ -286,16 +283,6 @@ parametric anticipative subproblem:
     argmin_{y ∈ Y(instance)}  c(y, scenario) + θᵀy
 """
 function generate_parametric_anticipative_solver end
-
-"""
-    generate_anticipative_solution(::AbstractStochasticBenchmark, instance, scenario; kwargs...)
-
-!!! warning "Deprecated"
-    Use [`generate_anticipative_solver`](@ref) instead, which returns a callable
-    `(scenario; kwargs...) -> y` consistent with the [`generate_maximizer`](@ref)
-    convention.
-"""
-function generate_anticipative_solution end
 
 """
 $TYPEDSIGNATURES

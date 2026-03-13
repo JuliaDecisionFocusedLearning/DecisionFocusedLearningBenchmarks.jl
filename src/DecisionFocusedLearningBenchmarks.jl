@@ -73,7 +73,7 @@ export generate_scenario
 export generate_baseline_policies
 export generate_statistical_model
 export generate_maximizer
-export generate_anticipative_solution
+export generate_anticipative_solver, generate_parametric_anticipative_solver
 export is_exogenous, is_endogenous
 
 export objective_value

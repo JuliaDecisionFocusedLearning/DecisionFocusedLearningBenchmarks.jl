@@ -116,13 +116,13 @@ end
 $TYPEDSIGNATURES
 
 Return the anticipative solver for the dynamic vehicle scheduling benchmark.
-The callable takes a scenario and solver kwargs (including `instance`) and returns a
-training trajectory as a `Vector{DataSample}`.
+The callable takes an environment and solver kwargs and returns a training trajectory
+as a `Vector{DataSample}`. Set `reset_env=true` (default) to reset the environment
+before solving, or `reset_env=false` to plan from the current state.
 """
 function Utils.generate_anticipative_solver(::DynamicVehicleSchedulingBenchmark)
-    return (scenario; instance, kwargs...) -> begin
-        env = DVSPEnv(instance, scenario)
-        _, trajectory = anticipative_solver(env; reset_env=false, kwargs...)
+    return (env; reset_env=true, kwargs...) -> begin
+        _, trajectory = anticipative_solver(env; reset_env, kwargs...)
         return trajectory
     end
 end
