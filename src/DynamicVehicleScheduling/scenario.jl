@@ -51,7 +51,7 @@ function Utils.generate_scenario(
 end
 
 function Utils.generate_scenario(
-    ::DynamicVehicleSchedulingBenchmark, rng::AbstractRNG; instance, kwargs...
+    ::DynamicVehicleSchedulingBenchmark, rng::AbstractRNG; instance::Instance, kwargs...
 )
     return generate_scenario(instance; rng)
 end

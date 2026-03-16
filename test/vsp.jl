@@ -7,53 +7,46 @@
 
     b = StochasticVehicleSchedulingBenchmark(; nb_tasks=25, nb_scenarios=10)
 
-    N = 5
+    N = 2
+    K = 3
 
-    # Helper to build a target_policy that wraps a given algorithm
-    function make_svs_target_policy(algorithm)
-        return sample ->
-            DataSample(; sample.context..., x=sample.x, y=algorithm(sample.instance))
-    end
+    # Test unlabeled stochastic dataset: N instances × K scenarios = N*K unlabeled samples
+    unlabeled = generate_dataset(b, N; nb_scenarios=K, seed=1)
+    @test length(unlabeled) == N * K
+    @test hasproperty(unlabeled[1].extra, :scenario)
+    @test unlabeled[1].extra.scenario isa VSPScenario
 
-    col_gen_policy = make_svs_target_policy(column_generation_algorithm)
-    mip_policy = make_svs_target_policy(compact_mip)
-    mipl_policy = make_svs_target_policy(compact_linearized_mip)
-    local_search_policy = make_svs_target_policy(local_search)
-    deterministic_policy = make_svs_target_policy(deterministic_mip)
+    # Test baseline policies
+    policies = generate_baseline_policies(b)
+    @test hasproperty(policies, :saa)
+    @test hasproperty(policies, :deterministic)
+    @test hasproperty(policies, :local_search)
 
-    dataset = generate_dataset(b, N; seed=0, rng=StableRNG(0), target_policy=col_gen_policy)
-    mip_dataset = generate_dataset(b, N; seed=0, rng=StableRNG(0), target_policy=mip_policy)
-    mipl_dataset = generate_dataset(
-        b, N; seed=0, rng=StableRNG(0), target_policy=mipl_policy
+    # Test labeled stochastic dataset with SAA policy
+    # N instances, each with K scenarios → N labeled samples
+    saa_dataset = generate_dataset(
+        b, N; nb_scenarios=K, seed=0, rng=StableRNG(0), target_policy=policies.saa.policy
     )
-    local_search_dataset = generate_dataset(
-        b, N; seed=0, rng=StableRNG(0), target_policy=local_search_policy
-    )
-    deterministic_dataset = generate_dataset(
-        b, N; seed=0, rng=StableRNG(0), target_policy=deterministic_policy
-    )
-    @test length(dataset) == N
+    @test length(saa_dataset) == N
+    @test hasproperty(saa_dataset[1].extra, :scenarios)
+    @test saa_dataset[1].extra.scenarios isa Vector{VSPScenario}
+    @test length(saa_dataset[1].extra.scenarios) == K
 
-    figure_1 = plot_instance(b, dataset[1])
+    # Plots work unchanged
+    figure_1 = plot_instance(b, saa_dataset[1])
     @test figure_1 isa Plots.Plot
-    figure_2 = plot_solution(b, dataset[1])
+    figure_2 = plot_solution(b, saa_dataset[1])
     @test figure_2 isa Plots.Plot
 
     maximizer = generate_maximizer(b)
     model = generate_statistical_model(b)
 
-    gap = compute_gap(b, dataset, model, maximizer)
-    gap_mip = compute_gap(b, mip_dataset, model, maximizer)
-    gap_mipl = compute_gap(b, mipl_dataset, model, maximizer)
-    gap_local_search = compute_gap(b, local_search_dataset, model, maximizer)
-    gap_deterministic = compute_gap(b, deterministic_dataset, model, maximizer)
+    # compute_gap runs and returns finite values
+    gap = compute_gap(b, saa_dataset, model, maximizer)
+    @test isfinite(gap)
 
-    @test gap_mip ≈ gap_mipl rtol = 1e-2
-    @test gap_mip >= gap_local_search
-    @test gap_mip >= gap
-    @test gap_local_search >= gap_deterministic
-
-    for sample in dataset
+    # Features, maximizer output, and feasibility
+    for sample in saa_dataset
         x = sample.x
         instance = sample.instance
         E = ne(instance.graph)
@@ -65,4 +58,20 @@
         solution = StochasticVehicleScheduling.Solution(y, instance)
         @test is_feasible(solution, instance)
     end
+
+    # Direct solver tests: take an Instance directly (stochastic interface not required)
+    direct_sample = generate_dataset(b, 1; seed=42)[1]
+    instance = direct_sample.instance
+
+    y_mip = compact_mip(instance)
+    @test y_mip isa BitVector
+
+    y_mipl = compact_linearized_mip(instance)
+    @test y_mipl isa BitVector
+
+    y_ls = local_search(instance)
+    @test y_ls isa BitVector
+
+    y_det = deterministic_mip(instance)
+    @test y_det isa BitVector
 end

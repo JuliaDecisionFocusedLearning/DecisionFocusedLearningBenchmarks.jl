@@ -6,6 +6,7 @@ export plot_instance, plot_solution
 export compact_linearized_mip,
     compact_mip, column_generation_algorithm, local_search, deterministic_mip
 export evaluate_solution, is_feasible
+export VSPScenario, build_stochastic_instance
 
 using ..Utils
 using DocStringExtensions: TYPEDEF, TYPEDFIELDS, TYPEDSIGNATURES
@@ -30,7 +31,7 @@ using JuMP:
 using Plots: Plots, plot, plot!, scatter!, annotate!, text
 using Printf: @printf
 using Random: Random, AbstractRNG, MersenneTwister
-using SparseArrays: sparse
+using SparseArrays: sparse, SparseMatrixCSC, nnz
 using Statistics: quantile, mean
 
 include("utils.jl")
@@ -40,6 +41,8 @@ include("instance/district.jl")
 include("instance/city.jl")
 include("instance/features.jl")
 include("instance/instance.jl")
+
+include("scenario.jl")
 
 include("solution/solution.jl")
 include("solution/algorithms/mip.jl")
@@ -57,17 +60,53 @@ Data structure for a stochastic vehicle scheduling benchmark.
 # Fields
 $TYPEDFIELDS
 """
-@kwdef struct StochasticVehicleSchedulingBenchmark <: AbstractBenchmark
+@kwdef struct StochasticVehicleSchedulingBenchmark <: AbstractStochasticBenchmark{true}
     "number of tasks in each instance"
     nb_tasks::Int = 25
-    "number of scenarios in each instance"
+    "number of scenarios in each instance (only used to compute features and objective evaluation)"
     nb_scenarios::Int = 10
 end
+
+include("policies.jl")
 
 function Utils.objective_value(
     ::StochasticVehicleSchedulingBenchmark, sample::DataSample, y::BitVector
 )
-    return evaluate_solution(y, sample.instance)
+    stoch = build_stochastic_instance(sample.instance, sample.extra.scenarios)
+    return evaluate_solution(y, stoch)
+end
+
+"""
+$TYPEDSIGNATURES
+
+Draw a single fresh [`VSPScenario`](@ref) for the given instance.
+Requires `store_city=true` (the default) when generating instances.
+"""
+function Utils.generate_scenario(
+    ::StochasticVehicleSchedulingBenchmark, rng::AbstractRNG; instance::Instance, kwargs...
+)
+    @assert !isnothing(instance.city) "`generate_scenario` requires `store_city=true`"
+    return draw_scenario(instance.city, instance.graph, rng)
+end
+
+"""
+$TYPEDSIGNATURES
+"""
+function Utils.generate_baseline_policies(bench::StochasticVehicleSchedulingBenchmark)
+    return svs_generate_baseline_policies(bench)
+end
+
+"""
+$TYPEDSIGNATURES
+
+Return the anticipative solver: a callable `(scenario::VSPScenario; instance, kwargs...) -> y`
+that solves the 1-scenario stochastic VSP via column generation.
+"""
+function Utils.generate_anticipative_solver(::StochasticVehicleSchedulingBenchmark)
+    return (scenario::VSPScenario; instance::Instance, kwargs...) -> begin
+        stochastic_inst = build_stochastic_instance(instance, [scenario])
+        return column_generation_algorithm(stochastic_inst)
+    end
 end
 
 """
@@ -84,7 +123,9 @@ policy = sample -> DataSample(; sample.context..., x=sample.x,
 dataset = generate_dataset(benchmark, N; target_policy=policy)
 ```
 
-If `store_city=false`, coordinates and city information are not stored in the instance.
+If `store_city=false`, coordinates and city information are not stored in the instance,
+and `generate_scenario` will not work. This can be used to save memory if you only need to evaluate
+solutions on a fixed set of scenarios.
 """
 function Utils.generate_instance(
     benchmark::StochasticVehicleSchedulingBenchmark,
