@@ -27,6 +27,8 @@ export TopKMaximizer
 export AbstractEnvironment, get_seed, is_terminated, observe, reset!, step!
 
 export AbstractBenchmark, AbstractStochasticBenchmark, AbstractDynamicBenchmark
+export ExogenousStochasticBenchmark,
+    EndogenousStochasticBenchmark, ExogenousDynamicBenchmark, EndogenousDynamicBenchmark
 export generate_instance, generate_sample, generate_dataset
 export generate_statistical_model, generate_maximizer
 export generate_scenario
