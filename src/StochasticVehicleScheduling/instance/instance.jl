@@ -26,6 +26,18 @@ end
 """
 $TYPEDSIGNATURES
 
+Display a compact summary of an [`Instance`](@ref): number of tasks, scenarios, and edges.
+"""
+function Base.show(io::IO, instance::Instance)
+    return print(
+        io,
+        "VSP Instance($(get_nb_tasks(instance)) tasks, $(get_nb_scenarios(instance)) scenarios, $(ne(instance.graph)) arcs)",
+    )
+end
+
+"""
+$TYPEDSIGNATURES
+
 Return the acyclic directed graph corresponding to `city`.
 Each vertex represents a task. Vertices are ordered by start time of corresponding task.
 There is an edge from task u to task v the (end time of u + tie distance between u and v <= start time of v).
