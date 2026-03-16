@@ -77,6 +77,6 @@
 
     anticipative_solver = generate_anticipative_solver(b)
     sample = unlabeled[1]
-    y_anticipative = anticipative_solver(sample.scenarios; sample.context...)
+    y_anticipative = anticipative_solver(sample.scenario; sample.context...)
     @test y_anticipative isa BitVector
 end
