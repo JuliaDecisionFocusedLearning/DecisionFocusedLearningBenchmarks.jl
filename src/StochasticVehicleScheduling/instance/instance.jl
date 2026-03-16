@@ -31,7 +31,7 @@ Display a compact summary of an [`Instance`](@ref): number of tasks, scenarios, 
 function Base.show(io::IO, instance::Instance)
     return print(
         io,
-        "VSP Instance($(get_nb_tasks(instance)) tasks, $(get_nb_scenarios(instance)) scenarios, $(ne(instance.graph)) edges)",
+        "VSP Instance($(get_nb_tasks(instance)) tasks, $(get_nb_scenarios(instance)) scenarios, $(ne(instance.graph)) arcs)",
     )
 end
 

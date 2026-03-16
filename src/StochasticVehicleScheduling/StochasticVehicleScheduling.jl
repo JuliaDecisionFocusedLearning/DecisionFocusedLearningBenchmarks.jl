@@ -31,7 +31,7 @@ using JuMP:
 using Plots: Plots, plot, plot!, scatter!, annotate!, text
 using Printf: @printf
 using Random: Random, AbstractRNG, MersenneTwister
-using SparseArrays: sparse, SparseMatrixCSC, nnz
+using SparseArrays: sparse, SparseMatrixCSC
 using Statistics: quantile, mean
 
 include("utils.jl")

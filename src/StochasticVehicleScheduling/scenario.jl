@@ -9,7 +9,7 @@ $TYPEDFIELDS
 struct VSPScenario
     "delays per task (length = nb_tasks + 2): scenario_end_time - nominal_end_time"
     delays::Vector{Float64}
-    "scalar slack per edge for this scenario"
+    "scalar slack per arc for this scenario"
     slacks::SparseMatrixCSC{Float64,Int}
 end
 
