@@ -79,7 +79,7 @@ export generate_anticipative_solver, generate_parametric_anticipative_solver
 export is_exogenous, is_endogenous
 
 export objective_value
-export plot_data, plot_instance, plot_solution
+export has_visualization, plot_instance, plot_solution, plot_trajectory, animate_trajectory
 export compute_gap
 
 # Export all benchmarks

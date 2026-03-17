@@ -20,9 +20,10 @@ Also implement:
 - [`is_minimization_problem`](@ref): defaults to `true`
 - [`objective_value`](@ref): defaults to `dot(θ, y)`
 - [`compute_gap`](@ref): default implementation provided; override for custom evaluation
+- [`has_visualization`](@ref): defaults to `false`
 
-# Optional methods (no default)
-- [`plot_data`](@ref), [`plot_instance`](@ref), [`plot_solution`](@ref)
+# Optional methods (no default, require `Plots` to be loaded)
+- [`plot_instance`](@ref), [`plot_solution`](@ref)
 - [`generate_baseline_policies`](@ref)
 """
 abstract type AbstractBenchmark end
@@ -59,7 +60,7 @@ end
     generate_dataset(::AbstractBenchmark, dataset_size::Int; target_policy=nothing, kwargs...) -> Vector{<:DataSample}
 
 Generate a `Vector` of [`DataSample`](@ref) of length `dataset_size` for given benchmark.
-Content of the dataset can be visualized using [`plot_data`](@ref), when it applies.
+Content of the dataset can be visualized using [`plot_solution`](@ref), when it applies.
 
 By default, it uses [`generate_sample`](@ref) to create each sample in the dataset, and passes any
 keyword arguments to it. `target_policy` is applied if provided, it is called on each sample
@@ -109,24 +110,24 @@ Return named baseline policies for the benchmark. Each policy is a callable.
 function generate_baseline_policies end
 
 """
-    plot_data(::AbstractBenchmark, ::DataSample; kwargs...)
+    has_visualization(::AbstractBenchmark) -> Bool
 
-Plot a data sample from the dataset created by [`generate_dataset`](@ref).
-Check the specific benchmark documentation of `plot_data` for more details on the arguments.
+Return `true` if `plot_instance` and `plot_solution` are implemented for this benchmark
+(requires `Plots` to be loaded). Default is `false`.
 """
-function plot_data end
+has_visualization(::AbstractBenchmark) = false
 
 """
-    plot_instance(::AbstractBenchmark, instance; kwargs...)
+    plot_instance(bench::AbstractBenchmark, sample::DataSample; kwargs...)
 
-Plot the instance object of the sample.
+Plot the problem instance (no solution). Only available when `Plots` is loaded.
 """
 function plot_instance end
 
 """
-    plot_solution(::AbstractBenchmark, sample::DataSample, [solution]; kwargs...)
+    plot_solution(bench::AbstractBenchmark, sample::DataSample; kwargs...)
 
-Plot `solution` if given, else plot the target solution in the sample.
+Plot the instance with `sample.y` overlaid. Only available when `Plots` is loaded.
 """
 function plot_solution end
 
@@ -382,6 +383,10 @@ meaning (whether uncertainty is independent of decisions).
 - [`generate_dataset`](@ref)`(bench, environments; target_policy, ...)`: generates
   training-ready [`DataSample`](@ref)s by calling `target_policy(env)` for each environment.
   Requires `target_policy` as a mandatory keyword argument.
+
+# Optional visualization methods (require `Plots` to be loaded)
+- [`plot_trajectory`](@ref)`(bench, traj)`: plot a full episode as a grid of subplots.
+- [`animate_trajectory`](@ref)`(bench, traj)`: animate a full episode.
 """
 abstract type AbstractDynamicBenchmark{exogenous} <: AbstractStochasticBenchmark{exogenous} end
 
@@ -467,3 +472,19 @@ function generate_dataset(
     environments = generate_environments(bench, n; seed)
     return generate_dataset(bench, environments; target_policy, seed, kwargs...)
 end
+
+"""
+    plot_trajectory(bench::AbstractDynamicBenchmark, trajectory::Vector{<:DataSample}; kwargs...)
+
+Plot a full dynamic episode as a grid of state/decision subplots.
+Only available when `Plots` is loaded.
+"""
+function plot_trajectory end
+
+"""
+    animate_trajectory(bench::AbstractDynamicBenchmark, trajectory::Vector{<:DataSample}; kwargs...)
+
+Animate a full dynamic episode. Returns a `Plots.Animation` object
+(save with `gif(result, filename)`). Only available when `Plots` is loaded.
+"""
+function animate_trajectory end

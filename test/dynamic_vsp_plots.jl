@@ -1,32 +1,35 @@
 @testset "Dynamic VSP Plots" begin
-    import DecisionFocusedLearningBenchmarks.DynamicVehicleScheduling as DVSP
     using Plots
 
-    # Create test benchmark and data (similar to scripts/a.jl)
+    # Create test benchmark and environments
     b = DynamicVehicleSchedulingBenchmark(; two_dimensional_features=true)
     environments = generate_environments(b, 3; seed=0)
     env = environments[1]
 
-    # Test basic plotting functions
-    fig1 = DVSP.plot_instance(env)
-    @test fig1 isa Plots.Plot
-
+    # Get a trajectory via the anticipative solver
     y = generate_anticipative_solver(b)(env; nb_epochs=3)
 
-    fig2 = DVSP.plot_epochs(y)
+    # Test plot_instance (shows first epoch state)
+    fig1 = plot_instance(b, y[1])
+    @test fig1 isa Plots.Plot
+
+    # Test plot_trajectory (grid of epoch subplots)
+    fig2 = plot_trajectory(b, y)
     @test fig2 isa Plots.Plot
 
+    # Test plot_solution via baseline policy
     policies = generate_baseline_policies(b)
     lazy = policies[1]
     _, d = evaluate_policy!(lazy, env)
-    fig3 = DVSP.plot_routes(d[1].instance, d[1].y)
+    fig3 = plot_solution(b, d[1])
     @test fig3 isa Plots.Plot
 
-    # Test animation
+    # Test animate_trajectory — returns Animation, save separately with gif()
     temp_filename = tempname() * ".gif"
     try
-        anim = DVSP.animate_epochs(y; filename=temp_filename, fps=1)
-        @test anim isa Plots.AnimatedGif || anim isa Plots.Animation
+        anim = animate_trajectory(b, y; fps=1)
+        @test anim isa Plots.Animation
+        gif(anim, temp_filename; fps=1)
         @test isfile(temp_filename)
     finally
         if isfile(temp_filename)

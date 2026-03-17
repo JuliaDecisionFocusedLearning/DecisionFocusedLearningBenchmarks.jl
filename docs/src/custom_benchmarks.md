@@ -69,13 +69,13 @@ generate_maximizer(bench::MyBenchmark)
 ### Optional methods
 
 ```julia
+generate_baseline_policies(bench::MyBenchmark) -> collection of callables
 is_minimization_problem(bench::MyBenchmark) -> Bool   # default: false (maximization)
 objective_value(bench::MyBenchmark, sample::DataSample, y) -> Real
 compute_gap(bench::MyBenchmark, dataset, model, maximizer) -> Float64
-plot_data(bench::MyBenchmark, sample::DataSample; kwargs...)
-plot_instance(bench::MyBenchmark, instance; kwargs...)
-plot_solution(bench::MyBenchmark, sample::DataSample, y; kwargs...)
-generate_baseline_policies(bench::MyBenchmark) -> collection of callables
+has_visualization(bench::MyBenchmark) -> Bool                            # default: false; return true when plot methods are implemented/available
+plot_instance(bench::MyBenchmark, sample::DataSample; kwargs...)
+plot_solution(bench::MyBenchmark, sample::DataSample; kwargs...)
 ```
 
 ---
@@ -146,6 +146,13 @@ is_terminated(env::MyEnv) -> Bool                # True when episode has ended
 generate_baseline_policies(bench::MyDynamicBenchmark)
 # Returns named callables: (env) -> Vector{DataSample}
 # Each callable performs a full episode rollout and returns the trajectory.
+```
+
+### Optional visualization methods
+
+```julia
+plot_trajectory(bench::MyDynamicBenchmark, traj::Vector{DataSample}; kwargs...)
+animate_trajectory(bench::MyDynamicBenchmark, traj::Vector{DataSample}; kwargs...)
 ```
 
 `generate_dataset` for dynamic benchmarks **requires** a `target_policy` kwarg, 
