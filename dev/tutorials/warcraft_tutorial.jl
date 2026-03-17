@@ -8,6 +8,7 @@ The map is represented as a 2D image representing a 12x12 grid, each cell having
 
 # First, let's load the package and create a benchmark object as follows:
 using DecisionFocusedLearningBenchmarks
+using Plots
 b = WarcraftBenchmark()
 
 # ## Dataset generation
@@ -32,8 +33,8 @@ y_true = sample.y
 # `context` is not used in this benchmark (no solver kwargs needed), so it is empty:
 isempty(sample.context)
 
-# For some benchmarks, we provide the following plotting method [`plot_data`](@ref) to visualize the data:
-plot_data(b, sample)
+# For some benchmarks, we provide the following plotting method [`plot_solution`](@ref) to visualize the data:
+plot_solution(b, sample)
 # We can see here the terrain image, the true terrain weights, and the true shortest path avoiding the high cost cells.
 
 # ## Building a pipeline
@@ -50,7 +51,7 @@ maximizer = generate_maximizer(b; dijkstra=true)
 # In the case o fthe Warcraft benchmark, the method has an additional keyword argument to chose the algorithm to use: Dijkstra's algorithm or Bellman-Ford algorithm.
 y = maximizer(θ)
 # As we can see, currently the pipeline predicts random noise as cell weights, and therefore the maximizer returns a straight line path.
-plot_data(b, DataSample(; x, θ, y))
+plot_solution(b, DataSample(; x, θ, y))
 # We can evaluate the current pipeline performance using the optimality gap metric:
 starting_gap = compute_gap(b, test_dataset, model, maximizer)
 
@@ -59,7 +60,6 @@ starting_gap = compute_gap(b, test_dataset, model, maximizer)
 # We can now train the model using the InferOpt.jl package:
 using InferOpt
 using Flux
-using Plots
 
 perturbed_maximizer = PerturbedMultiplicative(maximizer; ε=0.2, nb_samples=100)
 loss = FenchelYoungLoss(perturbed_maximizer)
@@ -85,7 +85,7 @@ final_gap = compute_gap(b, test_dataset, model, maximizer)
 #
 θ = model(x)
 y = maximizer(θ)
-plot_data(b, DataSample(; x, θ, y))
+plot_solution(b, DataSample(; x, θ, y))
 
 using Test #src
 @test final_gap < starting_gap #src
