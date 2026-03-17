@@ -4,6 +4,7 @@
         DecisionFocusedLearningBenchmarks;
         ambiguities=false,
         deps_compat=(check_extras = false),
+        stale_deps=(ignore=[:LaTeXStrings],),
     )
 end
 

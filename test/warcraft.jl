@@ -13,7 +13,7 @@
     bellman_maximizer = generate_maximizer(b; dijkstra=false)
     dijkstra_maximizer = generate_maximizer(b; dijkstra=true)
 
-    figure = plot_data(b, dataset[1])
+    figure = plot_solution(b, dataset[1])
     @test figure isa Plots.Plot
     gap = compute_gap(b, dataset, model, dijkstra_maximizer)
     @test gap >= 0

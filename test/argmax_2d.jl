@@ -16,8 +16,7 @@
     gap = compute_gap(b, dataset, model, maximizer)
     @test gap >= 0
 
-    # Test plot_data
-    figure = plot_data(b, dataset[1])
+    figure = plot_solution(b, dataset[1])
     @test figure isa Plots.Plot
 
     for (i, sample) in enumerate(dataset)

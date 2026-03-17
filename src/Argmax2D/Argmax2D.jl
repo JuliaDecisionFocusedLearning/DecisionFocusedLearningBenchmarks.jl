@@ -1,12 +1,9 @@
 module Argmax2D
 
 using ..Utils
-using Colors: Colors
 using DocStringExtensions: TYPEDEF, TYPEDFIELDS, TYPEDSIGNATURES
 using Flux: Chain, Dense
-using LaTeXStrings: @L_str
 using LinearAlgebra: dot, norm
-using Plots: Plots
 using Random: Random, MersenneTwister, AbstractRNG
 
 include("polytope.jl")
@@ -86,28 +83,6 @@ function Utils.generate_statistical_model(
     (; nb_features) = bench
     model = Dense(nb_features => 2; bias=false)
     return model
-end
-
-function Utils.plot_data(::Argmax2DBenchmark; instance, θ, kwargs...)
-    pl = init_plot()
-    plot_polytope!(pl, instance)
-    plot_objective!(pl, θ)
-    return plot_maximizer!(pl, θ, instance, maximizer)
-end
-
-"""
-$TYPEDSIGNATURES
-
-Plot the data sample for the [`Argmax2DBenchmark`](@ref).
-"""
-function Utils.plot_data(
-    bench::Argmax2DBenchmark,
-    sample::DataSample;
-    instance=sample.instance,
-    θ=sample.θ,
-    kwargs...,
-)
-    return Utils.plot_data(bench; instance, θ, kwargs...)
 end
 
 export Argmax2DBenchmark

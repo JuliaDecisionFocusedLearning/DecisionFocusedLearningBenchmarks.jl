@@ -12,7 +12,6 @@ using InferOpt: LinearMaximizer
 using IterTools: partition
 using JSON
 using JuMP
-using Plots: plot, plot!, scatter!, @animate, Plots, gif
 using Printf: @printf, @sprintf
 using Random: Random, AbstractRNG, MersenneTwister, seed!, randperm
 using Requires: @require
@@ -43,13 +42,13 @@ include("utils.jl")
 include("static_vsp/instance.jl")
 include("static_vsp/parsing.jl")
 include("static_vsp/solution.jl")
-include("static_vsp/plot.jl")
+include("static_vsp/instance_data.jl")
 
 include("instance.jl")
 include("state.jl")
 include("scenario.jl")
 include("environment.jl")
-include("plot.jl")
+include("plot_data.jl")
 
 include("maximizer.jl")
 include("anticipative_solver.jl")

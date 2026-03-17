@@ -10,7 +10,6 @@ using Images
 using LinearAlgebra
 using Metalhead
 using NPZ
-using Plots
 using Random
 using SimpleWeightedGraphs
 using SparseArrays
@@ -78,51 +77,6 @@ function Utils.generate_statistical_model(::WarcraftBenchmark; seed=nothing)
         squeeze_last_dims,
     )
     return model_embedding
-end
-
-"""
-$TYPEDSIGNATURES
-
-Plot the content of input `DataSample` as images.
-`x` as the initial image, `θ` as the weights, and `y` as the path.
-
-The keyword argument `θ_true` is used to set the color range of the weights plot.
-"""
-function Utils.plot_data(
-    ::WarcraftBenchmark,
-    sample::DataSample;
-    θ_true=sample.θ,
-    θ_title="Weights",
-    y_title="Path",
-    kwargs...,
-)
-    x = sample.x
-    y = sample.y
-    θ = sample.θ
-    im = dropdims(x; dims=4)
-    img = convert_image_for_plot(im)
-    p1 = Plots.plot(
-        img; aspect_ratio=:equal, framestyle=:none, size=(300, 300), title="Terrain image"
-    )
-    p2 = Plots.heatmap(
-        -θ;
-        yflip=true,
-        aspect_ratio=:equal,
-        framestyle=:none,
-        padding=(0.0, 0.0),
-        size=(300, 300),
-        legend=false,
-        title=θ_title,
-        clim=(minimum(-θ_true), maximum(-θ_true)),
-    )
-    p3 = Plots.plot(
-        Gray.(y .* 0.7);
-        aspect_ratio=:equal,
-        framestyle=:none,
-        size=(300, 300),
-        title=y_title,
-    )
-    return plot(p1, p2, p3; layout=(1, 3), size=(900, 300))
 end
 
 export WarcraftBenchmark

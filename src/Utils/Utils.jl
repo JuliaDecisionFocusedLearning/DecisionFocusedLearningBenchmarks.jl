@@ -36,7 +36,8 @@ export generate_environment, generate_environments
 export generate_baseline_policies
 export generate_anticipative_solver, generate_parametric_anticipative_solver
 
-export plot_data, compute_gap
+export has_visualization, plot_instance, plot_solution, plot_trajectory, animate_trajectory
+export compute_gap
 export grid_graph, get_path, path_to_matrix
 export neg_tensor, squeeze_last_dims, average_tensor
 export scip_model, highs_model

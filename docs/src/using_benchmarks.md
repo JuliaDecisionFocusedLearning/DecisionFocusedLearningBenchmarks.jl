@@ -10,7 +10,7 @@ A benchmark bundles a problem family (an instance generator, a combinatorial sol
 Three abstract types cover the main settings:
 - **`AbstractBenchmark`**: static problems (one instance, one decision)
 - **`AbstractStochasticBenchmark{exogenous}`**: stochastic problems (type parameter indicates whether uncertainty is exogenous)
-- **`AbstractDynamicBenchmark`**: sequential / multi-stage problems
+- **`AbstractDynamicBenchmark{exogenous}`**: sequential / multi-stage problems
 
 The sections below explain what changes between these settings. For most purposes, start with a static benchmark to understand the core workflow.
 
@@ -180,10 +180,29 @@ rewards, samples = evaluate_policy!(pol, envs, n_episodes)
 
 ## Visualization
 
-Where implemented, benchmarks provide benchmark-specific plotting helpers:
-
+Plots is an **optional** dependency, load it with `using Plots` to unlock the plot functions. Not all benchmarks support visualization, call `has_visualization(bench)` to check.
 ```julia
-plot_data(bench, sample)            # overview of a data sample
-plot_instance(bench, instance)      # raw problem instance
-plot_solution(bench, sample, y)     # overlay solution on instance
+using Plots
+
+bench = Argmax2DBenchmark()
+dataset = generate_dataset(bench, 10)
+sample = dataset[1]
+
+has_visualization(bench)           # true
+plot_instance(bench, sample)       # problem geometry only
+plot_solution(bench, sample)       # sample.y overlaid on the instance
+plot_solution(bench, sample, y)    # convenience 3-arg form: override y before plotting
+
+# Dynamic benchmarks only
+traj = generate_anticipative_solver(bench)(env)
+plot_trajectory(bench, traj)           # grid of epoch subplots
+anim = animate_trajectory(bench, traj; fps=2)
+gif(anim, "episode.gif")
 ```
+
+- `has_visualization(bench)`: returns `true` for benchmarks that implement plot support (if Plots is loaded).
+- `plot_instance(bench, sample; kwargs...)`: renders the problem geometry without any solution.
+- `plot_solution(bench, sample; kwargs...)`: renders `sample.y` overlaid on the instance.
+- `plot_solution(bench, sample, y; kwargs...)`: 3-arg convenience form that overrides `y` before plotting.
+- `plot_trajectory(bench, traj; kwargs...)`: dynamic benchmarks only; produces a grid of per-epoch subplots.
+- `animate_trajectory(bench, traj; kwargs...)`: dynamic benchmarks only, returns a `Plots.Animation` that can be saved with `gif(anim, "file.gif")`.
