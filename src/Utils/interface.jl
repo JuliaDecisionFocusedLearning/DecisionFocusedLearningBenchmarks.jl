@@ -215,7 +215,7 @@ context known before the scenario is revealed) and a **random scenario** (the un
 part). Decisions are taken by seeing only the instance. Scenarios are used to generate
 anticipative targets and compute objective values.
 
-# Required methods ([ExogenousStochasticBenchmark](@ref) only)
+# Required methods ([`ExogenousStochasticBenchmark`](@ref) only)
 - [`generate_instance`](@ref)`(bench, rng)`: returns a [`DataSample`](@ref) with instance
   and features but **no scenario**. Scenarios are added later by [`generate_dataset`](@ref)
   via [`generate_scenario`](@ref).
@@ -230,7 +230,7 @@ anticipative targets and compute objective values.
   `argmin_{y ∈ Y} c(y, scenario) + θᵀy`.
 
 # Dataset generation (exogenous only)
-[`generate_dataset`](@ref) is specialised for [ExogenousStochasticBenchmark](@ref) and
+[`generate_dataset`](@ref) is specialised for [`ExogenousStochasticBenchmark`](@ref) and
 supports all three standard structures via `nb_scenarios`:
 
 | Setting | Call |
