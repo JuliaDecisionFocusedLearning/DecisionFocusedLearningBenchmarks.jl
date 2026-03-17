@@ -1,10 +1,11 @@
-function _init_plot(title="")
+function _init_plot(title=""; kwargs...)
     pl = Plots.plot(;
         aspect_ratio=:equal,
         legend=:outerleft,
         xlim=(-1.1, 1.1),
         ylim=(-1.1, 1.1),
         title=title,
+        kwargs...,
     )
     return pl
 end
@@ -42,28 +43,23 @@ function _plot_y!(pl, y)
     )
 end
 
-function _plot_maximizer!(pl, θ, instance, maximizer)
-    ŷ = maximizer(θ; instance)
-    return _plot_y!(pl, ŷ)
-end
-
 has_visualization(::Argmax2DBenchmark) = true
 
-function plot_instance(::Argmax2DBenchmark, sample::DataSample)
-    pl = _init_plot()
+function plot_instance(::Argmax2DBenchmark, sample::DataSample; kwargs...)
+    pl = _init_plot(; kwargs...)
     _plot_polytope!(pl, sample.instance)
     return pl
 end
 
-function plot_solution(::Argmax2DBenchmark, sample::DataSample)
-    pl = _init_plot()
+function plot_solution(::Argmax2DBenchmark, sample::DataSample; kwargs...)
+    pl = _init_plot(; kwargs...)
     _plot_polytope!(pl, sample.instance)
     _plot_objective!(pl, sample.θ)
     return _plot_y!(pl, sample.y)
 end
 
-function plot_solution(::Argmax2DBenchmark, sample::DataSample, y; θ=sample.θ)
-    pl = _init_plot()
+function plot_solution(::Argmax2DBenchmark, sample::DataSample, y; θ=sample.θ, kwargs...)
+    pl = _init_plot(; kwargs...)
     _plot_polytope!(pl, sample.instance)
     _plot_objective!(pl, θ)
     return _plot_y!(pl, y)

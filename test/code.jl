@@ -4,7 +4,7 @@
         DecisionFocusedLearningBenchmarks;
         ambiguities=false,
         deps_compat=(check_extras = false),
-        stale_deps=(ignore=[:LaTeXStrings],),
+        stale_deps=(ignore=[:LaTeXStrings],),  # used only inside DFLBenchmarksPlotsExt
     )
 end
 
