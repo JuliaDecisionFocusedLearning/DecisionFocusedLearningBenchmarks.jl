@@ -42,7 +42,6 @@ include("utils.jl")
 include("static_vsp/instance.jl")
 include("static_vsp/parsing.jl")
 include("static_vsp/solution.jl")
-include("static_vsp/instance_data.jl")
 
 include("instance.jl")
 include("state.jl")

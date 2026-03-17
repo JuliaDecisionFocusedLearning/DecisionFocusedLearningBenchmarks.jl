@@ -42,11 +42,6 @@ function _plot_static_instance(
     return fig
 end
 
-function _plot_static_instance(instance::DVS.StaticInstance; kwargs...)
-    x_depot, y_depot, x, y = DVS.build_instance_data(instance)
-    return _plot_static_instance(x_depot, y_depot, x, y; kwargs...)
-end
-
 # ── plot_state ───────────────────────────────────────────────────────────────
 
 """
