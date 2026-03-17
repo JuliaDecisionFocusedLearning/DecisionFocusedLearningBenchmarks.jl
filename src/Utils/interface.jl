@@ -215,7 +215,7 @@ context known before the scenario is revealed) and a **random scenario** (the un
 part). Decisions are taken by seeing only the instance. Scenarios are used to generate
 anticipative targets and compute objective values.
 
-# Required methods (exogenous benchmarks, `{true}` only)
+# Required methods ([`ExogenousStochasticBenchmark`](@ref) only)
 - [`generate_instance`](@ref)`(bench, rng)`: returns a [`DataSample`](@ref) with instance
   and features but **no scenario**. Scenarios are added later by [`generate_dataset`](@ref)
   via [`generate_scenario`](@ref).
@@ -230,7 +230,7 @@ anticipative targets and compute objective values.
   `argmin_{y ∈ Y} c(y, scenario) + θᵀy`.
 
 # Dataset generation (exogenous only)
-[`generate_dataset`](@ref) is specialised for `AbstractStochasticBenchmark{true}` and
+[`generate_dataset`](@ref) is specialised for [`ExogenousStochasticBenchmark`](@ref) and
 supports all three standard structures via `nb_scenarios`:
 
 | Setting | Call |
@@ -251,8 +251,14 @@ abstract type AbstractStochasticBenchmark{exogenous} <: AbstractBenchmark end
 is_exogenous(::AbstractStochasticBenchmark{exogenous}) where {exogenous} = exogenous
 is_endogenous(::AbstractStochasticBenchmark{exogenous}) where {exogenous} = !exogenous
 
+"Alias for [`AbstractStochasticBenchmark`](@ref)`{true}`. Uncertainty is independent of decisions."
+const ExogenousStochasticBenchmark = AbstractStochasticBenchmark{true}
+
+"Alias for [`AbstractStochasticBenchmark`](@ref)`{false}`. Uncertainty depends on decisions."
+const EndogenousStochasticBenchmark = AbstractStochasticBenchmark{false}
+
 """
-    generate_scenario(::AbstractStochasticBenchmark{true}, rng::AbstractRNG; kwargs...) -> scenario
+    generate_scenario(::ExogenousStochasticBenchmark, rng::AbstractRNG; kwargs...) -> scenario
 
 Draw a random scenario. Instance and context fields are passed as keyword arguments,
 spread from `sample.context`:
@@ -275,7 +281,7 @@ Return a callable that computes the anticipative solution.
 function generate_anticipative_solver end
 
 """
-    generate_parametric_anticipative_solver(::AbstractStochasticBenchmark{true}) -> callable
+    generate_parametric_anticipative_solver(::ExogenousStochasticBenchmark) -> callable
 
 **Optional.** Return a callable `(θ, scenario; kwargs...) -> y` that solves the
 parametric anticipative subproblem:
@@ -299,7 +305,7 @@ Calls [`generate_instance`](@ref), draws `nb_scenarios` scenarios via
 (K samples, one per scenario) or SAA (1 sample aggregating all K scenarios).
 """
 function generate_sample(
-    bench::AbstractStochasticBenchmark{true},
+    bench::ExogenousStochasticBenchmark,
     rng;
     target_policy=nothing,
     nb_scenarios::Int=1,
@@ -337,7 +343,7 @@ scenario draws. The scenario→sample mapping is controlled by the `target_polic
 - `kwargs...`: forwarded to [`generate_sample`](@ref).
 """
 function generate_dataset(
-    bench::AbstractStochasticBenchmark{true},
+    bench::ExogenousStochasticBenchmark,
     nb_instances::Int;
     target_policy=nothing,
     nb_scenarios::Int=1,
@@ -378,6 +384,12 @@ meaning (whether uncertainty is independent of decisions).
   Requires `target_policy` as a mandatory keyword argument.
 """
 abstract type AbstractDynamicBenchmark{exogenous} <: AbstractStochasticBenchmark{exogenous} end
+
+"Alias for [`AbstractDynamicBenchmark`](@ref)`{true}`. Uncertainty is independent of decisions."
+const ExogenousDynamicBenchmark = AbstractDynamicBenchmark{true}
+
+"Alias for [`AbstractDynamicBenchmark`](@ref)`{false}`. Uncertainty depends on decisions."
+const EndogenousDynamicBenchmark = AbstractDynamicBenchmark{false}
 
 """
     generate_environment(::AbstractDynamicBenchmark, rng::AbstractRNG; kwargs...)
@@ -424,7 +436,7 @@ to obtain standard baseline callables (e.g. the anticipative solver).
 - `rng`: random number generator.
 """
 function generate_dataset(
-    bench::AbstractDynamicBenchmark{true},
+    bench::ExogenousDynamicBenchmark,
     environments::AbstractVector;
     target_policy,
     seed=nothing,
@@ -450,7 +462,7 @@ via [`generate_environments`](@ref), then calls
 `target_policy` is a **required** keyword argument.
 """
 function generate_dataset(
-    bench::AbstractDynamicBenchmark{true}, n::Int; target_policy, seed=nothing, kwargs...
+    bench::ExogenousDynamicBenchmark, n::Int; target_policy, seed=nothing, kwargs...
 )
     environments = generate_environments(bench, n; seed)
     return generate_dataset(bench, environments; target_policy, seed, kwargs...)

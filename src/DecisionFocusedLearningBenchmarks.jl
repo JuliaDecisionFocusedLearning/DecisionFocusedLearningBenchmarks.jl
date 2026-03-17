@@ -63,6 +63,8 @@ using .Utils
 
 # Interface
 export AbstractBenchmark, AbstractStochasticBenchmark, AbstractDynamicBenchmark, DataSample
+export ExogenousStochasticBenchmark,
+    EndogenousStochasticBenchmark, ExogenousDynamicBenchmark, EndogenousDynamicBenchmark
 export AbstractEnvironment, get_seed, is_terminated, observe, reset!, step!
 
 export Policy, evaluate_policy!
