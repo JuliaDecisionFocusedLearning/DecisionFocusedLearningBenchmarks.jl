@@ -7,7 +7,7 @@ The Maintenance problem with resource constraint is a sequential decision-making
 
 ### Overview
 
-In this benchmark, a system consists of $N$ identical components, each of which can degrade over $n$ discrete states. State $1$ means that the component is new, state $n$ means that the component is failed. At each time step, the agent can maintain up to $K$ components.  
+In this benchmark, a system consists of ``N`` identical components, each of which can degrade over ``n`` discrete states. State ``1`` means that the component is new, state $n$ means that the component is failed. At each time step, the agent can maintain up to $K$ components.  
 
 This forms an endogenous multistage stochastic optimization problem, where the agent must plan maintenance actions over the horizon.
 
@@ -15,9 +15,9 @@ This forms an endogenous multistage stochastic optimization problem, where the a
 
 The maintenance problem can be formulated as a finite-horizon Markov Decision Process (MDP) with the following components:
 
-**State Space** $\mathcal{S}$: At time step $t$, the state $s_t \in [1:n]^N$ is the degradation state for each component.
+**State Space** ``\mathcal{S}``: At time step ``t``, the state ``s_t \in [1:n]^N`` is the degradation state for each component.
 
-**Action Space** $\mathcal{A}$: The action at time $t$ is the set of components that are maintained at time $t$:
+**Action Space** ``\mathcal{A}``: The action at time ``t`` is the set of components that are maintained at time ``t``:
 ```math
 a_t \subseteq \{1, 2, \ldots, N\} \text{ such that } |a_t| \leq K
 ```
@@ -51,9 +51,9 @@ Here, \(p\) is the degradation probability, \(s_t^i\) is the current state of co
 
 The immediate cost at time \(t\) is:
 
-$$
+```math
 c(s_t, a_t) = \Big( c_m \cdot |a_t| + c_f \cdot \#\{ i : s_t^i = n \} \Big)
-$$
+```
 
 Where:
 

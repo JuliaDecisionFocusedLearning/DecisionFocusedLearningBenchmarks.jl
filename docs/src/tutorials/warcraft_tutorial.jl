@@ -8,6 +8,7 @@ The map is represented as a 2D image representing a 12x12 grid, each cell having
 
 # First, let's load the package and create a benchmark object as follows:
 using DecisionFocusedLearningBenchmarks
+using Plots
 b = WarcraftBenchmark()
 
 # ## Dataset generation
@@ -59,7 +60,6 @@ starting_gap = compute_gap(b, test_dataset, model, maximizer)
 # We can now train the model using the InferOpt.jl package:
 using InferOpt
 using Flux
-using Plots
 
 perturbed_maximizer = PerturbedMultiplicative(maximizer; ε=0.2, nb_samples=100)
 loss = FenchelYoungLoss(perturbed_maximizer)
