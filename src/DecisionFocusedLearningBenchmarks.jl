@@ -55,6 +55,7 @@ include("Warcraft/Warcraft.jl")
 include("FixedSizeShortestPath/FixedSizeShortestPath.jl")
 include("PortfolioOptimization/PortfolioOptimization.jl")
 include("StochasticVehicleScheduling/StochasticVehicleScheduling.jl")
+include("TwoStageSpanningTree/TwoStageSpanningTree.jl")
 include("DynamicVehicleScheduling/DynamicVehicleScheduling.jl")
 include("DynamicAssortment/DynamicAssortment.jl")
 include("Maintenance/Maintenance.jl")
@@ -91,6 +92,7 @@ using .Warcraft
 using .FixedSizeShortestPath
 using .PortfolioOptimization
 using .StochasticVehicleScheduling
+using .TwoStageSpanningTree
 using .DynamicVehicleScheduling
 using .DynamicAssortment
 using .Maintenance
@@ -104,6 +106,7 @@ export PortfolioOptimizationBenchmark
 export RankingBenchmark
 export StochasticVehicleSchedulingBenchmark
 export SubsetSelectionBenchmark
+export TwoStageSpanningTreeBenchmark
 export WarcraftBenchmark
 export MaintenanceBenchmark
 

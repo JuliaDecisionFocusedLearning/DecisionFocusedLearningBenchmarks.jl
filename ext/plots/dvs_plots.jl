@@ -3,8 +3,6 @@ using Printf: @sprintf
 
 has_visualization(::DynamicVehicleSchedulingBenchmark) = true
 
-# ── helpers (moved from static_vsp/plot.jl) ─────────────────────────────────
-
 function _plot_static_instance(
     x_depot,
     y_depot,

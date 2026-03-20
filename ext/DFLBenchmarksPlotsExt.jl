@@ -11,6 +11,7 @@ include("plots/argmax2d_plots.jl")
 include("plots/warcraft_plots.jl")
 include("plots/svs_plots.jl")
 include("plots/dvs_plots.jl")
+include("plots/tst_plots.jl")
 
 """
     plot_solution(bench::AbstractBenchmark, sample::DataSample, y; kwargs...)
