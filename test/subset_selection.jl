@@ -23,7 +23,7 @@
         @test size(x) == (n,)
         @test length(θ_true) == n
         @test length(y_true) == n
-        @test isempty(sample.context)
+        @test isempty(sample.instance_kwargs)
         @test all(y_true .== maximizer(θ_true))
 
         # Features and true weights should be equal

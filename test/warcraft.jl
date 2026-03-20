@@ -29,7 +29,7 @@
         y_true = sample.y
         @test size(x) == (96, 96, 3, 1)
         @test all(θ_true .<= 0)
-        @test isempty(sample.context)
+        @test isempty(sample.instance_kwargs)
 
         θ = model(x)
         @test size(θ) == size(θ_true)

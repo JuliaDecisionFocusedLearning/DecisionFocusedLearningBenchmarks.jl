@@ -58,7 +58,7 @@ end
     @test occursin("y_true", s)
     @test occursin("instance=\"this is an instance\"", s)
 
-    @test propertynames(sample) == (:x, :θ, :y, :context, :extra, :instance)
+    @test propertynames(sample) == (:x, :θ, :y, :instance_kwargs, :extra, :instance)
 
     # Create a dataset for testing
     N = 5
@@ -81,7 +81,7 @@ end
     for i in 1:N
         @test dataset_zt[i].θ == dataset[i].θ
         @test dataset_zt[i].y == dataset[i].y
-        @test dataset_zt[i].context == dataset[i].context
+        @test dataset_zt[i].instance_kwargs == dataset[i].instance_kwargs
     end
 
     # Check that features are actually transformed
@@ -97,7 +97,7 @@ end
     for i in 1:N
         @test dataset_copy[i].θ == dataset[i].θ
         @test dataset_copy[i].y == dataset[i].y
-        @test dataset_copy[i].context == dataset[i].context
+        @test dataset_copy[i].instance_kwargs == dataset[i].instance_kwargs
     end
 
     # Test reconstruct (non-mutating)
@@ -109,7 +109,7 @@ end
         @test dataset_reconstructed[i].x ≈ dataset[i].x atol = 1e-10
         @test dataset_reconstructed[i].θ == dataset[i].θ
         @test dataset_reconstructed[i].y == dataset[i].y
-        @test dataset_reconstructed[i].context == dataset[i].context
+        @test dataset_reconstructed[i].instance_kwargs == dataset[i].instance_kwargs
     end
 
     # Test reconstruct! (mutating)

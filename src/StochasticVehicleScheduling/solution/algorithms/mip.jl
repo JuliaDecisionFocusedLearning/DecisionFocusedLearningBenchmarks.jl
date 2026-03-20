@@ -84,6 +84,18 @@ end
 """
 $TYPEDSIGNATURES
 
+SAA variant: build stochastic instance from `scenarios` then solve via
+[`compact_linearized_mip`](@ref).
+"""
+function compact_linearized_mip(
+    instance::Instance, scenarios::Vector{VSPScenario}; kwargs...
+)
+    return compact_linearized_mip(build_stochastic_instance(instance, scenarios); kwargs...)
+end
+
+"""
+$TYPEDSIGNATURES
+
 Returns the optimal solution of the Stochastic VSP instance, by solving the associated compact quadratic MIP.
 Note: If you have Gurobi, use `grb_model` as `model_builder` instead of `highs_model`.
 
@@ -150,4 +162,14 @@ function compact_mip(
 
     sol = solution_from_JuMP_array(solution, graph)
     return sol.value
+end
+
+"""
+$TYPEDSIGNATURES
+
+SAA variant: build stochastic instance from `scenarios` then solve via
+[`compact_mip`](@ref).
+"""
+function compact_mip(instance::Instance, scenarios::Vector{VSPScenario}; kwargs...)
+    return compact_mip(build_stochastic_instance(instance, scenarios); kwargs...)
 end

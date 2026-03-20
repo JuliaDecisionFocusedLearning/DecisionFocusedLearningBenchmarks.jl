@@ -31,7 +31,7 @@ x = sample.x
 # `y` correspond to the optimal shortest path, encoded as a binary matrix:
 y_true = sample.y
 # `context` is not used in this benchmark (no solver kwargs needed), so it is empty:
-isempty(sample.context)
+isempty(sample.instance_kwargs)
 
 # For some benchmarks, we provide the following plotting method [`plot_solution`](@ref) to visualize the data:
 plot_solution(b, sample)
