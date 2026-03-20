@@ -1,107 +1,139 @@
-
-function first_stage_cost(
-    inst::TwoStageSpanningTreeInstance, e::AbstractEdge, scenario::Int
-)
-    return inst.first_stage_weights_matrix[src(e), dst(e)]
-end
-
-function scenario_second_stage_cost(
-    inst::TwoStageSpanningTreeInstance, e::AbstractEdge, scenario::Int
-)
-    return inst.second_stage_weights[scenario][src(e), dst(e)]
-end
-
-function scenario_best_stage_cost(
-    inst::TwoStageSpanningTreeInstance, e::AbstractEdge, scenario::Int
-)
-    return min(
-        inst.second_stage_weights[scenario][src(e), dst(e)],
-        inst.first_stage_weights_matrix[src(e), dst(e)],
-    )
-end
-
-function edge_neighbors(g::AbstractGraph, e::AbstractEdge)
-    result = Vector{AbstractEdge}()
-    for v in [src(e), dst(e)]
-        for u in neighbors(g, v)
-            push!(result, Edge(min(u, v), max(u, v)))
+function _edge_adjacent_indices(graph::AbstractGraph, e::AbstractEdge)
+    result = Int[]
+    for v in (src(e), dst(e))
+        for u in neighbors(graph, v)
+            push!(result, edge_index(graph, Edge(min(u, v), max(u, v))))
         end
     end
     return result
 end
 
-function compute_minimum_spanning_tree(
-    inst::TwoStageSpanningTreeInstance, scenario::Int, weight_function
+function _compute_mst_indicator(
+    instance::TwoStageSpanningTreeInstance, scenario::Int, weight_fn
 )
-    weights_vec = zeros(ne(inst.g))
-    for e in edges(inst.g)
-        weights_vec[edge_index(inst, e)] = weight_function(inst, e, scenario)
-    end
-    weights = get_weight_matrix_from_weight_vector(inst.g, inst.edge_index, weights_vec)
-    return kruskal_mst(inst.g, weights)
+    weights = [weight_fn(instance, i, scenario) for i in 1:ne(instance.graph)]
+    _, tree = kruskal(instance.graph, weights)
+    return tree
 end
 
-function compute_first_stage_mst(inst::TwoStageSpanningTreeInstance)
-    tree = compute_minimum_spanning_tree(inst, -1, first_stage_cost)
-    fs_mst_indicator = zeros(ne(inst.g))
-    for e in tree
-        fs_mst_indicator[edge_index(inst, e)] = 1.0
-    end
-    return fs_mst_indicator
+function _compute_first_stage_mst(instance::TwoStageSpanningTreeInstance)
+    return _compute_mst_indicator(instance, 1, (inst, i, _) -> inst.first_stage_costs[i])
 end
 
-function compute_second_stage_mst(inst::TwoStageSpanningTreeInstance)
-    ss_mst_indicator = zeros(ne(inst.g), inst.nb_scenarios)
-    for scenario in 1:(inst.nb_scenarios)
-        tree = compute_minimum_spanning_tree(inst, scenario, scenario_second_stage_cost)
-        for e in tree
-            ss_mst_indicator[edge_index(inst, e), scenario] = 1.0
-        end
+function _compute_second_stage_mst(instance::TwoStageSpanningTreeInstance)
+    S = nb_scenarios(instance)
+    indicator = falses(ne(instance.graph), S)
+    for s in 1:S
+        indicator[:, s] .= _compute_mst_indicator(
+            instance, s, (inst, i, sc) -> inst.second_stage_costs[i, sc]
+        )
     end
-    return ss_mst_indicator
+    return indicator
 end
 
-function compute_best_stage_mst(inst::TwoStageSpanningTreeInstance)
-    bfs_mst_indicator = zeros(ne(inst.g), inst.nb_scenarios)
-    bss_mst_indicator = zeros(ne(inst.g), inst.nb_scenarios)
-    for scenario in 1:(inst.nb_scenarios)
-        tree = compute_minimum_spanning_tree(inst, scenario, scenario_best_stage_cost)
-        for e in tree
-            e_ind = edge_index(inst, e)
-            if inst.first_stage_weights_matrix[src(e), dst(e)] <
-                inst.second_stage_weights[scenario][src(e), dst(e)]
-                bfs_mst_indicator[e_ind, scenario] = 1.0
+function _compute_best_stage_mst(instance::TwoStageSpanningTreeInstance)
+    (; first_stage_costs, second_stage_costs) = instance
+    S = nb_scenarios(instance)
+    E = ne(instance.graph)
+    bfs = falses(E, S)
+    bss = falses(E, S)
+    for s in 1:S
+        tree = _compute_mst_indicator(
+            instance,
+            s,
+            (inst, i, sc) -> min(inst.first_stage_costs[i], inst.second_stage_costs[i, sc]),
+        )
+        for i in 1:E
+            tree[i] || continue
+            if first_stage_costs[i] <= second_stage_costs[i, s]
+                bfs[i, s] = true
             else
-                bss_mst_indicator[e_ind, scenario] = 1.0
+                bss[i, s] = true
             end
         end
     end
-    return bfs_mst_indicator, bss_mst_indicator
+    return bfs, bss
 end
 
-function pivot_instance_second_stage_costs(inst::TwoStageSpanningTreeInstance)
-    edgeWeights = zeros(ne(inst.g), inst.nb_scenarios)
-    for s in 1:(inst.nb_scenarios)
-        for e in edges(inst.g)
-            edgeWeights[edge_index(inst, e), s] = inst.second_stage_weights[s][
-                src(e), dst(e)
-            ]
-        end
-    end
-    return edgeWeights
-end
+"""
+$TYPEDSIGNATURES
 
-function compute_edge_neighbors(inst::TwoStageSpanningTreeInstance)
-    neighbors = Vector{Vector{Int}}(undef, ne(inst.g))
-    for e in edges(inst.g)
-        e_ind = edge_index(inst, e)
-        neighbors_list = edge_neighbors(inst.g, e)
-        neighbors[e_ind] = Vector{Int}(undef, length(neighbors_list))
-        count = 0
-        for f in neighbors_list
-            count += 1
-            neighbors[e_ind][count] = edge_index(inst, f)
+Compute per-edge features for a [`TwoStageSpanningTreeInstance`](@ref).
+
+Returns a `Float32` matrix of shape `(nb_features, ne)` where `nb_features = 2 + 7 * 11`.
+
+Features are normalized by `c_max` (first-stage costs) and `d_max` (second-stage costs) so
+that all values lie in `[0, 1]`. Pass `c_max=1` and `d_max=1` to skip normalization.
+
+# Features (normalized to [0, 1])
+- `first_stage_cost / c_max`
+- Quantiles (0:0.1:1) of `second_stage_cost / d_max` across scenarios
+- Quantiles of `best_stage_cost / max(c_max, d_max)` across scenarios
+- Quantiles of `neighbors_first_stage_cost / c_max`
+- Quantiles of `neighbors_second_stage_cost / d_max` across scenarios and neighbors
+- `is_in_first_stage_mst × first_stage_cost / c_max`
+- Quantiles of `is_in_second_stage_mst × second_stage_cost / d_max`
+- Quantiles of `is_first_in_best_stage_mst × first_stage_cost / c_max`
+- Quantiles of `is_second_in_best_stage_mst × second_stage_cost / d_max`
+"""
+function compute_features(
+    instance::TwoStageSpanningTreeInstance; c_max::Real=1, d_max::Real=1
+)
+    (; graph, first_stage_costs, second_stage_costs) = instance
+    S = nb_scenarios(instance)
+    E = ne(graph)
+    cd_max = max(c_max, d_max)
+
+    quantiles_used = 0.0:0.1:1.0
+    nb_quantiles = length(quantiles_used)
+    nb_features = 2 + 7 * nb_quantiles
+
+    fs_mst = _compute_first_stage_mst(instance)
+    ss_mst = _compute_second_stage_mst(instance)
+    bfs_mst, bss_mst = _compute_best_stage_mst(instance)
+
+    X = zeros(Float32, nb_features, E)
+
+    for (i, e) in enumerate(edges(graph))
+        f = 0
+
+        function add_quantiles(realizations)
+            for p in quantiles_used
+                f += 1
+                X[f, i] = quantile(realizations, p)
+            end
         end
+
+        # first_stage_cost
+        f += 1
+        X[f, i] = first_stage_costs[i] / c_max
+
+        # second_stage_cost quantiles across scenarios
+        add_quantiles(second_stage_costs[i, :] ./ d_max)
+
+        # best_stage_cost quantiles across scenarios
+        add_quantiles(min.(first_stage_costs[i], second_stage_costs[i, :]) ./ cd_max)
+
+        # neighbor first_stage_cost quantiles
+        adj = _edge_adjacent_indices(graph, e)
+        add_quantiles(first_stage_costs[adj] ./ c_max)
+
+        # neighbor second_stage_cost quantiles across scenarios and neighbors
+        add_quantiles([second_stage_costs[n, s] / d_max for s in 1:S for n in adj])
+
+        # is_in_first_stage_mst × first_stage_cost
+        f += 1
+        X[f, i] = fs_mst[i] * first_stage_costs[i] / c_max
+
+        # is_in_second_stage_mst × second_stage_cost quantiles
+        add_quantiles(ss_mst[i, :] .* second_stage_costs[i, :] ./ d_max)
+
+        # is_first_in_best_stage_mst × first_stage_cost quantiles
+        add_quantiles(bfs_mst[i, :] .* first_stage_costs[i] ./ c_max)
+
+        # is_second_in_best_stage_mst × second_stage_cost quantiles
+        add_quantiles(bss_mst[i, :] .* second_stage_costs[i, :] ./ d_max)
     end
-    return neighbors
+
+    return X
 end

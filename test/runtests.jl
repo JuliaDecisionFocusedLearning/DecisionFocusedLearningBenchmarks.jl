@@ -18,6 +18,7 @@ using Random
     include("warcraft.jl")
     include("vsp.jl")
     include("portfolio_optimization.jl")
+    include("two_stage_spanning_tree.jl")
 
     @testset "Dynamic Vehicle Scheduling Problem" begin
         include("dynamic_vsp.jl")

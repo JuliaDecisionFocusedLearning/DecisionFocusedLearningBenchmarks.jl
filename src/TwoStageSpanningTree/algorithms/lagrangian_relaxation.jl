@@ -1,8 +1,10 @@
-function first_stage_optimal_solution(inst::TwoStageSpanningTreeInstance, θ::AbstractMatrix; M=20.0)
-	S = nb_scenarios(inst)
-	E = ne(inst.graph)
+function first_stage_optimal_solution(
+    inst::TwoStageSpanningTreeInstance, θ::AbstractMatrix; M=20.0
+)
+    S = nb_scenarios(inst)
+    E = ne(inst.graph)
 
-	# first stage objective value
+    # first stage objective value
     edge_weight_vector = inst.first_stage_costs .+ vec(sum(θ; dims=2)) ./ S
 
     edges_index_with_negative_cost = [e for e in 1:E if edge_weight_vector[e] < 0]
@@ -13,7 +15,7 @@ function first_stage_optimal_solution(inst::TwoStageSpanningTreeInstance, θ::Ab
     end
 
     grad = zeros(E, S)
-	grad[edges_index_with_negative_cost, :] .= M / S
+    grad[edges_index_with_negative_cost, :] .= M / S
     return value, grad
 end;
 
@@ -23,27 +25,29 @@ function second_stage_optimal_solution!(
     scenario::Int,
     grad::AbstractMatrix,
 )
-	(; graph, second_stage_costs) = instance
+    (; graph, second_stage_costs) = instance
     S = nb_scenarios(instance)
 
-	weights = min.(-θ[:, scenario], second_stage_costs[:, scenario])
+    weights = min.(-θ[:, scenario], second_stage_costs[:, scenario])
 
     (; value, tree) = kruskal(graph, weights)
 
-	# update gradient
-	slice = (-θ[:, scenario] .< second_stage_costs[:, scenario]) .&& tree
-	grad[slice, scenario] .-= 1 / S
+    # update gradient
+    slice = (-θ[:, scenario] .< second_stage_costs[:, scenario]) .&& tree
+    grad[slice, scenario] .-= 1 / S
 
     return value ./ S
 end;
 
-function lagrangian_function_value_gradient(inst::TwoStageSpanningTreeInstance, θ::AbstractMatrix)
+function lagrangian_function_value_gradient(
+    inst::TwoStageSpanningTreeInstance, θ::AbstractMatrix
+)
     value, grad = first_stage_optimal_solution(inst, θ)
 
-	S = nb_scenarios(inst)
+    S = nb_scenarios(inst)
     values = zeros(S)
     for s in 1:S
-		# Different part of grad are modified
+        # Different part of grad are modified
         values[s] = second_stage_optimal_solution!(inst, θ, s, grad)
     end
     value += sum(values)
@@ -52,8 +56,8 @@ end;
 
 function lagrangian_heuristic(θ::AbstractMatrix; inst::TwoStageSpanningTreeInstance)
     # Retrieve - y_{es} / S from θ by computing the gradient
-	(; graph) = inst
-	S = nb_scenarios(inst)
+    (; graph) = inst
+    S = nb_scenarios(inst)
     grad = zeros(ne(graph), S)
     for s in 1:S
         second_stage_optimal_solution!(inst, θ, s, grad)
@@ -66,7 +70,7 @@ function lagrangian_heuristic(θ::AbstractMatrix; inst::TwoStageSpanningTreeInst
     # Keep only the edges that are in the initial candidate graph and in the spanning tree
     forest = weights .&& tree_from_candidate
     sol = solution_from_first_stage_forest(forest, inst)
-	# v, _ = evaluate_first_stage_solution(inst, forest)
+    # v, _ = evaluate_first_stage_solution(inst, forest)
     return solution_value(sol, inst), forest
 end;
 
@@ -76,11 +80,12 @@ $TYPEDSIGNATURES
 Return an heuristic solution using a combination of lagarngian relaxation and lagrangian heuristic.
 """
 function lagrangian_relaxation(
-    inst::TwoStageSpanningTreeInstance; nb_epochs=100, stop_gap=1e-8
+    inst::TwoStageSpanningTreeInstance; nb_epochs=500, stop_gap=1e-8
 )
     θ = zeros(ne(inst.graph), nb_scenarios(inst))
 
     opt = Adam()
+    opt_state = Flux.setup(opt, θ)
 
     lb = -Inf
     ub = Inf
@@ -106,12 +111,12 @@ function lagrangian_relaxation(
                 end
             end
         end
-        Flux.update!(opt, θ, -grad)
+        Flux.update!(opt_state, θ, -grad)
         push!(lb_history, value)
         push!(ub_history, ub)
     end
 
-	ub, forest = lagrangian_heuristic(best_theta; inst=inst)
+    ub, forest = lagrangian_heuristic(best_theta; inst=inst)
     solution = solution_from_first_stage_forest(forest, inst)
     return solution, (; lb, ub, best_theta, lb_history, ub_history)
 end

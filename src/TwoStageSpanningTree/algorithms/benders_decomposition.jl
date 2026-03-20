@@ -1,91 +1,91 @@
-function separate_benders_cut(instance::TwoStageSpanningTreeInstance, y, s; MILP_solver, tol=1e-5)
-	(; graph, second_stage_costs) = instance
+function separate_benders_cut(
+    instance::TwoStageSpanningTreeInstance, y, s; model_builder, tol=1e-5
+)
+    (; graph, second_stage_costs) = instance
 
-	E = ne(graph)
+    E = ne(graph)
 
-	columns = BitVector[]
+    columns = BitVector[]
 
-	# Feasibility cut
-	model = Model(MILP_solver)
+    # Feasibility cut
+    model = model_builder()
 
-	@variable(model, dummy, Bin)
+    @variable(model, dummy, Bin)
 
-	@variable(model, νₛ <= 1)
-	@variable(model, 0 <= μₛ[e in 1:E] <= 1)
+    @variable(model, νₛ <= 1)
+    @variable(model, 0 <= μₛ[e in 1:E] <= 1)
 
-	@objective(model, Max, νₛ + sum(y[e] * μₛ[e] for e in 1:E))
+    @objective(model, Max, νₛ + sum(y[e] * μₛ[e] for e in 1:E))
 
-	function feasibility_callback(cb_data)
-		μ_val = callback_value.(cb_data, μₛ)
-		ν_val = callback_value(cb_data, νₛ)
+    function feasibility_callback(cb_data)
+        μ_val = callback_value.(cb_data, μₛ)
+        ν_val = callback_value(cb_data, νₛ)
 
-		weights = -μ_val
-		val, tree = kruskal(graph, weights)
+        weights = -μ_val
+        val, tree = kruskal(graph, weights)
 
-		push!(columns, tree)
-		
-		if val + tol < ν_val
-			new_constraint = @build_constraint(
-				- sum(μₛ[e] for e in 1:E if tree[e]) - νₛ >= 0
-			)
-			MOI.submit(
-				model, MOI.LazyConstraint(cb_data), new_constraint
-			)
-		end
-	end
+        push!(columns, tree)
 
-	set_attribute(model, MOI.LazyConstraintCallback(), feasibility_callback)
-	optimize!(model)
+        if val + tol < ν_val
+            new_constraint = @build_constraint(
+                -sum(μₛ[e] for e in 1:E if tree[e]) - νₛ >= 0
+            )
+            MOI.submit(model, MOI.LazyConstraint(cb_data), new_constraint)
+        end
+    end
 
-	if objective_value(model) > tol
-		return false, value.(νₛ), value.(μₛ), objective_value(model)
-	end
-	
-	# Else, optimality cut
-	optimality_model = Model(MILP_solver)
+    set_attribute(model, MOI.LazyConstraintCallback(), feasibility_callback)
+    optimize!(model)
 
-	@variable(optimality_model, dummy, Bin)
+    if JuMP.objective_value(model) > tol
+        return false, value.(νₛ), value.(μₛ), JuMP.objective_value(model)
+    end
 
-	@variable(optimality_model, νₛ)
-	@variable(optimality_model, μₛ[e in 1:E] >= 0)
+    # Else, optimality cut
+    optimality_model = model_builder()
 
-	@objective(
-		optimality_model, Max,
-		νₛ + sum(y[e] * μₛ[e] for e in 1:E) - sum(second_stage_costs[e, s] * y[e] for e in 1:E)
-	)
+    @variable(optimality_model, dummy, Bin)
 
-	for tree in columns
-		@constraint(
-			optimality_model,
-			sum(second_stage_costs[e, s] - μₛ[e] for e in 1:E if tree[e]) >= νₛ
-		)
-	end
+    @variable(optimality_model, νₛ)
+    @variable(optimality_model, μₛ[e in 1:E] >= 0)
 
-	function my_callback_function(cb_data)
-		μ_val = callback_value.(cb_data, μₛ)
-		ν_val = callback_value(cb_data, νₛ)
+    @objective(
+        optimality_model,
+        Max,
+        νₛ + sum(y[e] * μₛ[e] for e in 1:E) -
+            sum(second_stage_costs[e, s] * y[e] for e in 1:E)
+    )
 
-		weights = second_stage_costs[:, s] .- μ_val
+    for tree in columns
+        @constraint(
+            optimality_model,
+            sum(second_stage_costs[e, s] - μₛ[e] for e in 1:E if tree[e]) >= νₛ
+        )
+    end
 
-		val, tree = kruskal(graph, weights)
+    function my_callback_function(cb_data)
+        μ_val = callback_value.(cb_data, μₛ)
+        ν_val = callback_value(cb_data, νₛ)
 
-		if val - ν_val + tol < 0
-			new_constraint = @build_constraint(
-				sum(second_stage_costs[e, s] - μₛ[e] for e in 1:E if tree[e]) >= νₛ
-			)
-			MOI.submit(
-				optimality_model, MOI.LazyConstraint(cb_data), new_constraint
-			)
-		end
-	end
+        weights = second_stage_costs[:, s] .- μ_val
 
-	set_attribute(optimality_model, MOI.LazyConstraintCallback(), my_callback_function)
+        val, tree = kruskal(graph, weights)
 
-	optimize!(optimality_model)
+        if val - ν_val + tol < 0
+            new_constraint = @build_constraint(
+                sum(second_stage_costs[e, s] - μₛ[e] for e in 1:E if tree[e]) >= νₛ
+            )
+            MOI.submit(optimality_model, MOI.LazyConstraint(cb_data), new_constraint)
+        end
+    end
 
-	# If primal feasible, add an optimality cut
-	@assert termination_status(optimality_model) != DUAL_INFEASIBLE
-	return true, value.(νₛ), value.(μₛ), objective_value(optimality_model)
+    set_attribute(optimality_model, MOI.LazyConstraintCallback(), my_callback_function)
+
+    optimize!(optimality_model)
+
+    # If primal feasible, add an optimality cut
+    @assert termination_status(optimality_model) != DUAL_INFEASIBLE
+    return true, value.(νₛ), value.(μₛ), JuMP.objective_value(optimality_model)
 end
 
 """
@@ -95,20 +95,18 @@ Returns the optimal solution using a Benders decomposition algorithm.
 """
 function benders_decomposition(
     instance::TwoStageSpanningTreeInstance;
-    MILP_solver=GLPK.Optimizer,
-	tol=1e-6,
-	verbose=true
+    model_builder=() -> Model(GLPK.Optimizer),
+    tol=1e-6,
+    verbose=true,
 )
-	(; graph, first_stage_costs, second_stage_costs) = instance
-	E = ne(graph)
-	S = nb_scenarios(instance)
-	
-    model = Model(MILP_solver)
+    (; graph, first_stage_costs, second_stage_costs) = instance
+    E = ne(graph)
+    S = nb_scenarios(instance)
+
+    model = model_builder()
+    set_silent(model)
     @variable(model, y[e in 1:E], Bin)
-    @variable(
-        model,
-        θ[s in 1:S] >= sum(min(0, second_stage_costs[e, s]) for e in 1:E)
-    )
+    @variable(model, θ[s in 1:S] >= sum(min(0, second_stage_costs[e, s]) for e in 1:E))
     @objective(
         model,
         Min,
@@ -124,41 +122,40 @@ function benders_decomposition(
         callback_counter += 1
 
         y_val = callback_value.(cb_data, y)
-		θ_val = callback_value.(cb_data, θ)
+        θ_val = callback_value.(cb_data, θ)
 
         for current_scenario in 1:S
-            optimality_cut, ν_val, μ_val =
-				separate_benders_cut(instance, y_val, current_scenario; MILP_solver)
+            optimality_cut, ν_val, μ_val = separate_benders_cut(
+                instance, y_val, current_scenario; model_builder
+            )
 
-			# If feasibility cut
+            # If feasibility cut
             if !optimality_cut
                 new_feasibility_cut = @build_constraint(
                     ν_val + sum(μ_val[e] * y[e] for e in 1:E) <= 0
                 )
-                MOI.submit(
-                    model,
-					MOI.LazyConstraint(cb_data),
-					new_feasibility_cut
-                )
+                MOI.submit(model, MOI.LazyConstraint(cb_data), new_feasibility_cut)
 
                 return nothing
             end
 
-			# Else, optimality cut
-			if θ_val[current_scenario] + tol < ν_val + sum(μ_val[e] * y_val[e] for e in 1:E) -
-				sum(second_stage_costs[e, current_scenario] * y_val[e] for e in 1:E)
-				con = @build_constraint(
-					θ[current_scenario] >=
-						ν_val + sum(μ_val[e] * y[e] for e in 1:E) - sum(second_stage_costs[e, current_scenario] * y[e] for e in 1:E)
-				)
-				MOI.submit(model, MOI.LazyConstraint(cb_data), con)
-				return nothing
-			end
+            # Else, optimality cut
+            if θ_val[current_scenario] + tol <
+                ν_val + sum(μ_val[e] * y_val[e] for e in 1:E) -
+               sum(second_stage_costs[e, current_scenario] * y_val[e] for e in 1:E)
+                con = @build_constraint(
+                    θ[current_scenario] >=
+                        ν_val + sum(μ_val[e] * y[e] for e in 1:E) -
+                    sum(second_stage_costs[e, current_scenario] * y[e] for e in 1:E)
+                )
+                MOI.submit(model, MOI.LazyConstraint(cb_data), con)
+                return nothing
+            end
         end
     end
 
     set_attribute(model, MOI.LazyConstraintCallback(), benders_callback)
     optimize!(model)
 
-	return solution_from_first_stage_forest(value.(y) .> 0.5, instance)
+    return solution_from_first_stage_forest(value.(y) .> 0.5, instance)
 end
