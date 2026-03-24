@@ -74,7 +74,7 @@ export generate_instance,
     generate_sample, generate_dataset, generate_environments, generate_environment
 export generate_scenario, generate_context
 export generate_baseline_policies
-export SAA
+export SampleAverageApproximation
 export generate_statistical_model
 export generate_maximizer
 export generate_anticipative_solver, generate_parametric_anticipative_solver

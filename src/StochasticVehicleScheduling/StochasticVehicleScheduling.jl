@@ -116,7 +116,7 @@ Returns a [`DataSample`](@ref) with features `x` and `instance` set, but `y=noth
 To obtain labeled samples, pass a `target_policy` to [`generate_dataset`](@ref):
 
 ```julia
-policy = sample -> DataSample(; sample.instance_kwargs..., x=sample.x,
+policy = sample -> DataSample(; sample.maximizer_kwargs..., x=sample.x,
                                 y=column_generation_algorithm(sample.instance))
 dataset = generate_dataset(benchmark, N; target_policy=policy)
 ```

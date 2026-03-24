@@ -22,7 +22,7 @@ include("model_builders.jl")
 
 export DataSample, Policy
 export evaluate_policy!
-export TopKMaximizer
+export TopKMaximizer, one_hot_argmax
 
 export AbstractEnvironment, get_seed, is_terminated, observe, reset!, step!
 
@@ -33,7 +33,7 @@ export generate_instance, generate_sample, generate_dataset
 export generate_statistical_model, generate_maximizer
 export generate_scenario, generate_context
 export generate_environment, generate_environments
-export SAA
+export SampleAverageApproximation
 export generate_baseline_policies
 export generate_anticipative_solver, generate_parametric_anticipative_solver
 

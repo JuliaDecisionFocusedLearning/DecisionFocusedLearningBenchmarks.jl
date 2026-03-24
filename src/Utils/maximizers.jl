@@ -20,3 +20,14 @@ function (m::TopKMaximizer)(θ; kwargs...)
     res[solution] .= 1
     return res
 end
+
+"""
+$TYPEDSIGNATURES
+
+Return a one-hot encoding of the index of the maximum value in `θ`.
+"""
+function one_hot_argmax(z::AbstractVector{R}; kwargs...) where {R<:Real}
+    e = zeros(R, length(z))
+    e[argmax(z)] = one(R)
+    return e
+end

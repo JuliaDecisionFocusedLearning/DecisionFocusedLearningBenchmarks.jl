@@ -198,7 +198,7 @@ function compute_gap(
             target_obj = objective_value(bench, sample)
             x = sample.x
             θ = statistical_model(x)
-            y = maximizer(θ; sample.instance_kwargs...)
+            y = maximizer(θ; sample.maximizer_kwargs...)
             obj = objective_value(bench, sample, y)
             Δ = check ? obj - target_obj : target_obj - obj
             return Δ / abs(target_obj)
@@ -221,7 +221,7 @@ anticipative targets and compute objective values.
   and features but **no scenario**. Scenarios are added later by [`generate_dataset`](@ref)
   via [`generate_scenario`](@ref).
 - [`generate_scenario`](@ref)`(bench, rng; kwargs...)`: draws a random scenario.
-  Solver kwargs are spread from `sample.instance_kwargs`; context latents from `ctx.extra`.
+  Solver kwargs are spread from `sample.maximizer_kwargs`; context latents from `ctx.extra`.
 
 # Optional methods
 - [`generate_context`](@ref)`(bench, rng, instance_sample)`: enriches the instance with
@@ -243,10 +243,10 @@ supports all three standard structures via `nb_scenarios` and `nb_contexts`:
 | N instances with K scenarios | `generate_dataset(bench, N; nb_scenarios=K)` |
 | N instances with M contexts × K scenarios | `generate_dataset(bench, N; nb_contexts=M, nb_scenarios=K)` |
 
-By default (no `target_policy`), each [`DataSample`](@ref) has `instance_kwargs` holding
+By default (no `target_policy`), each [`DataSample`](@ref) has `maximizer_kwargs` holding
 the solver kwargs and `extra=(; scenario)` holding one scenario.
 
-Provide a `target_policy(instance_sample, ctx_sample, scenarios) -> Vector{DataSample}`
+Provide a `target_policy(ctx_sample, scenarios) -> Vector{DataSample}`
 to compute labels. This covers both anticipative (K samples, one per scenario) and SAA
 (1 sample from all K scenarios) labeling strategies.
 """
@@ -265,9 +265,9 @@ const EndogenousStochasticBenchmark = AbstractStochasticBenchmark{false}
     generate_scenario(::ExogenousStochasticBenchmark, rng::AbstractRNG; kwargs...) -> scenario
 
 Draw a random scenario. Solver kwargs are passed as keyword arguments spread from
-`sample.instance_kwargs`, and context latents (if any) are spread from `ctx.extra`:
+`sample.maximizer_kwargs`, and context latents (if any) are spread from `ctx.extra`:
 
-    ξ = generate_scenario(bench, rng; ctx.extra..., ctx.instance_kwargs...)
+    ξ = generate_scenario(bench, rng; ctx.extra..., ctx.maximizer_kwargs...)
 """
 function generate_scenario end
 
@@ -289,7 +289,7 @@ function generate_context(bench::MyBench, rng, instance_sample::DataSample)
     x_raw = randn(rng, Float32, bench.d)
     return DataSample(;
         x=vcat(instance_sample.x, x_raw),
-        instance_sample.instance_kwargs...,
+        instance_sample.maximizer_kwargs...,
         extra=(; x_raw),
     )
 end
@@ -332,10 +332,10 @@ Calls [`generate_instance`](@ref), then [`generate_context`](@ref) (default: ide
 draws scenarios via [`generate_scenario`](@ref), then:
 - Without `target_policy`: returns M×K unlabeled samples (`nb_contexts` contexts ×
   `nb_scenarios` scenarios each), each with one scenario in `extra=(; scenario=ξ)`.
-- With `target_policy`: calls `target_policy(instance_sample, ctx_sample, scenarios)`
+- With `target_policy`: calls `target_policy(ctx_sample, scenarios)`
   per context and returns the result.
 
-`target_policy(instance_sample, ctx_sample, scenarios) -> Vector{DataSample}` enables
+`target_policy(ctx_sample, scenarios) -> Vector{DataSample}` enables
 anticipative labeling (K samples, one per scenario) or SAA (1 sample aggregating all K
 scenarios).
 """
@@ -353,23 +353,23 @@ function generate_sample(
         ctx = generate_context(bench, rng, instance_sample)
         if isnothing(target_policy)
             for _ in 1:nb_scenarios
-                ξ = generate_scenario(bench, rng; ctx.extra..., ctx.instance_kwargs...)
+                ξ = generate_scenario(bench, rng; ctx.extra..., ctx.maximizer_kwargs...)
                 push!(
                     result,
                     DataSample(;
                         x=ctx.x,
                         θ=ctx.θ,
-                        ctx.instance_kwargs...,
+                        ctx.maximizer_kwargs...,
                         extra=(; ctx.extra..., scenario=ξ),
                     ),
                 )
             end
         else
             scenarios = [
-                generate_scenario(bench, rng; ctx.extra..., ctx.instance_kwargs...) for
+                generate_scenario(bench, rng; ctx.extra..., ctx.maximizer_kwargs...) for
                 _ in 1:nb_scenarios
             ]
-            append!(result, target_policy(instance_sample, ctx, scenarios))
+            append!(result, target_policy(ctx, scenarios))
         end
     end
     return result
@@ -385,7 +385,7 @@ and `nb_scenarios` scenario draws per context. The scenario→sample mapping is 
 by the `target_policy`:
 - Without `target_policy` (default): M contexts × K scenarios produce M×K unlabeled
   samples per instance.
-- With `target_policy(instance_sample, ctx_sample, scenarios) -> Vector{DataSample}`:
+- With `target_policy(ctx_sample, scenarios) -> Vector{DataSample}`:
   enables anticipative labeling (K labeled samples) or SAA (1 sample aggregating all K
   scenarios).
 
@@ -393,7 +393,7 @@ by the `target_policy`:
 - `nb_scenarios::Int = 1`: scenarios per context (K).
 - `nb_contexts::Int = 1`: context draws per instance (M).
 - `target_policy`: when provided, called as
-  `target_policy(instance_sample, ctx_sample, scenarios)` to compute labels.
+  `target_policy(ctx_sample, scenarios)` to compute labels.
   Defaults to `nothing` (unlabeled samples).
 - `seed`: passed to `MersenneTwister` when `rng` is not provided.
 - `rng`: random number generator; overrides `seed` when provided.
@@ -433,49 +433,59 @@ and gap evaluation.
 # Fields
 $TYPEDFIELDS
 """
-struct SAA{B<:ExogenousStochasticBenchmark} <: AbstractBenchmark
+struct SampleAverageApproximation{B<:ExogenousStochasticBenchmark} <: AbstractBenchmark
     "inner stochastic benchmark"
     benchmark::B
     "number of scenarios to draw per (instance, context) pair"
     nb_scenarios::Int
 end
 
-is_minimization_problem(saa::SAA) = is_minimization_problem(saa.benchmark)
-generate_maximizer(saa::SAA) = generate_maximizer(saa.benchmark)
-function generate_statistical_model(saa::SAA; kwargs...)
+function is_minimization_problem(saa::SampleAverageApproximation)
+    return is_minimization_problem(saa.benchmark)
+end
+
+function generate_maximizer(saa::SampleAverageApproximation; kwargs...)
+    return generate_maximizer(saa.benchmark; kwargs...)
+end
+
+function generate_statistical_model(saa::SampleAverageApproximation; kwargs...)
     return generate_statistical_model(saa.benchmark; kwargs...)
 end
 
-function generate_sample(saa::SAA, rng; target_policy=nothing, kwargs...)
+function generate_sample(
+    saa::SampleAverageApproximation, rng; target_policy=nothing, kwargs...
+)
     inner = saa.benchmark
     instance_sample = generate_instance(inner, rng; kwargs...)
     ctx = generate_context(inner, rng, instance_sample)
     scenarios = [
-        generate_scenario(inner, rng; ctx.extra..., ctx.instance_kwargs...) for
+        generate_scenario(inner, rng; ctx.extra..., ctx.maximizer_kwargs...) for
         _ in 1:(saa.nb_scenarios)
     ]
     if isnothing(target_policy)
         return [
-            DataSample(; x=ctx.x, ctx.instance_kwargs..., extra=(; ctx.extra..., scenarios))
+            DataSample(;
+                x=ctx.x, ctx.maximizer_kwargs..., extra=(; ctx.extra..., scenarios)
+            ),
         ]
     else
-        return target_policy(instance_sample, ctx, scenarios)
+        return target_policy(ctx, scenarios)
     end
 end
 
 """
 $TYPEDSIGNATURES
 
-Specialised [`generate_dataset`](@ref) for [`SAA`](@ref).
+Specialised [`generate_dataset`](@ref) for [`SampleAverageApproximation`](@ref).
 
 - Without `target_policy`: returns one static [`DataSample`](@ref) per instance, with
   `nb_scenarios` stored in `extra.scenarios`.
-- With `target_policy(instance_sample, ctx_sample, scenarios) -> Vector{DataSample}`:
+- With `target_policy(ctx_sample, scenarios) -> Vector{DataSample}`:
   labels each instance using all stored scenarios (same signature as
   [`ExogenousStochasticBenchmark`](@ref) policies).
 """
 function generate_dataset(
-    saa::SAA,
+    saa::SampleAverageApproximation,
     nb_instances::Int;
     target_policy=nothing,
     seed=nothing,
@@ -495,7 +505,9 @@ $TYPEDSIGNATURES
 
 Evaluate a decision `y` against stored scenarios (average over scenarios).
 """
-function objective_value(saa::SAA, sample::DataSample, y::AbstractArray)
+function objective_value(
+    saa::SampleAverageApproximation, sample::DataSample, y::AbstractArray
+)
     return mean(objective_value(saa.benchmark, ξ, y) for ξ in sample.extra.scenarios)
 end
 
@@ -505,7 +517,7 @@ $TYPEDSIGNATURES
 Evaluate the target solution in the sample against stored scenarios.
 """
 function objective_value(
-    saa::SAA, sample::DataSample{CTX,EX,F,S,C}
+    saa::SampleAverageApproximation, sample::DataSample{CTX,EX,F,S,C}
 ) where {CTX,EX,F,S<:AbstractArray,C}
     return objective_value(saa, sample, sample.y)
 end

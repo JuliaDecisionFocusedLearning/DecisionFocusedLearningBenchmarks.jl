@@ -19,9 +19,9 @@
 
     # Test with anticipative target_policy
     policy =
-        (instance_sample, ctx_sample, scenarios) -> [
+        (ctx_sample, scenarios) -> [
             DataSample(;
-                instance_sample.instance_kwargs...,
+                ctx_sample.maximizer_kwargs...,
                 x=ctx_sample.x,
                 y=maximizer(s),
                 extra=(; ctx_sample.extra..., scenario=s),
@@ -38,12 +38,12 @@
     @test first(d1).x ≈ first(d2).x
 end
 
-@testset "SAA wrapper on ContextualStochasticArgmax" begin
+@testset "SampleAverageApproximation wrapper on ContextualStochasticArgmax" begin
     using DecisionFocusedLearningBenchmarks
     using Statistics: mean
 
     inner = ContextualStochasticArgmaxBenchmark(; n=5, d=3, seed=0)
-    saa = SAA(inner, 20)
+    saa = SampleAverageApproximation(inner, 20)
 
     # Static instances: each sample has x and stored scenarios (no θ)
     dataset = generate_dataset(saa, 10)
@@ -57,7 +57,7 @@ end
     maximizer = generate_maximizer(saa)
     labeled = map(dataset) do s
         y_saa = maximizer(mean(s.scenarios))
-        DataSample(; s.instance_kwargs..., x=s.x, y=y_saa, extra=s.extra)
+        DataSample(; s.maximizer_kwargs..., x=s.x, y=y_saa, extra=s.extra)
     end
     @test sum(first(labeled).y) ≈ 1.0
 

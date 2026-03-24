@@ -24,7 +24,7 @@
         @test size(x) == (nb_features, instance_dim)
         @test length(θ_true) == instance_dim
         @test length(y_true) == instance_dim
-        @test isempty(sample.instance_kwargs)
+        @test isempty(sample.maximizer_kwargs)
         @test all(y_true .== maximizer(θ_true))
 
         θ = model(x)

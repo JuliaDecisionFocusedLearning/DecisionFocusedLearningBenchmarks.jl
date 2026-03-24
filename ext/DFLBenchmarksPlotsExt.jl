@@ -22,7 +22,7 @@ function plot_solution(bench::AbstractBenchmark, sample::DataSample, y; kwargs..
     return plot_solution(
         bench,
         DataSample(;
-            sample.instance_kwargs..., x=sample.x, θ=sample.θ, y=y, extra=sample.extra
+            sample.maximizer_kwargs..., x=sample.x, θ=sample.θ, y=y, extra=sample.extra
         );
         kwargs...,
     )

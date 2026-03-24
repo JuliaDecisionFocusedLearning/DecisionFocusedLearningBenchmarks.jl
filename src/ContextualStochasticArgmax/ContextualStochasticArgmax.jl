@@ -5,18 +5,12 @@ using DocStringExtensions: TYPEDEF, TYPEDFIELDS
 using Flux: Dense
 using Random: Random, AbstractRNG, MersenneTwister
 
-function one_hot_argmax(z::AbstractVector{R}; kwargs...) where {R<:Real}
-    e = zeros(R, length(z))
-    e[argmax(z)] = one(R)
-    return e
-end
-
 """
 $TYPEDEF
 
 Minimal contextual stochastic argmax benchmark.
 
-Per instance: `c_base ~ U[0,1]^n` (base utility, part of instance kwargs and base features).
+Per instance: `c_base ~ U[0,1]^n` (base utility, stored in `extra` of the instance sample).
 Per context draw: `x_raw ~ N(0, I_d)` (observable context). Features: `x = [c_base; x_raw]`.
 Per scenario: `ξ = c_base + W * x_raw + noise`, `noise ~ N(0, noise_std² I)`.
 The learner sees `x` and must predict `θ̂` so that `argmax(θ̂)` ≈ `argmax(ξ)`.
@@ -49,29 +43,42 @@ end
 Utils.is_minimization_problem(::ContextualStochasticArgmaxBenchmark) = false
 Utils.generate_maximizer(::ContextualStochasticArgmaxBenchmark) = one_hot_argmax
 
-# c_base: base features (in x) and solver kwarg (in instance_kwargs for generate_scenario)
+"""
+    generate_instance(::ContextualStochasticArgmaxBenchmark, rng)
+
+Draw `c_base ~ U[0,1]^n` and store it in `extra`. No solver kwargs are needed
+(the maximizer is `one_hot_argmax`, which takes no kwargs).
+"""
 function Utils.generate_instance(
     bench::ContextualStochasticArgmaxBenchmark, rng::AbstractRNG; kwargs...
 )
     c_base = rand(rng, Float32, bench.n)
-    return DataSample(; x=c_base, c_base=c_base)
+    return DataSample(; extra=(; c_base))
 end
 
-# Enriches instance_sample: x = [c_base; x_raw], x_raw in extra for generate_scenario
+"""
+    generate_context(::ContextualStochasticArgmaxBenchmark, rng, instance_sample)
+
+Draw `x_raw ~ N(0, I_d)` and return a context sample with:
+- `x = [c_base; x_raw]`: full feature vector seen by the ML model.
+- `extra = (; c_base, x_raw)`: latents spread into [`generate_scenario`](@ref).
+"""
 function Utils.generate_context(
     bench::ContextualStochasticArgmaxBenchmark,
     rng::AbstractRNG,
     instance_sample::DataSample,
 )
+    c_base = instance_sample.c_base
     x_raw = randn(rng, Float32, bench.d)
-    return DataSample(;
-        x=vcat(instance_sample.x, x_raw),
-        instance_sample.instance_kwargs...,
-        extra=(; x_raw),
-    )
+    return DataSample(; x=vcat(c_base, x_raw), extra=(; x_raw, c_base))
 end
 
-# ξ = c_base + W * x_raw + noise  (c_base from instance_kwargs, x_raw from ctx.extra)
+"""
+    generate_scenario(::ContextualStochasticArgmaxBenchmark, rng; c_base, x_raw, kwargs...)
+
+Draw `ξ = c_base + W * x_raw + noise`, `noise ~ N(0, noise_std² I)`.
+`c_base` and `x_raw` are spread from `ctx.extra` by the framework.
+"""
 function Utils.generate_scenario(
     bench::ContextualStochasticArgmaxBenchmark,
     rng::AbstractRNG;
