@@ -38,6 +38,18 @@
     @test first(d1).x ≈ first(d2).x
 end
 
+@testset "csa_saa_policy" begin
+    using DecisionFocusedLearningBenchmarks
+
+    b = ContextualStochasticArgmaxBenchmark(; n=5, d=3, seed=0)
+    policies = generate_baseline_policies(b)
+
+    labeled = generate_dataset(b, 3; nb_scenarios=4, target_policy=policies.saa)
+    @test length(labeled) == 3                               # one sample per context (SAA aggregates)
+    @test sum(first(labeled).y) ≈ 1.0                       # one-hot label
+    @test length(first(labeled).extra.scenarios) == 4       # scenarios stored in extra
+end
+
 @testset "SampleAverageApproximation wrapper on ContextualStochasticArgmax" begin
     using DecisionFocusedLearningBenchmarks
     using Statistics: mean

@@ -1,9 +1,10 @@
 module ContextualStochasticArgmax
 
 using ..Utils
-using DocStringExtensions: TYPEDEF, TYPEDFIELDS
+using DocStringExtensions: TYPEDEF, TYPEDFIELDS, TYPEDSIGNATURES
 using Flux: Dense
 using Random: Random, AbstractRNG, MersenneTwister
+using Statistics: mean
 
 """
 $TYPEDEF
@@ -96,6 +97,8 @@ function Utils.generate_statistical_model(
     Random.seed!(seed)
     return Dense(bench.n + bench.d => bench.n; bias=false)
 end
+
+include("policies.jl")
 
 export ContextualStochasticArgmaxBenchmark
 
