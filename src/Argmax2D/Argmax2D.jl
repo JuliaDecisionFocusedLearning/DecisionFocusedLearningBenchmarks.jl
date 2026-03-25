@@ -30,6 +30,8 @@ function Base.show(io::IO, bench::Argmax2DBenchmark)
     return print(io, "Argmax2DBenchmark(nb_features=$nb_features)")
 end
 
+Utils.objective_value(::Argmax2DBenchmark, sample::DataSample, y) = dot(sample.θ, y)
+
 """
 $TYPEDSIGNATURES
 

@@ -5,6 +5,8 @@ using DocStringExtensions: TYPEDEF, TYPEDFIELDS, TYPEDSIGNATURES
 using Flux: Chain, Dense
 using Random
 
+using LinearAlgebra: dot
+
 """
 $TYPEDEF
 
@@ -28,6 +30,8 @@ function Base.show(io::IO, bench::RankingBenchmark)
         io, "RankingBenchmark(instance_dim=$instance_dim, nb_features=$nb_features)"
     )
 end
+
+Utils.objective_value(::RankingBenchmark, sample::DataSample, y) = dot(sample.θ, y)
 
 """
 $TYPEDSIGNATURES

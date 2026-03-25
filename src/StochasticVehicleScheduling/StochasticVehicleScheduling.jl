@@ -68,10 +68,25 @@ end
 include("policies.jl")
 
 function Utils.objective_value(
-    ::StochasticVehicleSchedulingBenchmark, sample::DataSample, y::BitVector
+    ::StochasticVehicleSchedulingBenchmark,
+    sample::DataSample,
+    y::BitVector,
+    scenario::VSPScenario,
 )
-    stoch = build_stochastic_instance(sample.instance, sample.extra.scenarios)
+    stoch = build_stochastic_instance(sample.instance, [scenario])
     return evaluate_solution(y, stoch)
+end
+
+function Utils.objective_value(
+    bench::StochasticVehicleSchedulingBenchmark, sample::DataSample, y::BitVector
+)
+    if hasproperty(sample.extra, :scenario)
+        return Utils.objective_value(bench, sample, y, sample.extra.scenario)
+    elseif hasproperty(sample.extra, :scenarios)
+        stoch = build_stochastic_instance(sample.instance, sample.extra.scenarios)
+        return evaluate_solution(y, stoch)
+    end
+    return error("Sample must have scenario or scenarios")
 end
 
 """

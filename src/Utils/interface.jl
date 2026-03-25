@@ -150,22 +150,11 @@ function compute_gap end
 """
 $TYPEDSIGNATURES
 
-Compute `dot(θ, y)`. Override for non-linear objectives.
+Compute the objective value of given solution `y` for a specific benchmark.
+Must be implemented by each concrete benchmark type. For stochastic benchmarks,
+an additional `scenario` argument is required.
 """
-function objective_value(::AbstractBenchmark, θ::AbstractArray, y::AbstractArray)
-    return dot(θ, y)
-end
-
-"""
-$TYPEDSIGNATURES
-
-Compute the objective value of given solution `y`.
-"""
-function objective_value(
-    bench::AbstractBenchmark, sample::DataSample{CTX,EX,F,S,C}, y::AbstractArray
-) where {CTX,EX,F,S,C<:AbstractArray}
-    return objective_value(bench, sample.θ, y)
-end
+function objective_value end
 
 """
 $TYPEDSIGNATURES
@@ -527,7 +516,9 @@ Evaluate a decision `y` against stored scenarios (average over scenarios).
 function objective_value(
     saa::SampleAverageApproximation, sample::DataSample, y::AbstractArray
 )
-    return mean(objective_value(saa.benchmark, ξ, y) for ξ in sample.extra.scenarios)
+    return mean(
+        objective_value(saa.benchmark, sample, y, ξ) for ξ in sample.extra.scenarios
+    )
 end
 
 """

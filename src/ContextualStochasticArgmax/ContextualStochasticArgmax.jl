@@ -3,6 +3,7 @@ module ContextualStochasticArgmax
 using ..Utils
 using DocStringExtensions: TYPEDEF, TYPEDFIELDS, TYPEDSIGNATURES
 using Flux: Dense
+using LinearAlgebra: dot
 using Random: Random, AbstractRNG, MersenneTwister
 using Statistics: mean
 
@@ -43,6 +44,25 @@ end
 
 Utils.is_minimization_problem(::ContextualStochasticArgmaxBenchmark) = false
 Utils.generate_maximizer(::ContextualStochasticArgmaxBenchmark) = one_hot_argmax
+
+function Utils.objective_value(
+    ::ContextualStochasticArgmaxBenchmark, sample::DataSample, y, scenario
+)
+    return dot(scenario, y)
+end
+
+function Utils.objective_value(
+    bench::ContextualStochasticArgmaxBenchmark, sample::DataSample, y
+)
+    if hasproperty(sample.extra, :scenario)
+        return Utils.objective_value(bench, sample, y, sample.extra.scenario)
+    elseif hasproperty(sample.extra, :scenarios)
+        return mean(
+            Utils.objective_value(bench, sample, y, ξ) for ξ in sample.extra.scenarios
+        )
+    end
+    return error("Sample must have scenario or scenarios")
+end
 
 """
     generate_instance(::ContextualStochasticArgmaxBenchmark, rng)
