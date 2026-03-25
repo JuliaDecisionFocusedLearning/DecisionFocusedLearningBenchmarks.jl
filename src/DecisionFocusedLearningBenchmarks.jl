@@ -55,6 +55,7 @@ include("Warcraft/Warcraft.jl")
 include("FixedSizeShortestPath/FixedSizeShortestPath.jl")
 include("PortfolioOptimization/PortfolioOptimization.jl")
 include("StochasticVehicleScheduling/StochasticVehicleScheduling.jl")
+include("ContextualStochasticArgmax/ContextualStochasticArgmax.jl")
 include("DynamicVehicleScheduling/DynamicVehicleScheduling.jl")
 include("DynamicAssortment/DynamicAssortment.jl")
 include("Maintenance/Maintenance.jl")
@@ -71,8 +72,9 @@ export Policy, evaluate_policy!
 
 export generate_instance,
     generate_sample, generate_dataset, generate_environments, generate_environment
-export generate_scenario
+export generate_scenario, generate_context
 export generate_baseline_policies
+export SampleAverageApproximation
 export generate_statistical_model
 export generate_maximizer
 export generate_anticipative_solver, generate_parametric_anticipative_solver
@@ -91,6 +93,7 @@ using .Warcraft
 using .FixedSizeShortestPath
 using .PortfolioOptimization
 using .StochasticVehicleScheduling
+using .ContextualStochasticArgmax
 using .DynamicVehicleScheduling
 using .DynamicAssortment
 using .Maintenance
@@ -106,5 +109,6 @@ export StochasticVehicleSchedulingBenchmark
 export SubsetSelectionBenchmark
 export WarcraftBenchmark
 export MaintenanceBenchmark
+export ContextualStochasticArgmaxBenchmark
 
 end # module DecisionFocusedLearningBenchmarks

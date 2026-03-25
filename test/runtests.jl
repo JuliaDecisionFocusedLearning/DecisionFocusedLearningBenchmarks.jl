@@ -17,6 +17,7 @@ using Random
     include("maintenance.jl")
     include("warcraft.jl")
     include("vsp.jl")
+    include("contextual_stochastic_argmax.jl")
     include("portfolio_optimization.jl")
 
     @testset "Dynamic Vehicle Scheduling Problem" begin

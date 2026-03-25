@@ -36,6 +36,18 @@ Modules = [DecisionFocusedLearningBenchmarks.Argmax]
 Public = false
 ```
 
+## Contextual Stochastic Argmax
+
+```@autodocs
+Modules = [DecisionFocusedLearningBenchmarks.ContextualStochasticArgmax]
+Private = false
+```
+
+```@autodocs
+Modules = [DecisionFocusedLearningBenchmarks.ContextualStochasticArgmax]
+Public = false
+```
+
 ## Dynamic Vehicle Scheduling
 
 ```@autodocs
