@@ -8,7 +8,10 @@ Choose one of three primary implementation strategies:
 - Implement [`generate_instance`](@ref) (returns a [`DataSample`](@ref) with `y=nothing`).
   The default [`generate_sample`](@ref) forwards the call directly; [`generate_dataset`](@ref)
   applies `target_policy` afterwards if provided.
-- Override [`generate_sample`](@ref) directly when the sample requires custom logic.
+- Override [`generate_sample`](@ref) directly when the sample requires custom logic
+  that cannot be expressed via [`generate_instance`](@ref). Applies to static benchmarks
+  only, stochastic benchmarks should implement the finer-grained hooks instead
+  ([`generate_instance`](@ref), [`generate_context`](@ref), [`generate_scenario`](@ref)).
   [`generate_dataset`](@ref) applies `target_policy` to the result after the call returns.
 - Override [`generate_dataset`](@ref) directly when samples cannot be drawn independently.
 
@@ -51,6 +54,12 @@ Calls [`generate_instance`](@ref) and returns the result directly.
 
 Override this method when sample generation requires custom logic. Labeling via
 `target_policy` is always applied by [`generate_dataset`](@ref) after this call returns.
+
+!!! note
+    This is an internal hook called by [`generate_dataset`](@ref). Prefer calling
+    [`generate_dataset`](@ref) rather than this method directly. For stochastic
+    benchmarks, implement [`generate_instance`](@ref), [`generate_context`](@ref),
+    and [`generate_scenario`](@ref) instead of overriding this method.
 """
 function generate_sample(bench::AbstractBenchmark, rng; kwargs...)
     return generate_instance(bench, rng; kwargs...)
@@ -340,6 +349,14 @@ draws scenarios via [`generate_scenario`](@ref), then:
 `target_policy(ctx_sample, scenarios) -> Vector{DataSample}` enables
 anticipative labeling (K samples, one per scenario) or SAA (1 sample aggregating all K
 scenarios).
+
+!!! note
+    This is an internal override of [`generate_sample`](@ref) for the stochastic pipeline,
+    called by [`generate_dataset`](@ref). New stochastic benchmarks should implement
+    [`generate_instance`](@ref), [`generate_context`](@ref), and [`generate_scenario`](@ref)
+    rather than overriding this method. Note that the return type is `Vector{DataSample}`
+    (one per context × scenario combination), unlike the base method which returns a
+    single `DataSample`.
 """
 function generate_sample(
     bench::ExogenousStochasticBenchmark,
