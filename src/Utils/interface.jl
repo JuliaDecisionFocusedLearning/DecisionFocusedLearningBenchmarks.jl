@@ -217,9 +217,11 @@ part). Decisions are taken by seeing only the instance. Scenarios are used to ge
 anticipative targets and compute objective values.
 
 # Required methods ([`ExogenousStochasticBenchmark`](@ref) only)
-- [`generate_instance`](@ref)`(bench, rng)`: returns a [`DataSample`](@ref) with instance
-  and features but **no scenario**. Scenarios are added later by [`generate_dataset`](@ref)
-  via [`generate_scenario`](@ref).
+- [`generate_instance`](@ref)`(bench, rng)`: returns a [`DataSample`](@ref) with the
+  problem instance (solver kwargs) and, if not overriding [`generate_context`](@ref),
+  the ML features `x`. Scenarios are added later by [`generate_dataset`](@ref) via
+  [`generate_scenario`](@ref). When [`generate_context`](@ref) is overridden, `x` may
+  be absent here and constructed there instead.
 - [`generate_scenario`](@ref)`(bench, rng; kwargs...)`: draws a random scenario.
   Solver kwargs are spread from `sample.maximizer_kwargs`; context latents from `ctx.extra`.
 
