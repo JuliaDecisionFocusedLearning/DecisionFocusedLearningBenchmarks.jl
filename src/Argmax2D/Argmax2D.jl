@@ -16,7 +16,7 @@ Argmax becnhmark on a 2d polytope.
 # Fields
 $TYPEDFIELDS
 """
-struct Argmax2DBenchmark{E,R} <: AbstractBenchmark
+struct Argmax2DBenchmark{E,R} <: AbstractStaticBenchmark
     "number of features"
     nb_features::Int
     "true mapping between features and costs"

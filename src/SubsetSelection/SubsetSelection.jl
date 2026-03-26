@@ -18,7 +18,7 @@ without knowing their values, but only observing some features.
 # Fields
 $TYPEDFIELDS
 """
-struct SubsetSelectionBenchmark{M} <: AbstractBenchmark
+struct SubsetSelectionBenchmark{M} <: AbstractStaticBenchmark
     "total number of items"
     n::Int
     "number of items to select"

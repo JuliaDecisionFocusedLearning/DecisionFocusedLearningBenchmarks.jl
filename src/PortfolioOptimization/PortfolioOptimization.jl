@@ -19,7 +19,7 @@ Data is generated using the process described in: <https://arxiv.org/abs/2307.13
 # Fields
 $TYPEDFIELDS
 """
-struct PortfolioOptimizationBenchmark <: AbstractBenchmark
+struct PortfolioOptimizationBenchmark <: AbstractStaticBenchmark
     "number of assets"
     d::Int
     "size of feature vectors"

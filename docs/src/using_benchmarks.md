@@ -8,7 +8,7 @@ This guide covers everything you need to work with existing benchmarks in Decisi
 
 A benchmark bundles a problem family (an instance generator, a combinatorial solver, and a statistical model architecture) into a single object. It provides everything needed to run a Decision-Focused Learning experiment out of the box, without having to create each component from scratch.
 Three abstract types cover the main settings:
-- **`AbstractBenchmark`**: static problems (one instance, one decision)
+- **`AbstractStaticBenchmark`**: static problems (one instance, one decision)
 - **`AbstractStochasticBenchmark{exogenous}`**: stochastic problems (type parameter indicates whether uncertainty is exogenous)
 - **`AbstractDynamicBenchmark{exogenous}`**: sequential / multi-stage problems
 
@@ -65,7 +65,7 @@ sample.scenario   # looks up :scenario in context first, then in extra
 
 ### Static benchmarks
 
-For static benchmarks (`<:AbstractBenchmark`), `generate_dataset` may compute a default ground-truth label `y` if the benchmark implements it:
+For static benchmarks (`<:AbstractStaticBenchmark`), `generate_dataset` may compute a default ground-truth label `y` if the benchmark implements it:
 
 ```julia
 bench = ArgmaxBenchmark()

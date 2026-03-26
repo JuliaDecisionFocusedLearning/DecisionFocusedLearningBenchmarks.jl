@@ -9,14 +9,14 @@ problems to the benchmark suite or integrate their own domains.
 ## Type hierarchy
 
 ```
-AbstractBenchmark
+AbstractStaticBenchmark
 └── AbstractStochasticBenchmark{exogenous}
     └── AbstractDynamicBenchmark{exogenous}
 ```
 
 | Type | Use case |
 |------|----------|
-| `AbstractBenchmark` | Static, single-stage optimization (e.g. shortest path, portfolio) |
+| `AbstractStaticBenchmark` | Static, single-stage optimization (e.g. shortest path, portfolio) |
 | `AbstractStochasticBenchmark{true}` | Single-stage with exogenous uncertainty (scenarios drawn independently of decisions) |
 | `AbstractStochasticBenchmark{false}` | Single-stage with endogenous uncertainty |
 | `AbstractDynamicBenchmark{true}` | Multi-stage sequential decisions with exogenous uncertainty |
@@ -41,7 +41,7 @@ repeatedly and applies `target_policy` to each result.
 
 ---
 
-## `AbstractBenchmark`: required methods
+## `AbstractStaticBenchmark`: required methods
 
 ### Data generation (choose one strategy)
 
