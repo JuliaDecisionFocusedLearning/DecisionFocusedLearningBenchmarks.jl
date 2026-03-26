@@ -32,6 +32,7 @@ function Base.show(io::IO, bench::RankingBenchmark)
 end
 
 Utils.objective_value(::RankingBenchmark, sample::DataSample, y) = dot(sample.θ, y)
+Utils.is_minimization_problem(::RankingBenchmark) = false
 
 """
 $TYPEDSIGNATURES

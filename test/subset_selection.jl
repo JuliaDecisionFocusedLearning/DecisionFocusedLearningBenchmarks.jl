@@ -36,4 +36,8 @@
         @test length(y) == n
         @test sum(y) == k
     end
+
+    gap = compute_gap(b, dataset[1:5], model, maximizer)
+    @test isfinite(gap)
+    @test gap >= 0
 end

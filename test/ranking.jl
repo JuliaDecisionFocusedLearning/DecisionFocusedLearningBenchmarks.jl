@@ -30,4 +30,8 @@
         y = maximizer(θ)
         @test length(y) == instance_dim
     end
+
+    gap = compute_gap(b, dataset[1:5], model, maximizer)
+    @test isfinite(gap)
+    @test gap >= 0
 end

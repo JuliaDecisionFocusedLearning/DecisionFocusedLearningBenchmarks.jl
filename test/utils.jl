@@ -117,6 +117,16 @@ end
     for i in 1:N
         @test dataset_zt[i].x ≈ dataset[i].x atol = 1e-10
     end
+
+    # Error: overlap between context and extra
+    @test_throws Exception DataSample(x=[1], foo=1, extra=(; foo=2))
+    # Error: reserved name used as context kwarg
+    @test_throws Exception DataSample(x=[1], context=[2])
+    # Error: reserved name in extra
+    @test_throws Exception DataSample(x=[1], extra=(; x=[2]))
+
+    # is_minimization_problem: maximization benchmarks override to false
+    @test is_minimization_problem(ArgmaxBenchmark()) == false
 end
 
 @testset "Maximizers" begin

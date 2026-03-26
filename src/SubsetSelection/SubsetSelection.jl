@@ -33,6 +33,7 @@ function Base.show(io::IO, bench::SubsetSelectionBenchmark)
 end
 
 Utils.objective_value(::SubsetSelectionBenchmark, sample::DataSample, y) = dot(sample.θ, y)
+Utils.is_minimization_problem(::SubsetSelectionBenchmark) = false
 
 function SubsetSelectionBenchmark(; n::Int=25, k::Int=5, identity_mapping::Bool=true)
     @assert n >= k "number of items n must be greater than k"

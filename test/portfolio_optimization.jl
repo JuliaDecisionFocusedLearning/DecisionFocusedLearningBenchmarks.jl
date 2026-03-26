@@ -26,4 +26,7 @@
         @test length(y) == d
         @test sum(y) <= 1 + 1e-6
     end
+
+    gap = compute_gap(b, dataset[1:5], model, maximizer)
+    @test isfinite(gap)
 end

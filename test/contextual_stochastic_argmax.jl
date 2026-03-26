@@ -78,3 +78,13 @@ end
     gap = compute_gap(saa, labeled, model, maximizer)
     @test isfinite(gap)
 end
+
+@testset "csa_objective_value_error" begin
+    using DecisionFocusedLearningBenchmarks
+
+    b = ContextualStochasticArgmaxBenchmark(; n=5, d=3, seed=0)
+    maximizer = generate_maximizer(b)
+    # Sample with neither :scenario nor :scenarios in extra → objective_value should error
+    s = DataSample(; x=randn(Float32, 8), y=maximizer(randn(Float32, 5)))
+    @test_throws Exception objective_value(b, s, s.y)
+end

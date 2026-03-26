@@ -36,6 +36,7 @@ export generate_environment, generate_environments
 export SampleAverageApproximation
 export generate_baseline_policies
 export generate_anticipative_solver, generate_parametric_anticipative_solver
+export is_minimization_problem
 
 export has_visualization, plot_instance, plot_solution, plot_trajectory, animate_trajectory
 export compute_gap
