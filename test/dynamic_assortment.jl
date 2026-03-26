@@ -321,14 +321,14 @@ end
 
     # vector-of-environments overload
     dataset = generate_dataset(b, envs; target_policy=target_policy)
-    @test dataset isa Vector{DataSample}
+    @test dataset isa Vector{D} where D <: DataSample
     @test !isempty(dataset)
     @test all(!isnothing(s.x) for s in dataset)
     @test all(!isnothing(s.y) for s in dataset)
 
     # count-based wrapper
     dataset2 = generate_dataset(b, 3; seed=7, target_policy=target_policy)
-    @test dataset2 isa Vector{DataSample}
+    @test dataset2 isa Vector{D} where D <: DataSample
     @test !isempty(dataset2)
 end
 
@@ -342,7 +342,7 @@ end
 
     # Test integration with sample data
     sample = generate_sample(b, MersenneTwister(42))
-    @test hasfield(typeof(sample), :maximizer_kwargs)
+    @test hasfield(typeof(sample), :context)
 
     environments = generate_environments(b, 3; seed=42)
 

@@ -8,7 +8,7 @@
     @test length(dataset) == 80
     sample = first(dataset)
     @test size(sample.x) == (8,)                                     # n+d
-    @test sample.x ≈ vcat(sample.c_base, sample.extra.x_raw)         # features = [c_base; x_raw]
+    @test sample.x ≈ vcat(sample.c_base, sample.x_raw)              # features = [c_base; x_raw]
     @test sample.y === nothing
     @test sample.scenario isa AbstractVector{Float32} && length(sample.scenario) == 5
 
@@ -21,7 +21,7 @@
     policy =
         (ctx_sample, scenarios) -> [
             DataSample(;
-                ctx_sample.maximizer_kwargs...,
+                ctx_sample.context...,
                 x=ctx_sample.x,
                 y=maximizer(s),
                 extra=(; ctx_sample.extra..., scenario=s),
@@ -69,7 +69,7 @@ end
     maximizer = generate_maximizer(saa)
     labeled = map(dataset) do s
         y_saa = maximizer(mean(s.scenarios))
-        DataSample(; s.maximizer_kwargs..., x=s.x, y=y_saa, extra=s.extra)
+        DataSample(; s.context..., x=s.x, y=y_saa, extra=s.extra)
     end
     @test sum(first(labeled).y) ≈ 1.0
 

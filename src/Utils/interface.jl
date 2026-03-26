@@ -183,7 +183,7 @@ end
 $TYPEDSIGNATURES
 
 Default implementation of [`compute_gap`](@ref): average relative optimality gap over `dataset`.
-Requires labeled samples (`y ≠ nothing`), `x`, and `maximizer_kwargs` fields.
+Requires labeled samples (`y ≠ nothing`), `x`, and `context` fields.
 Override for custom evaluation logic.
 """
 function compute_gap(
@@ -200,7 +200,7 @@ function compute_gap(
             target_obj = objective_value(bench, sample)
             x = sample.x
             θ = statistical_model(x)
-            y = maximizer(θ; sample.maximizer_kwargs...)
+            y = maximizer(θ; sample.context...)
             obj = objective_value(bench, sample, y)
             Δ = check ? obj - target_obj : target_obj - obj
             return Δ / abs(target_obj)
@@ -225,7 +225,7 @@ anticipative targets and compute objective values.
   [`generate_scenario`](@ref). When [`generate_context`](@ref) is overridden, `x` may
   be absent here and constructed there instead.
 - [`generate_scenario`](@ref)`(bench, rng; kwargs...)`: draws a random scenario.
-  Solver kwargs are spread from `sample.maximizer_kwargs`; context latents from `ctx.extra`.
+  Solver kwargs are spread from `ctx.context`.
 
 # Optional methods
 - [`generate_context`](@ref)`(bench, rng, instance_sample)`: enriches the instance with
@@ -247,7 +247,7 @@ supports all three standard structures via `nb_scenarios` and `nb_contexts`:
 | N instances with K scenarios | `generate_dataset(bench, N; nb_scenarios=K)` |
 | N instances with M contexts × K scenarios | `generate_dataset(bench, N; nb_contexts=M, nb_scenarios=K)` |
 
-By default (no `target_policy`), each [`DataSample`](@ref) has `maximizer_kwargs` holding
+By default (no `target_policy`), each [`DataSample`](@ref) has `context` holding
 the solver kwargs and `extra=(; scenario)` holding one scenario.
 
 Provide a `target_policy(ctx_sample, scenarios) -> Vector{DataSample}`
@@ -269,9 +269,9 @@ const EndogenousStochasticBenchmark = AbstractStochasticBenchmark{false}
     generate_scenario(::ExogenousStochasticBenchmark, rng::AbstractRNG; kwargs...) -> scenario
 
 Draw a random scenario. Solver kwargs are passed as keyword arguments spread from
-`sample.maximizer_kwargs`, and context latents (if any) are spread from `ctx.extra`:
+`sample.context`:
 
-    ξ = generate_scenario(bench, rng; ctx.extra..., ctx.maximizer_kwargs...)
+    ξ = generate_scenario(bench, rng; ctx.context...)
 """
 function generate_scenario end
 
@@ -293,12 +293,12 @@ function generate_context(bench::MyBench, rng, instance_sample::DataSample)
     x_raw = randn(rng, Float32, bench.d)
     return DataSample(;
         x=vcat(instance_sample.x, x_raw),
-        instance_sample.maximizer_kwargs...,
-        extra=(; x_raw),
+        instance_sample.context...,
+        x_raw,
     )
 end
 ```
-Fields in `.extra` are spread into [`generate_scenario`](@ref) as kwargs.
+Fields in `.context` are spread into [`generate_scenario`](@ref) as kwargs.
 """
 function generate_context(::AbstractStochasticBenchmark, rng, instance_sample::DataSample)
     return instance_sample
@@ -360,31 +360,32 @@ function generate_sample(
     kwargs...,
 )
     instance_sample = generate_instance(bench, rng; kwargs...)
-    result = DataSample[]
-    for _ in 1:nb_contexts
-        ctx = generate_context(bench, rng, instance_sample)
-        if isnothing(target_policy)
-            for _ in 1:nb_scenarios
-                ξ = generate_scenario(bench, rng; ctx.extra..., ctx.maximizer_kwargs...)
-                push!(
-                    result,
-                    DataSample(;
-                        x=ctx.x,
-                        θ=ctx.θ,
-                        ctx.maximizer_kwargs...,
-                        extra=(; ctx.extra..., scenario=ξ),
-                    ),
-                )
-            end
-        else
-            scenarios = [
-                generate_scenario(bench, rng; ctx.extra..., ctx.maximizer_kwargs...) for
-                _ in 1:nb_scenarios
-            ]
-            append!(result, target_policy(ctx, scenarios))
-        end
-    end
-    return result
+    return reduce(
+        vcat,
+        (
+            let ctx = generate_context(bench, rng, instance_sample)
+                if isnothing(target_policy)
+                    [
+                        DataSample(;
+                            x=ctx.x,
+                            θ=ctx.θ,
+                            ctx.context...,
+                            extra=(;
+                                ctx.extra...,
+                                scenario=generate_scenario(bench, rng; ctx.context...),
+                            ),
+                        ) for _ in 1:nb_scenarios
+                    ]
+                else
+                    scenarios = [
+                        generate_scenario(bench, rng; ctx.context...) for
+                        _ in 1:nb_scenarios
+                    ]
+                    target_policy(ctx, scenarios)
+                end
+            end for _ in 1:nb_contexts
+        ),
+    )
 end
 
 """
@@ -422,14 +423,14 @@ function generate_dataset(
     kwargs...,
 )
     Random.seed!(rng, seed)
-    samples = DataSample[]
-    for _ in 1:nb_instances
-        new_samples = generate_sample(
-            bench, rng; target_policy, nb_scenarios, nb_contexts, kwargs...
-        )
-        append!(samples, new_samples)
-    end
-    return samples
+    return reduce(
+        vcat,
+        (
+            generate_sample(
+                bench, rng; target_policy, nb_scenarios, nb_contexts, kwargs...
+            ) for _ in 1:nb_instances
+        ),
+    )
 end
 
 """
@@ -471,15 +472,10 @@ function generate_sample(
     instance_sample = generate_instance(inner, rng; kwargs...)
     ctx = generate_context(inner, rng, instance_sample)
     scenarios = [
-        generate_scenario(inner, rng; ctx.extra..., ctx.maximizer_kwargs...) for
-        _ in 1:(saa.nb_scenarios)
+        generate_scenario(inner, rng; ctx.context...) for _ in 1:(saa.nb_scenarios)
     ]
     if isnothing(target_policy)
-        return [
-            DataSample(;
-                x=ctx.x, ctx.maximizer_kwargs..., extra=(; ctx.extra..., scenarios)
-            ),
-        ]
+        return [DataSample(; x=ctx.x, ctx.context..., extra=(; ctx.extra..., scenarios))]
     else
         return target_policy(ctx, scenarios)
     end
@@ -505,11 +501,9 @@ function generate_dataset(
     kwargs...,
 )
     Random.seed!(rng, seed)
-    samples = DataSample[]
-    for _ in 1:nb_instances
-        append!(samples, generate_sample(saa, rng; target_policy, kwargs...))
-    end
-    return samples
+    return reduce(
+        vcat, (generate_sample(saa, rng; target_policy, kwargs...) for _ in 1:nb_instances)
+    )
 end
 
 """
@@ -626,12 +620,7 @@ function generate_dataset(
     kwargs...,
 )
     Random.seed!(rng, seed)
-    samples = DataSample[]
-    for env in environments
-        trajectory = target_policy(env)
-        append!(samples, trajectory)
-    end
-    return samples
+    return reduce(vcat, (target_policy(env) for env in environments))
 end
 
 """

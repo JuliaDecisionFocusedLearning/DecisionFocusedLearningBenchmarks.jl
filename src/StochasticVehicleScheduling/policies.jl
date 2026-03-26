@@ -10,7 +10,7 @@ function svs_saa_policy(ctx_sample, scenarios)
     y = column_generation_algorithm(stochastic_inst)
     return [
         DataSample(;
-            ctx_sample.maximizer_kwargs...,
+            ctx_sample.context...,
             x=ctx_sample.x,
             y,
             extra=(; ctx_sample.extra..., scenarios),
@@ -28,7 +28,7 @@ function svs_deterministic_policy(ctx_sample, scenarios; model_builder=highs_mod
     y = deterministic_mip(ctx_sample.instance; model_builder)
     return [
         DataSample(;
-            ctx_sample.maximizer_kwargs...,
+            ctx_sample.context...,
             x=ctx_sample.x,
             y,
             extra=(; ctx_sample.extra..., scenarios),
@@ -48,7 +48,7 @@ function svs_local_search_policy(ctx_sample, scenarios)
     y = local_search(stochastic_inst)
     return [
         DataSample(;
-            ctx_sample.maximizer_kwargs...,
+            ctx_sample.context...,
             x=ctx_sample.x,
             y,
             extra=(; ctx_sample.extra..., scenarios),
@@ -70,7 +70,7 @@ function svs_saa_mip_policy(ctx_sample, scenarios; model_builder=scip_model)
     y = compact_linearized_mip(ctx_sample.instance, scenarios; model_builder)
     return [
         DataSample(;
-            ctx_sample.maximizer_kwargs...,
+            ctx_sample.context...,
             x=ctx_sample.x,
             y,
             extra=(; ctx_sample.extra..., scenarios),
