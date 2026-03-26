@@ -42,7 +42,9 @@ Constructor for `DataSample` with keyword arguments.
 All keyword arguments beyond `x`, `θ`, `y`, and `extra` are collected into the `maximizer_kwargs`
 field (solver kwargs). The `extra` keyword accepts a `NamedTuple` of non-solver data.
 
-Fields in `maximizer_kwargs` and `extra` must be disjoint. An error is thrown if they overlap.
+Fields in `maximizer_kwargs` and `extra` must be disjoint. Neither may use a reserved
+struct field name (`x`, `θ`, `y`, `maximizer_kwargs`, `extra`). An error is thrown in
+both cases.
 Both can be accessed directly via property forwarding.
 
 # Examples
@@ -67,6 +69,19 @@ function DataSample(; x=nothing, θ=nothing, y=nothing, extra=NamedTuple(), kwar
     if !isempty(overlap)
         error(
             "Keys $(collect(overlap)) appear in both maximizer_kwargs and extra of DataSample",
+        )
+    end
+    reserved = (:x, :θ, :y, :maximizer_kwargs, :extra)
+    shadowed_ctx = intersect(keys(maximizer_kwargs), reserved)
+    if !isempty(shadowed_ctx)
+        error(
+            "Keys $(collect(shadowed_ctx)) in maximizer_kwargs shadow DataSample struct fields",
+        )
+    end
+    shadowed_extra = intersect(keys(extra), reserved)
+    if !isempty(shadowed_extra)
+        error(
+            "Keys $(collect(shadowed_extra)) in extra shadow DataSample struct fields",
         )
     end
     return DataSample(x, θ, y, maximizer_kwargs, extra)

@@ -547,6 +547,8 @@ meaning (whether uncertainty is independent of decisions).
 
 # Additional optional methods
 - [`generate_environment`](@ref)`(bench, rng)`: initialize a single rollout environment.
+  Must return an [`AbstractEnvironment`](@ref) (see `environment.jl` for the full protocol:
+  [`reset!`](@ref), [`observe`](@ref), [`step!`](@ref), [`is_terminated`](@ref)).
   Implement this instead of overriding [`generate_environments`](@ref) when environments
   can be drawn independently.
 - [`generate_baseline_policies`](@ref)`(bench)`: returns named baseline callables of
@@ -568,7 +570,7 @@ const ExogenousDynamicBenchmark = AbstractDynamicBenchmark{true}
 const EndogenousDynamicBenchmark = AbstractDynamicBenchmark{false}
 
 """
-    generate_environment(::AbstractDynamicBenchmark, rng::AbstractRNG; kwargs...)
+    generate_environment(::AbstractDynamicBenchmark, rng::AbstractRNG; kwargs...) -> AbstractEnvironment
 
 Initialize a single environment for the given dynamic benchmark.
 Primary implementation target for the count-based [`generate_environments`](@ref) default.
