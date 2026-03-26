@@ -173,6 +173,9 @@ end
 $TYPEDSIGNATURES
 
 Check if the benchmark is a minimization problem.
+
+Defaults to `true`. **Maximization benchmarks must override this method**, forgetting to do
+so will cause `compute_gap` to compute the gap with the wrong sign without any error or warning.
 """
 function is_minimization_problem(::AbstractBenchmark)
     return true
@@ -237,14 +240,14 @@ anticipative targets and compute objective values.
 
 # Dataset generation (exogenous only)
 [`generate_dataset`](@ref) is specialised for [`ExogenousStochasticBenchmark`](@ref) and
-supports all three standard structures via `nb_scenarios` and `nb_contexts`:
+supports all three standard structures via `nb_scenarios` and `contexts_per_instance`:
 
 | Setting | Call |
 |---------|------|
 | 1 instance with K scenarios  | `generate_dataset(bench, 1; nb_scenarios=K)` |
 | N instances with 1 scenario  | `generate_dataset(bench, N)` (default) |
 | N instances with K scenarios | `generate_dataset(bench, N; nb_scenarios=K)` |
-| N instances with M contexts × K scenarios | `generate_dataset(bench, N; nb_contexts=M, nb_scenarios=K)` |
+| N instances with M contexts × K scenarios | `generate_dataset(bench, N; contexts_per_instance=M, nb_scenarios=K)` |
 
 By default (no `target_policy`), each [`DataSample`](@ref) has `context` holding
 the solver kwargs and `extra=(; scenario)` holding one scenario.
@@ -306,13 +309,17 @@ end
 """
     generate_anticipative_solver(::AbstractBenchmark) -> callable
 
-Return a callable that computes the anticipative solution.
+Return a callable that computes the anticipative (oracle) solution.
+The calling convention differs by benchmark category:
 
-- For [`AbstractStochasticBenchmark`](@ref): returns `(scenario; context...) -> y`.
-- For [`AbstractDynamicBenchmark`](@ref): returns
-  `(env; reset_env=true, kwargs...) -> Vector{DataSample}`, a full training trajectory.
-  `reset_env=true` resets the env before solving (initial dataset building);
-  `reset_env=false` starts from the current env state.
+**Stochastic benchmarks** ([`AbstractStochasticBenchmark`](@ref)):
+Returns `(scenario; context...) -> y`.
+Called once per scenario to obtain the optimal label.
+
+**Dynamic benchmarks** ([`AbstractDynamicBenchmark`](@ref)):
+Returns `(env; reset_env=true, kwargs...) -> Vector{DataSample}`, a full trajectory.
+`reset_env=true` resets the environment before solving (used for initial dataset building);
+`reset_env=false` starts from the current environment state (used inside DAgger rollouts).
 """
 function generate_anticipative_solver end
 
@@ -333,7 +340,7 @@ Default [`generate_sample`](@ref) for exogenous stochastic benchmarks.
 
 Calls [`generate_instance`](@ref), then [`generate_context`](@ref) (default: identity),
 draws scenarios via [`generate_scenario`](@ref), then:
-- Without `target_policy`: returns M×K unlabeled samples (`nb_contexts` contexts ×
+- Without `target_policy`: returns M×K unlabeled samples (`contexts_per_instance` contexts ×
   `nb_scenarios` scenarios each), each with one scenario in `extra=(; scenario=ξ)`.
 - With `target_policy`: calls `target_policy(ctx_sample, scenarios)`
   per context and returns the result.
@@ -355,7 +362,7 @@ function generate_sample(
     rng;
     target_policy=nothing,
     nb_scenarios::Int=1,
-    nb_contexts::Int=1,
+    contexts_per_instance::Int=1,
     kwargs...,
 )
     instance_sample = generate_instance(bench, rng; kwargs...)
@@ -382,7 +389,7 @@ function generate_sample(
                     ]
                     target_policy(ctx, scenarios)
                 end
-            end for _ in 1:nb_contexts
+            end for _ in 1:contexts_per_instance
         ),
     )
 end
@@ -392,7 +399,7 @@ $TYPEDSIGNATURES
 
 Specialised [`generate_dataset`](@ref) for exogenous stochastic benchmarks.
 
-Generates `nb_instances` problem instances, each with `nb_contexts` context draws
+Generates `nb_instances` problem instances, each with `contexts_per_instance` context draws
 and `nb_scenarios` scenario draws per context. The scenario→sample mapping is controlled
 by the `target_policy`:
 - Without `target_policy` (default): M contexts × K scenarios produce M×K unlabeled
@@ -403,7 +410,7 @@ by the `target_policy`:
 
 # Keyword arguments
 - `nb_scenarios::Int = 1`: scenarios per context (K).
-- `nb_contexts::Int = 1`: context draws per instance (M).
+- `contexts_per_instance::Int = 1`: context draws per instance (M).
 - `target_policy`: when provided, called as
   `target_policy(ctx_sample, scenarios)` to compute labels.
   Defaults to `nothing` (unlabeled samples).
@@ -416,7 +423,7 @@ function generate_dataset(
     nb_instances::Int;
     target_policy=nothing,
     nb_scenarios::Int=1,
-    nb_contexts::Int=1,
+    contexts_per_instance::Int=1,
     seed=nothing,
     rng=MersenneTwister(seed),
     kwargs...,
@@ -425,7 +432,7 @@ function generate_dataset(
         vcat,
         (
             generate_sample(
-                bench, rng; target_policy, nb_scenarios, nb_contexts, kwargs...
+                bench, rng; target_policy, nb_scenarios, contexts_per_instance, kwargs...
             ) for _ in 1:nb_instances
         ),
     )
@@ -440,6 +447,12 @@ Sample Average Approximation (SAA).
 For each (instance, context) pair, draws `nb_scenarios` fixed scenarios. These are stored
 in the sample and used for feature computation, target labeling (via `target_policy`),
 and gap evaluation.
+
+!!! note
+    `SampleAverageApproximation <: AbstractBenchmark`, not `AbstractStochasticBenchmark`.
+    This is intentional: after wrapping, the scenarios are fixed at dataset-generation time
+    and the benchmark behaves as a static problem. Functions dispatching on
+    `AbstractStochasticBenchmark` (e.g. `is_exogenous`) will not match SAA instances.
 
 # Fields
 $TYPEDFIELDS

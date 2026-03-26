@@ -4,7 +4,7 @@
     b = ContextualStochasticArgmaxBenchmark(; n=5, d=3, seed=0)
 
     # Unlabeled: N instances × M contexts × K scenarios = N*M*K samples
-    dataset = generate_dataset(b, 10; nb_contexts=2, nb_scenarios=4)
+    dataset = generate_dataset(b, 10; contexts_per_instance=2, nb_scenarios=4)
     @test length(dataset) == 80
     sample = first(dataset)
     @test size(sample.x) == (8,)                                     # n+d
