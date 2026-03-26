@@ -151,13 +151,6 @@ Plot the instance with `sample.y` overlaid. Only available when `Plots` is loade
 function plot_solution end
 
 """
-    compute_gap(::AbstractBenchmark, dataset::Vector{<:DataSample}, statistical_model, maximizer) -> Float64
-
-Compute the average relative optimality gap of the pipeline on the dataset.
-"""
-function compute_gap end
-
-"""
 $TYPEDSIGNATURES
 
 Compute the objective value of given solution `y` for a specific benchmark.
@@ -190,11 +183,12 @@ end
 $TYPEDSIGNATURES
 
 Default implementation of [`compute_gap`](@ref): average relative optimality gap over `dataset`.
-Requires samples with `x`, `θ`, and `y` fields. Override for custom evaluation logic.
+Requires labeled samples (`y ≠ nothing`), `x`, and `maximizer_kwargs` fields.
+Override for custom evaluation logic.
 """
 function compute_gap(
     bench::AbstractBenchmark,
-    dataset::AbstractVector{<:DataSample},
+    dataset::AbstractVector{<:DataSample{<:Any,<:Any,<:Any,<:AbstractArray}},
     statistical_model,
     maximizer,
     op=mean,
