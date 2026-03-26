@@ -80,9 +80,7 @@ function DataSample(; x=nothing, θ=nothing, y=nothing, extra=NamedTuple(), kwar
     end
     shadowed_extra = intersect(keys(extra), reserved)
     if !isempty(shadowed_extra)
-        error(
-            "Keys $(collect(shadowed_extra)) in extra shadow DataSample struct fields",
-        )
+        error("Keys $(collect(shadowed_extra)) in extra shadow DataSample struct fields")
     end
     return DataSample(x, θ, y, maximizer_kwargs, extra)
 end

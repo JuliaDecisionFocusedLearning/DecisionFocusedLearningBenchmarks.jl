@@ -97,7 +97,12 @@ end
 
 Returns a callable `f(θ; kwargs...) -> y`, solving a maximization problem.
 """
-function generate_maximizer end
+function generate_maximizer(bench::AbstractBenchmark; kwargs...)
+    return error(
+        "`generate_maximizer` is not implemented for $(typeof(bench)). " *
+        "Implement `generate_maximizer(::$(typeof(bench)); kwargs...) -> f(θ; kwargs...) -> y`.",
+    )
+end
 
 """
     generate_statistical_model(::AbstractBenchmark, seed=nothing; kwargs...)
@@ -106,7 +111,12 @@ Returns an untrained statistical model (usually a Flux neural network) that maps
 feature matrix `x` to an output array `θ`. The `seed` parameter controls initialization
 randomness for reproducibility.
 """
-function generate_statistical_model end
+function generate_statistical_model(bench::AbstractBenchmark, seed=nothing; kwargs...)
+    return error(
+        "`generate_statistical_model` is not implemented for $(typeof(bench)). " *
+        "Implement `generate_statistical_model(::$(typeof(bench)), seed=nothing; kwargs...) -> model`.",
+    )
+end
 
 """
     generate_baseline_policies(::AbstractBenchmark) -> NamedTuple or Tuple
