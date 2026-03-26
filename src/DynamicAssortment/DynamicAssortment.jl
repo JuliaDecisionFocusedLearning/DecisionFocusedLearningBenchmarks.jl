@@ -78,17 +78,6 @@ include("policies.jl")
 """
 $TYPEDSIGNATURES
 
-Outputs a data sample containing an [`Instance`](@ref).
-"""
-function Utils.generate_sample(
-    b::DynamicAssortmentBenchmark, rng::AbstractRNG=MersenneTwister(0)
-)
-    return DataSample(; instance=Instance(b, rng))
-end
-
-"""
-$TYPEDSIGNATURES
-
 Generates a statistical model for the dynamic assortment benchmark.
 The model is a small neural network with one hidden layer of size 5 and no activation function.
 """

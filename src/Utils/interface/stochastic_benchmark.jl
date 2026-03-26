@@ -71,8 +71,9 @@ function generate_scenario end
 
 Enrich `instance_sample` with observable context drawn from `rng`.
 Returns a new `DataSample` extending the instance: `.x` is the final ML feature vector
-(possibly augmented with context features) and `.extra` holds any latent context fields
-needed by [`generate_scenario`](@ref).
+(possibly augmented with context features). Any latent fields needed by
+[`generate_scenario`](@ref) must go into `.context` (they are spread as kwargs via
+`ctx.context...`), not into `.extra`.
 
 **Default**: returns `instance_sample` unchanged — no context augmentation.
 Non-contextual benchmarks (e.g. SVS) use this default.
@@ -110,6 +111,18 @@ Returns `(env; reset_env=true, kwargs...) -> Vector{DataSample}`, a full traject
 `reset_env=false` starts from the current environment state (used inside DAgger rollouts).
 """
 function generate_anticipative_solver end
+
+"""
+    objective_value(::ExogenousStochasticBenchmark, sample::DataSample, y, scenario) -> Real
+
+Compute the objective value of solution `y` for a given `scenario`.
+Must be implemented by each concrete [`ExogenousStochasticBenchmark`](@ref).
+
+This is the primary evaluation hook for stochastic benchmarks. The 2-arg fallback
+`objective_value(bench, sample, y)` dispatches here using the scenario stored in
+`sample.extra.scenario` (or averages over `sample.extra.scenarios`).
+"""
+function objective_value end
 
 """
     generate_parametric_anticipative_solver(::ExogenousStochasticBenchmark) -> callable
@@ -216,6 +229,7 @@ function generate_dataset(
     rng=MersenneTwister(seed),
     kwargs...,
 )
+    nb_instances == 0 && return DataSample[]
     return reduce(
         vcat,
         (
@@ -275,7 +289,7 @@ function generate_sample(
         generate_scenario(inner, rng; ctx.context...) for _ in 1:(saa.nb_scenarios)
     ]
     if isnothing(target_policy)
-        return [DataSample(; x=ctx.x, ctx.context..., extra=(; ctx.extra..., scenarios))]
+        return [DataSample(; x=ctx.x, θ=ctx.θ, ctx.context..., extra=(; ctx.extra..., scenarios))]
     else
         return target_policy(ctx, scenarios)
     end
@@ -300,8 +314,10 @@ function generate_dataset(
     rng=MersenneTwister(seed),
     kwargs...,
 )
+    nb_instances == 0 && return DataSample[]
     return reduce(
-        vcat, (generate_sample(saa, rng; target_policy, kwargs...) for _ in 1:nb_instances)
+        vcat,
+        (generate_sample(saa, rng; target_policy, kwargs...) for _ in 1:nb_instances),
     )
 end
 

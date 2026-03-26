@@ -21,9 +21,11 @@ Also implement:
 
 # Optional methods (defaults provided)
 - [`is_minimization_problem`](@ref): defaults to `true`
-- [`objective_value`](@ref): defaults to `dot(θ, y)`
 - [`compute_gap`](@ref): default implementation provided; override for custom evaluation
 - [`has_visualization`](@ref): defaults to `false`
+
+# Mandatory methods (no default)
+- [`objective_value`](@ref)`(bench, sample, y)`: must be implemented by every static benchmark
 
 # Optional methods (no default, require `Plots` to be loaded)
 - [`plot_instance`](@ref), [`plot_solution`](@ref)

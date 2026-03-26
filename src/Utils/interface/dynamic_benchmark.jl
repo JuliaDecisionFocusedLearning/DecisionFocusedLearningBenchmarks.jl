@@ -2,9 +2,8 @@
 $TYPEDEF
 
 Abstract type interface for multi-stage stochastic (dynamic) benchmark problems.
-
-Extends [`AbstractStochasticBenchmark`](@ref). The `{exogenous}` parameter retains its
-meaning (whether uncertainty is independent of decisions).
+The `{exogenous}` parameter has the same meaning (whether uncertainty is independent
+of decisions) as in [`AbstractStochasticBenchmark`](@ref).
 
 # Primary entry point
 - [`generate_environments`](@ref)`(bench, n; rng)`: mandatory (or implement
@@ -35,14 +34,14 @@ is_endogenous(::AbstractDynamicBenchmark{exogenous}) where {exogenous} = !exogen
 """
 $TYPEDSIGNATURES
 
-Intercepts accidental calls to `generate_sample` on dynamic benchmarks and throws a
-descriptive error pointing at the correct entry point.
+Intercepts accidental calls to the default `compute_gap` on dynamic benchmarks and throws a
+descriptive error. Dynamic benchmarks do not have a generic single-sample gap computation;
+override `compute_gap` directly on the concrete type if needed.
 """
-function generate_sample(bench::AbstractDynamicBenchmark, rng; kwargs...)
+function compute_gap(bench::AbstractDynamicBenchmark, args...; kwargs...)
     return error(
-        "`generate_sample` is not supported for dynamic benchmarks ($(typeof(bench))). " *
-        "Use `generate_environments` and " *
-        "`generate_dataset(bench, environments; target_policy=...)` instead.",
+        "`compute_gap` is not supported for dynamic benchmarks ($(typeof(bench))). " *
+        "Override `compute_gap` on the concrete type with trajectory-based evaluation logic.",
     )
 end
 
@@ -92,12 +91,11 @@ to obtain standard baseline callables (e.g. the anticipative solver).
 
 # Keyword arguments
 - `target_policy`: **required** callable `(env) -> Vector{DataSample}`.
-- `seed`: passed to `MersenneTwister` when `rng` is not provided.
-- `rng`: random number generator.
 """
 function generate_dataset(
     bench::ExogenousDynamicBenchmark, environments::AbstractVector; target_policy, kwargs...
 )
+    isempty(environments) && return DataSample[]
     return reduce(vcat, (target_policy(env) for env in environments))
 end
 
@@ -114,7 +112,7 @@ function generate_dataset(
     bench::ExogenousDynamicBenchmark, n::Int; target_policy, seed=nothing, kwargs...
 )
     environments = generate_environments(bench, n; seed)
-    return generate_dataset(bench, environments; target_policy, seed, kwargs...)
+    return generate_dataset(bench, environments; target_policy, kwargs...)
 end
 
 """

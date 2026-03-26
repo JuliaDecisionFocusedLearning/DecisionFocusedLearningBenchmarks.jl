@@ -150,7 +150,8 @@ dataset = generate_dataset(bench, 50; rng=rng)
 gap = compute_gap(bench, dataset, model, maximizer)
 ```
 
-# Objective value for a single decision
+Objective value for a single decision:
+
 ```julia
 obj = objective_value(bench, sample, y)
 ```

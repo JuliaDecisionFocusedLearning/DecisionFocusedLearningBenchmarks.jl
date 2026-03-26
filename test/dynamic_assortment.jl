@@ -340,10 +340,6 @@ end
     # Test maximizer generation
     maximizer = generate_maximizer(b)
 
-    # Test integration with sample data
-    sample = generate_sample(b, MersenneTwister(42))
-    @test hasfield(typeof(sample), :context)
-
     environments = generate_environments(b, 3; seed=42)
 
     # Evaluate policy to get data samples

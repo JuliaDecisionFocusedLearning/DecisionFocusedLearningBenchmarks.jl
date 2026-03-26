@@ -9,9 +9,10 @@ problems to the benchmark suite or integrate their own domains.
 ## Type hierarchy
 
 ```
-AbstractStaticBenchmark
-└── AbstractStochasticBenchmark{exogenous}
-    └── AbstractDynamicBenchmark{exogenous}
+AbstractBenchmark
+├── AbstractStaticBenchmark
+├── AbstractStochasticBenchmark{exogenous}
+└── AbstractDynamicBenchmark{exogenous}
 ```
 
 | Type | Use case |
@@ -70,7 +71,7 @@ generate_maximizer(bench::MyBenchmark)
 
 ```julia
 generate_baseline_policies(bench::MyBenchmark) -> collection of callables
-is_minimization_problem(bench::MyBenchmark) -> Bool   # default: false (maximization)
+is_minimization_problem(bench::MyBenchmark) -> Bool   # default: true (minimization)
 objective_value(bench::MyBenchmark, sample::DataSample, y) -> Real
 compute_gap(bench::MyBenchmark, dataset, model, maximizer) -> Float64
 has_visualization(bench::MyBenchmark) -> Bool                            # default: false; return true when plot methods are implemented/available
@@ -80,7 +81,7 @@ plot_solution(bench::MyBenchmark, sample::DataSample; kwargs...)
 
 ---
 
-## `AbstractStochasticBenchmark{true}`: additional methods
+## `AbstractStochasticBenchmark{true}`
 
 For stochastic benchmarks with exogenous uncertainty, implement:
 
@@ -113,7 +114,7 @@ DataSample(; x=features, y=nothing,
 
 ---
 
-## `AbstractDynamicBenchmark`: additional methods
+## `AbstractDynamicBenchmark`
 
 Dynamic benchmarks extend stochastic ones with an environment-based rollout interface.
 

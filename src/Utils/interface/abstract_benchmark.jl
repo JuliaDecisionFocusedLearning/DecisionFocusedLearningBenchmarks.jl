@@ -13,8 +13,8 @@ Generate a single unlabeled [`DataSample`](@ref) (with `y=nothing`) for the benc
 function generate_instance(bench::AbstractBenchmark, rng::AbstractRNG; kwargs...)
     return error(
         "`generate_instance` is not implemented for $(typeof(bench)). " *
-        "Implement `generate_instance(::$(typeof(bench)), rng; kwargs...) -> DataSample` " *
-        "or override `generate_sample` directly.",
+        "Implement `generate_instance(::$(typeof(bench)), rng; kwargs...) -> DataSample`. " *
+        "For static benchmarks, you may also override `generate_sample` directly instead.",
     )
 end
 
@@ -48,9 +48,11 @@ end
     generate_baseline_policies(::AbstractBenchmark) -> NamedTuple or Tuple
 
 Return named baseline policies for the benchmark. Each policy is a callable.
+The calling convention matches the `target_policy` signature for the benchmark category:
 
-- For static/stochastic benchmarks: signature `(sample) -> DataSample`.
-- For dynamic benchmarks: signature `(env) -> Vector{DataSample}` (full trajectory).
+- **Static:** `(sample) -> DataSample`
+- **Stochastic:** `(ctx_sample, scenarios) -> Vector{DataSample}`
+- **Dynamic:** `(env) -> Vector{DataSample}` (full trajectory rollout)
 """
 function generate_baseline_policies end
 
@@ -79,9 +81,13 @@ function plot_solution end
 """
     objective_value(bench::AbstractBenchmark, sample::DataSample, y) -> Real
 
-Compute the objective value of given solution `y` for a specific benchmark.
-Must be implemented by each concrete benchmark type. For stochastic benchmarks,
-an additional `scenario` argument is required.
+Compute the objective value of solution `y` for the benchmark instance encoded in `sample`.
+Must be implemented by each concrete [`AbstractStaticBenchmark`](@ref).
+
+For stochastic benchmarks, implement the 4-arg form instead (see
+[`ExogenousStochasticBenchmark`](@ref)):
+
+    objective_value(bench, sample, y, scenario) -> Real
 """
 function objective_value end
 
