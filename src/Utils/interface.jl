@@ -83,7 +83,6 @@ function generate_dataset(
     rng=MersenneTwister(seed),
     kwargs...,
 )
-    Random.seed!(rng, seed)
     return [
         begin
             sample = generate_sample(bench, rng; kwargs...)
@@ -422,7 +421,6 @@ function generate_dataset(
     rng=MersenneTwister(seed),
     kwargs...,
 )
-    Random.seed!(rng, seed)
     return reduce(
         vcat,
         (
@@ -500,7 +498,6 @@ function generate_dataset(
     rng=MersenneTwister(seed),
     kwargs...,
 )
-    Random.seed!(rng, seed)
     return reduce(
         vcat, (generate_sample(saa, rng; target_policy, kwargs...) for _ in 1:nb_instances)
     )
@@ -561,6 +558,20 @@ meaning (whether uncertainty is independent of decisions).
 """
 abstract type AbstractDynamicBenchmark{exogenous} <: AbstractStochasticBenchmark{exogenous} end
 
+"""
+$TYPEDSIGNATURES
+
+Intercepts accidental calls to `generate_sample` on dynamic benchmarks and throws a
+descriptive error pointing at the correct entry point.
+"""
+function generate_sample(bench::AbstractDynamicBenchmark, rng; kwargs...)
+    return error(
+        "`generate_sample` is not supported for dynamic benchmarks ($(typeof(bench))). " *
+        "Use `generate_environments` and " *
+        "`generate_dataset(bench, environments; target_policy=...)` instead.",
+    )
+end
+
 "Alias for [`AbstractDynamicBenchmark`](@ref)`{true}`. Uncertainty is independent of decisions."
 const ExogenousDynamicBenchmark = AbstractDynamicBenchmark{true}
 
@@ -591,7 +602,6 @@ function generate_environments(
     rng=MersenneTwister(seed),
     kwargs...,
 )
-    Random.seed!(rng, seed)
     return [generate_environment(bench, rng; kwargs...) for _ in 1:n]
 end
 
@@ -612,14 +622,8 @@ to obtain standard baseline callables (e.g. the anticipative solver).
 - `rng`: random number generator.
 """
 function generate_dataset(
-    bench::ExogenousDynamicBenchmark,
-    environments::AbstractVector;
-    target_policy,
-    seed=nothing,
-    rng=MersenneTwister(seed),
-    kwargs...,
+    bench::ExogenousDynamicBenchmark, environments::AbstractVector; target_policy, kwargs...
 )
-    Random.seed!(rng, seed)
     return reduce(vcat, (target_policy(env) for env in environments))
 end
 

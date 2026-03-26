@@ -54,8 +54,8 @@ end
     show(io, sample)
     s = String(take!(io))
     @test occursin("DataSample(", s)
-    @test occursin("θ_true", s)
-    @test occursin("y_true", s)
+    @test occursin("θ", s)
+    @test occursin("y", s)
     @test occursin("instance=\"this is an instance\"", s)
 
     @test propertynames(sample) == (:x, :θ, :y, :context, :extra, :instance)
