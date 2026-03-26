@@ -21,9 +21,7 @@ Reconstruct a new sample with `y` overridden and delegate to the 2-arg
 function plot_solution(bench::AbstractBenchmark, sample::DataSample, y; kwargs...)
     return plot_solution(
         bench,
-        DataSample(;
-            sample.maximizer_kwargs..., x=sample.x, θ=sample.θ, y=y, extra=sample.extra
-        );
+        DataSample(; sample.context..., x=sample.x, θ=sample.θ, y=y, extra=sample.extra);
         kwargs...,
     )
 end

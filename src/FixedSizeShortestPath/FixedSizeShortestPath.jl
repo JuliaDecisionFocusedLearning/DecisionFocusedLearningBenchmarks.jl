@@ -55,9 +55,9 @@ function FixedSizeShortestPathBenchmark(;
 end
 
 function Utils.objective_value(
-    ::FixedSizeShortestPathBenchmark, θ::AbstractArray, y::AbstractArray
+    ::FixedSizeShortestPathBenchmark, sample::DataSample, y::AbstractArray
 )
-    return -dot(θ, y)
+    return -dot(sample.θ, y)
 end
 
 """

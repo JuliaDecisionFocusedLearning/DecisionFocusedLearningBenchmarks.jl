@@ -29,7 +29,7 @@
         y_true = sample.y
         @test size(x) == (96, 96, 3, 1)
         @test all(θ_true .<= 0)
-        @test isempty(sample.maximizer_kwargs)
+        @test isempty(sample.context)
 
         θ = model(x)
         @test size(θ) == size(θ_true)
@@ -39,19 +39,19 @@
         y_dijkstra = dijkstra_maximizer(θ)
         @test size(y_bellman) == size(y_true)
         @test size(y_dijkstra) == size(y_true)
-        @test objective_value(b, θ_true, y_bellman) ==
-            objective_value(b, θ_true, y_dijkstra)
+        @test objective_value(b, sample, y_bellman) ==
+            objective_value(b, sample, y_dijkstra)
 
         y_bellman_true = bellman_maximizer(θ_true)
         y_dijkstra_true = dijkstra_maximizer(θ_true)
-        @test objective_value(b, θ_true, y_true) ==
-            objective_value(b, θ_true, y_dijkstra_true)
+        @test objective_value(b, sample, y_true) ==
+            objective_value(b, sample, y_dijkstra_true)
         if i == 32 # TODO: bellman seems to be broken for some edge cases ?
-            @test_broken objective_value(b, θ_true, y_bellman_true) ==
-                objective_value(b, θ_true, y_dijkstra_true)
+            @test_broken objective_value(b, sample, y_bellman_true) ==
+                objective_value(b, sample, y_dijkstra_true)
         else
-            @test objective_value(b, θ_true, y_bellman_true) ==
-                objective_value(b, θ_true, y_dijkstra_true)
+            @test objective_value(b, sample, y_bellman_true) ==
+                objective_value(b, sample, y_dijkstra_true)
         end
     end
 end

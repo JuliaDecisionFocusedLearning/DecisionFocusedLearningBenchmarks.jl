@@ -11,7 +11,7 @@ function csa_saa_policy(ctx_sample, scenarios)
     y = one_hot_argmax(mean(scenarios))
     return [
         DataSample(;
-            ctx_sample.maximizer_kwargs...,
+            ctx_sample.context...,
             x=ctx_sample.x,
             y=y,
             extra=(; ctx_sample.extra..., scenarios),

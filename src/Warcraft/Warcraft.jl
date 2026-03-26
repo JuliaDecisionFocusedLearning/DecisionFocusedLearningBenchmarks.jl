@@ -24,8 +24,8 @@ Does not have any field.
 """
 struct WarcraftBenchmark <: AbstractBenchmark end
 
-function Utils.objective_value(::WarcraftBenchmark, θ::AbstractArray, y::AbstractArray)
-    return -dot(θ, y)
+function Utils.objective_value(::WarcraftBenchmark, sample::DataSample, y::AbstractArray)
+    return -dot(sample.θ, y)
 end
 
 """

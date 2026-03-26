@@ -79,6 +79,7 @@ export generate_statistical_model
 export generate_maximizer
 export generate_anticipative_solver, generate_parametric_anticipative_solver
 export is_exogenous, is_endogenous
+export is_minimization_problem
 
 export objective_value
 export has_visualization, plot_instance, plot_solution, plot_trajectory, animate_trajectory

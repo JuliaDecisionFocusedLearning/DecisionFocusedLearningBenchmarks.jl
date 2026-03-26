@@ -6,7 +6,7 @@ using Distributions: Uniform, Bernoulli
 using Flux: Chain, Dense
 using Ipopt: Ipopt
 using JuMP: @variable, @objective, @constraint, optimize!, value, Model, set_silent
-using LinearAlgebra: I
+using LinearAlgebra: I, dot
 using Random: Random, AbstractRNG, MersenneTwister
 
 """
@@ -36,6 +36,10 @@ struct PortfolioOptimizationBenchmark <: AbstractBenchmark
     L::Matrix{Float32}
     "useful for dataset generation"
     f::Vector{Float32}
+end
+
+function Utils.objective_value(::PortfolioOptimizationBenchmark, sample::DataSample, y)
+    return dot(sample.θ, y)
 end
 
 """

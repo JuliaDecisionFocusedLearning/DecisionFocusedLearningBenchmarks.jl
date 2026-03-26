@@ -4,11 +4,11 @@
     b = ContextualStochasticArgmaxBenchmark(; n=5, d=3, seed=0)
 
     # Unlabeled: N instances × M contexts × K scenarios = N*M*K samples
-    dataset = generate_dataset(b, 10; nb_contexts=2, nb_scenarios=4)
+    dataset = generate_dataset(b, 10; contexts_per_instance=2, nb_scenarios=4)
     @test length(dataset) == 80
     sample = first(dataset)
     @test size(sample.x) == (8,)                                     # n+d
-    @test sample.x ≈ vcat(sample.c_base, sample.extra.x_raw)         # features = [c_base; x_raw]
+    @test sample.x ≈ vcat(sample.c_base, sample.x_raw)              # features = [c_base; x_raw]
     @test sample.y === nothing
     @test sample.scenario isa AbstractVector{Float32} && length(sample.scenario) == 5
 
@@ -21,7 +21,7 @@
     policy =
         (ctx_sample, scenarios) -> [
             DataSample(;
-                ctx_sample.maximizer_kwargs...,
+                ctx_sample.context...,
                 x=ctx_sample.x,
                 y=maximizer(s),
                 extra=(; ctx_sample.extra..., scenario=s),
@@ -69,7 +69,7 @@ end
     maximizer = generate_maximizer(saa)
     labeled = map(dataset) do s
         y_saa = maximizer(mean(s.scenarios))
-        DataSample(; s.maximizer_kwargs..., x=s.x, y=y_saa, extra=s.extra)
+        DataSample(; s.context..., x=s.x, y=y_saa, extra=s.extra)
     end
     @test sum(first(labeled).y) ≈ 1.0
 
@@ -77,4 +77,14 @@ end
     model = generate_statistical_model(saa; seed=0)
     gap = compute_gap(saa, labeled, model, maximizer)
     @test isfinite(gap)
+end
+
+@testset "csa_objective_value_error" begin
+    using DecisionFocusedLearningBenchmarks
+
+    b = ContextualStochasticArgmaxBenchmark(; n=5, d=3, seed=0)
+    maximizer = generate_maximizer(b)
+    # Sample with neither :scenario nor :scenarios in extra → objective_value should error
+    s = DataSample(; x=randn(Float32, 8), y=maximizer(randn(Float32, 5)))
+    @test_throws Exception objective_value(b, s, s.y)
 end

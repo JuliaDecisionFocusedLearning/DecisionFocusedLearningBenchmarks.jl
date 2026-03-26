@@ -54,11 +54,11 @@ end
     show(io, sample)
     s = String(take!(io))
     @test occursin("DataSample(", s)
-    @test occursin("θ_true", s)
-    @test occursin("y_true", s)
+    @test occursin("θ", s)
+    @test occursin("y", s)
     @test occursin("instance=\"this is an instance\"", s)
 
-    @test propertynames(sample) == (:x, :θ, :y, :maximizer_kwargs, :extra, :instance)
+    @test propertynames(sample) == (:x, :θ, :y, :context, :extra, :instance)
 
     # Create a dataset for testing
     N = 5
@@ -81,7 +81,7 @@ end
     for i in 1:N
         @test dataset_zt[i].θ == dataset[i].θ
         @test dataset_zt[i].y == dataset[i].y
-        @test dataset_zt[i].maximizer_kwargs == dataset[i].maximizer_kwargs
+        @test dataset_zt[i].context == dataset[i].context
     end
 
     # Check that features are actually transformed
@@ -97,7 +97,7 @@ end
     for i in 1:N
         @test dataset_copy[i].θ == dataset[i].θ
         @test dataset_copy[i].y == dataset[i].y
-        @test dataset_copy[i].maximizer_kwargs == dataset[i].maximizer_kwargs
+        @test dataset_copy[i].context == dataset[i].context
     end
 
     # Test reconstruct (non-mutating)
@@ -109,7 +109,7 @@ end
         @test dataset_reconstructed[i].x ≈ dataset[i].x atol = 1e-10
         @test dataset_reconstructed[i].θ == dataset[i].θ
         @test dataset_reconstructed[i].y == dataset[i].y
-        @test dataset_reconstructed[i].maximizer_kwargs == dataset[i].maximizer_kwargs
+        @test dataset_reconstructed[i].context == dataset[i].context
     end
 
     # Test reconstruct! (mutating)
@@ -117,6 +117,16 @@ end
     for i in 1:N
         @test dataset_zt[i].x ≈ dataset[i].x atol = 1e-10
     end
+
+    # Error: overlap between context and extra
+    @test_throws Exception DataSample(x=[1], foo=1, extra=(; foo=2))
+    # Error: reserved name used as context kwarg
+    @test_throws Exception DataSample(x=[1], context=[2])
+    # Error: reserved name in extra
+    @test_throws Exception DataSample(x=[1], extra=(; x=[2]))
+
+    # is_minimization_problem: maximization benchmarks override to false
+    @test is_minimization_problem(ArgmaxBenchmark()) == false
 end
 
 @testset "Maximizers" begin

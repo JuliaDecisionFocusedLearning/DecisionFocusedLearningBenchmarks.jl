@@ -16,7 +16,7 @@
         @test size(x) == (p,)
         @test length(θ_true) == d
         @test length(y_true) == d
-        @test isempty(sample.maximizer_kwargs)
+        @test isempty(sample.context)
         @test all(y_true .== maximizer(θ_true))
 
         θ = model(x)
@@ -26,4 +26,7 @@
         @test length(y) == d
         @test sum(y) <= 1 + 1e-6
     end
+
+    gap = compute_gap(b, dataset[1:5], model, maximizer)
+    @test isfinite(gap)
 end

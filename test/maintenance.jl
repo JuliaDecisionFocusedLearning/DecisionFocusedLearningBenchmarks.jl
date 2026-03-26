@@ -197,7 +197,7 @@ end
 
     # Test integration with sample data
     sample = generate_sample(b, MersenneTwister(42))
-    @test hasfield(typeof(sample), :maximizer_kwargs)
+    @test hasfield(typeof(sample), :context)
 
     environments = generate_environments(b, 3; seed=42)
 

@@ -23,7 +23,7 @@
         @test size(x) == (n,)
         @test length(θ_true) == n
         @test length(y_true) == n
-        @test isempty(sample.maximizer_kwargs)
+        @test isempty(sample.context)
         @test all(y_true .== maximizer(θ_true))
 
         # Features and true weights should be equal
@@ -36,4 +36,8 @@
         @test length(y) == n
         @test sum(y) == k
     end
+
+    gap = compute_gap(b, dataset[1:5], model, maximizer)
+    @test isfinite(gap)
+    @test gap >= 0
 end
