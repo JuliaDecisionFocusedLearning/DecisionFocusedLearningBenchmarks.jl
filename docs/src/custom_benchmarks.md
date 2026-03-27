@@ -149,6 +149,15 @@ generate_baseline_policies(bench::MyDynamicBenchmark)
 # Each callable performs a full episode rollout and returns the trajectory.
 ```
 
+### Anticipative solver (optional)
+
+```julia
+generate_anticipative_solver(bench::MyDynamicBenchmark)
+# Returns a callable: (env; reset_env=true, kwargs...) -> Vector{DataSample}
+# reset_env=true  → reset environment before solving
+# reset_env=false → solve from current state
+```
+
 ### Optional visualization methods
 
 ```julia

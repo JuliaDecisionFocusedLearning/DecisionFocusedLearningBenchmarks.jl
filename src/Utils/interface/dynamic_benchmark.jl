@@ -18,6 +18,9 @@ of decisions) as in [`AbstractStochasticBenchmark`](@ref).
   can be drawn independently.
 - [`generate_baseline_policies`](@ref)`(bench)`: returns named baseline callables of
   signature `(env) -> Vector{DataSample}` (full trajectory rollout).
+- [`generate_anticipative_solver`](@ref)`(bench)`: returns a callable
+  `(env; reset_env=true, kwargs...) -> Vector{DataSample}` that runs the anticipative solver over a full episode. `reset_env=true` resets the environment
+  before solving. `reset_env=false` starts from the current state.
 - [`generate_dataset`](@ref)`(bench, environments; target_policy, ...)`: generates
   training-ready [`DataSample`](@ref)s by calling `target_policy(env)` for each environment.
   Requires `target_policy` as a mandatory keyword argument.
