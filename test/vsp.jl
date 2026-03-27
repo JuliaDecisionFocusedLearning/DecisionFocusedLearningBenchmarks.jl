@@ -7,6 +7,8 @@
 
     b = StochasticVehicleSchedulingBenchmark(; nb_tasks=25, nb_scenarios=10)
 
+    @test is_exogenous(b)
+
     N = 2
     K = 3
 

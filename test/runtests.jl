@@ -8,6 +8,7 @@ using Random
     end
 
     include("utils.jl")
+    include("interface.jl")
 
     include("argmax.jl")
     include("argmax_2d.jl")
