@@ -15,7 +15,7 @@ Basic benchmark problem with an argmax as the CO algorithm.
 # Fields
 $TYPEDFIELDS
 """
-struct ArgmaxBenchmark{E} <: AbstractBenchmark
+struct ArgmaxBenchmark{E} <: AbstractStaticBenchmark
     "instances dimension, total number of classes"
     instance_dim::Int
     "number of features"

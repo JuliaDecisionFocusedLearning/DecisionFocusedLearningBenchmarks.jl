@@ -15,7 +15,7 @@ Basic benchmark problem with ranking as the CO algorithm.
 # Fields
 $TYPEDFIELDS
 """
-struct RankingBenchmark{E} <: AbstractBenchmark
+struct RankingBenchmark{E} <: AbstractStaticBenchmark
     "instances dimension, total number of classes"
     instance_dim::Int
     "number of features"

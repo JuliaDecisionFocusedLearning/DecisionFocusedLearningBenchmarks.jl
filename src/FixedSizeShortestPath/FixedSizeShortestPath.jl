@@ -21,7 +21,7 @@ Data is generated using the process described in: <https://arxiv.org/abs/2307.13
 # Fields
 $TYPEDFIELDS
 """
-struct FixedSizeShortestPathBenchmark <: AbstractBenchmark
+struct FixedSizeShortestPathBenchmark <: AbstractStaticBenchmark
     "grid graph instance"
     graph::SimpleDiGraph{Int64}
     "grid size of graphs"

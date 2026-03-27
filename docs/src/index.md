@@ -43,7 +43,7 @@ Where:
 
 The package organizes benchmarks into three main categories based on their problem structure:
 
-### Static Benchmarks (`AbstractBenchmark`)
+### Static Benchmarks (`AbstractStaticBenchmark`)
 Single-stage optimization problems with no randomness involved:
 - [`ArgmaxBenchmark`](@ref): argmax toy problem
 - [`Argmax2DBenchmark`](@ref): 2D argmax toy problem

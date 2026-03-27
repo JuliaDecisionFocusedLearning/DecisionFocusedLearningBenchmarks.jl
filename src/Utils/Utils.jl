@@ -15,7 +15,10 @@ include("data_sample.jl")
 include("maximizers.jl")
 include("environment.jl")
 include("policy.jl")
-include("interface.jl")
+include("interface/abstract_benchmark.jl")
+include("interface/static_benchmark.jl")
+include("interface/stochastic_benchmark.jl")
+include("interface/dynamic_benchmark.jl")
 include("grid_graph.jl")
 include("misc.jl")
 include("model_builders.jl")
@@ -26,7 +29,8 @@ export TopKMaximizer, one_hot_argmax
 
 export AbstractEnvironment, get_seed, is_terminated, observe, reset!, step!
 
-export AbstractBenchmark, AbstractStochasticBenchmark, AbstractDynamicBenchmark
+export AbstractBenchmark,
+    AbstractStaticBenchmark, AbstractStochasticBenchmark, AbstractDynamicBenchmark
 export ExogenousStochasticBenchmark,
     EndogenousStochasticBenchmark, ExogenousDynamicBenchmark, EndogenousDynamicBenchmark
 export generate_instance, generate_sample, generate_dataset

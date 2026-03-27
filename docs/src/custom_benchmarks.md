@@ -10,13 +10,14 @@ problems to the benchmark suite or integrate their own domains.
 
 ```
 AbstractBenchmark
-└── AbstractStochasticBenchmark{exogenous}
-    └── AbstractDynamicBenchmark{exogenous}
+├── AbstractStaticBenchmark
+├── AbstractStochasticBenchmark{exogenous}
+└── AbstractDynamicBenchmark{exogenous}
 ```
 
 | Type | Use case |
 |------|----------|
-| `AbstractBenchmark` | Static, single-stage optimization (e.g. shortest path, portfolio) |
+| `AbstractStaticBenchmark` | Static, single-stage optimization (e.g. shortest path, portfolio) |
 | `AbstractStochasticBenchmark{true}` | Single-stage with exogenous uncertainty (scenarios drawn independently of decisions) |
 | `AbstractStochasticBenchmark{false}` | Single-stage with endogenous uncertainty |
 | `AbstractDynamicBenchmark{true}` | Multi-stage sequential decisions with exogenous uncertainty |
@@ -41,7 +42,7 @@ repeatedly and applies `target_policy` to each result.
 
 ---
 
-## `AbstractBenchmark`: required methods
+## `AbstractStaticBenchmark`: required methods
 
 ### Data generation (choose one strategy)
 
@@ -70,7 +71,7 @@ generate_maximizer(bench::MyBenchmark)
 
 ```julia
 generate_baseline_policies(bench::MyBenchmark) -> collection of callables
-is_minimization_problem(bench::MyBenchmark) -> Bool   # default: false (maximization)
+is_minimization_problem(bench::MyBenchmark) -> Bool   # default: true (minimization)
 objective_value(bench::MyBenchmark, sample::DataSample, y) -> Real
 compute_gap(bench::MyBenchmark, dataset, model, maximizer) -> Float64
 has_visualization(bench::MyBenchmark) -> Bool                            # default: false; return true when plot methods are implemented/available
@@ -80,7 +81,7 @@ plot_solution(bench::MyBenchmark, sample::DataSample; kwargs...)
 
 ---
 
-## `AbstractStochasticBenchmark{true}`: additional methods
+## `AbstractStochasticBenchmark{true}`
 
 For stochastic benchmarks with exogenous uncertainty, implement:
 
@@ -113,7 +114,7 @@ DataSample(; x=features, y=nothing,
 
 ---
 
-## `AbstractDynamicBenchmark`: additional methods
+## `AbstractDynamicBenchmark`
 
 Dynamic benchmarks extend stochastic ones with an environment-based rollout interface.
 
@@ -146,6 +147,15 @@ is_terminated(env::MyEnv) -> Bool                # True when episode has ended
 generate_baseline_policies(bench::MyDynamicBenchmark)
 # Returns named callables: (env) -> Vector{DataSample}
 # Each callable performs a full episode rollout and returns the trajectory.
+```
+
+### Anticipative solver (optional)
+
+```julia
+generate_anticipative_solver(bench::MyDynamicBenchmark)
+# Returns a callable: (env; reset_env=true, kwargs...) -> Vector{DataSample}
+# reset_env=true  → reset environment before solving
+# reset_env=false → solve from current state
 ```
 
 ### Optional visualization methods

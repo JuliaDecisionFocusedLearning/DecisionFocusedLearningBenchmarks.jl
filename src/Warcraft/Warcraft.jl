@@ -22,7 +22,7 @@ $TYPEDEF
 Benchmark for the Warcraft shortest path problem.
 Does not have any field.
 """
-struct WarcraftBenchmark <: AbstractBenchmark end
+struct WarcraftBenchmark <: AbstractStaticBenchmark end
 
 function Utils.objective_value(::WarcraftBenchmark, sample::DataSample, y::AbstractArray)
     return -dot(sample.θ, y)
@@ -36,9 +36,17 @@ Downloads and decompresses the Warcraft dataset the first time it is called.
 !!! warning
     `dataset_size` is capped at 10000, i.e. the number of available samples in the dataset files.
 """
-function Utils.generate_dataset(::WarcraftBenchmark, dataset_size::Int=10)
+function Utils.generate_dataset(
+    ::WarcraftBenchmark,
+    dataset_size::Int=10;
+    target_policy=nothing,
+    seed=nothing,
+    rng=MersenneTwister(seed),
+    kwargs...,
+)
     decompressed_path = datadep"warcraft/data"
-    return create_dataset(decompressed_path, dataset_size)
+    dataset = create_dataset(decompressed_path, dataset_size)
+    return isnothing(target_policy) ? dataset : target_policy.(dataset)
 end
 
 """
