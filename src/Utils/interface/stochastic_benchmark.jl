@@ -289,7 +289,11 @@ function generate_sample(
         generate_scenario(inner, rng; ctx.context...) for _ in 1:(saa.nb_scenarios)
     ]
     if isnothing(target_policy)
-        return [DataSample(; x=ctx.x, θ=ctx.θ, ctx.context..., extra=(; ctx.extra..., scenarios))]
+        return [
+            DataSample(;
+                x=ctx.x, θ=ctx.θ, ctx.context..., extra=(; ctx.extra..., scenarios)
+            ),
+        ]
     else
         return target_policy(ctx, scenarios)
     end
@@ -316,8 +320,7 @@ function generate_dataset(
 )
     nb_instances == 0 && return DataSample[]
     return reduce(
-        vcat,
-        (generate_sample(saa, rng; target_policy, kwargs...) for _ in 1:nb_instances),
+        vcat, (generate_sample(saa, rng; target_policy, kwargs...) for _ in 1:nb_instances)
     )
 end
 
