@@ -21,7 +21,7 @@ using Test
     @test length(dataset) == 10
     @test all(x -> length(x.x) == 5, dataset)
 
-    struct DummyDynamicBenchmark <: AbstractDynamicBenchmark end
+    struct DummyDynamicBenchmark <: AbstractDynamicBenchmark{true} end
     db = DummyDynamicBenchmark()
     @test_throws ErrorException compute_gap(db)
 end
