@@ -38,6 +38,31 @@
     @test first(d1).x ≈ first(d2).x
 end
 
+@testset "Parametric Anticipative Solver - ContextualStochasticArgmax" begin
+    using DecisionFocusedLearningBenchmarks
+
+    b = ContextualStochasticArgmaxBenchmark(; n=5, d=3, seed=0)
+    dataset = generate_dataset(b, 2; contexts_per_instance=1, nb_scenarios=1)
+    sample = first(dataset)
+    scenario = generate_scenario(b, StableRNG(0); sample.context...)
+
+    solver = generate_anticipative_solver(b)
+    parametric_solver = generate_parametric_anticipative_solver(b)
+
+    # 1. Zero perturbation equivalence
+    θ_zero = zeros(eltype(scenario), size(scenario))
+    @test parametric_solver(θ_zero, scenario; sample.context...) ==
+        solver(scenario; sample.context...)
+
+    # 2. Extreme perturbation
+    θ_extreme = zeros(eltype(scenario), size(scenario))
+    θ_extreme[1] = 1000.0  # Force dimension 1
+    y_extreme = parametric_solver(θ_extreme, scenario; sample.context...)
+
+    @test y_extreme[1] == 1.0     # Only dimension 1 should be active
+    @test sum(y_extreme) ≈ 1.0    # One-hot preserved
+end
+
 @testset "csa_saa_policy" begin
     using DecisionFocusedLearningBenchmarks
 
