@@ -115,6 +115,9 @@ $TYPEDSIGNATURES
 
 Return the anticipative solver: a callable `(scenario::VSPScenario; instance, kwargs...) -> y`
 that solves the 1-scenario stochastic VSP.
+
+# Keyword Arguments
+- `model_builder`: a function returning an empty `JuMP.Model` with a solver attached (defaults to `scip_model`).
 """
 function Utils.generate_anticipative_solver(
     ::StochasticVehicleSchedulingBenchmark; model_builder=scip_model
@@ -126,6 +129,9 @@ end
 $TYPEDSIGNATURES
 
 Return the parametric anticipative solver: a callable `(θ, scenario::VSPScenario; instance, kwargs...) -> y`.
+
+# Keyword Arguments
+- `model_builder`: a function returning an empty `JuMP.Model` with a solver attached (defaults to `scip_model`).
 """
 function Utils.generate_parametric_anticipative_solver(
     ::StochasticVehicleSchedulingBenchmark; model_builder=scip_model
