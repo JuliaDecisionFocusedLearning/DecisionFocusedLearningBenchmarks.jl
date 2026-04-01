@@ -118,6 +118,26 @@ end
 
 include("policies.jl")
 
+"""
+$TYPEDSIGNATURES
+
+Generates the anticipative solver for the benchmark.
+"""
+function Utils.generate_anticipative_solver(::ContextualStochasticArgmaxBenchmark)
+    return AnticipativeSolver()
+end
+
+"""
+$TYPEDSIGNATURES
+
+Generates the parametric anticipative solver for the benchmark.
+"""
+function Utils.generate_parametric_anticipative_solver(
+    ::ContextualStochasticArgmaxBenchmark
+)
+    return AnticipativeSolver()
+end
+
 export ContextualStochasticArgmaxBenchmark
 
 end
