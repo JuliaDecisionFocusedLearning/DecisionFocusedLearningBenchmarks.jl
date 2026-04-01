@@ -47,6 +47,7 @@ include("solution/algorithms/mip.jl")
 include("solution/algorithms/column_generation.jl")
 include("solution/algorithms/local_search.jl")
 include("solution/algorithms/deterministic_mip.jl")
+include("solution/algorithms/anticipative_solver.jl")
 
 include("maximizer.jl")
 
@@ -113,13 +114,29 @@ end
 $TYPEDSIGNATURES
 
 Return the anticipative solver: a callable `(scenario::VSPScenario; instance, kwargs...) -> y`
-that solves the 1-scenario stochastic VSP via column generation.
+that solves the 1-scenario stochastic VSP.
+
+# Keyword Arguments
+- `model_builder`: a function returning an empty `JuMP.Model` with a solver attached (defaults to `scip_model`).
 """
-function Utils.generate_anticipative_solver(::StochasticVehicleSchedulingBenchmark)
-    return (scenario::VSPScenario; instance::Instance, kwargs...) -> begin
-        stochastic_inst = build_stochastic_instance(instance, [scenario])
-        return column_generation_algorithm(stochastic_inst)
-    end
+function Utils.generate_anticipative_solver(
+    ::StochasticVehicleSchedulingBenchmark; model_builder=scip_model
+)
+    return AnticipativeSolver(; model_builder=model_builder)
+end
+
+"""
+$TYPEDSIGNATURES
+
+Return the parametric anticipative solver: a callable `(θ, scenario::VSPScenario; instance, kwargs...) -> y`.
+
+# Keyword Arguments
+- `model_builder`: a function returning an empty `JuMP.Model` with a solver attached (defaults to `scip_model`).
+"""
+function Utils.generate_parametric_anticipative_solver(
+    ::StochasticVehicleSchedulingBenchmark; model_builder=scip_model
+)
+    return AnticipativeSolver(; model_builder=model_builder)
 end
 
 """

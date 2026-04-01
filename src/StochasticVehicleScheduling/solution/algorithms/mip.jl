@@ -6,7 +6,11 @@ Quadratic constraints are linearized using Mc Cormick linearization.
 Note: If you have Gurobi, use `grb_model` as `model_builder` instead of `highs_model`.
 """
 function compact_linearized_mip(
-    instance::Instance; scenario_range=nothing, model_builder=scip_model, silent=true
+    instance::Instance,
+    θ=nothing;
+    scenario_range=nothing,
+    model_builder=scip_model,
+    silent=true,
 )
     (; graph, slacks, intrinsic_delays, vehicle_cost, delay_cost) = instance
     nb_nodes = nv(graph)
@@ -28,13 +32,17 @@ function compact_linearized_mip(
     @variable(model, R[v in nodes, ω in Ω] >= 0) # propagated delay of job v
     @variable(model, yR[u in nodes, v in nodes, ω in Ω; has_edge(graph, u, v)] >= 0) # yR[u, v] = y[u, v] * R[u, ω]
 
-    @objective(
-        model,
-        Min,
+    obj = (
         delay_cost * sum(sum(R[v, ω] for v in job_indices) for ω in Ω) / nb_scenarios # average total delay
-            +
-            vehicle_cost * sum(y[1, v] for v in job_indices) # nb_vehicles
+        +
+        vehicle_cost * sum(y[1, v] for v in job_indices) # nb_vehicles
     )
+    if !isnothing(θ)
+        @assert length(θ) == ne(graph)
+        obj += sum(θ[a] * y[src(edge), dst(edge)] for (a, edge) in enumerate(edges(graph)))
+    end
+
+    @objective(model, Min, obj)
 
     # Flow contraints
     @constraint(
@@ -103,7 +111,11 @@ Note: If you have Gurobi, use `grb_model` as `model_builder` instead of `highs_m
     You need to use a solver that supports quadratic constraints to use this method.
 """
 function compact_mip(
-    instance::Instance; scenario_range=nothing, model_builder=scip_model, silent=true
+    instance::Instance,
+    θ=nothing;
+    scenario_range=nothing,
+    model_builder=scip_model,
+    silent=true,
 )
     (; graph, slacks, intrinsic_delays, vehicle_cost, delay_cost) = instance
     nb_nodes = nv(graph)
@@ -124,13 +136,17 @@ function compact_mip(
     @variable(model, R[v in nodes, ω in Ω] >= 0) # propagated delay of job v
     @variable(model, yR[u in nodes, v in nodes, ω in Ω; has_edge(graph, u, v)] >= 0) # yR[u, v] = y[u, v] * R[u, ω]
 
-    @objective(
-        model,
-        Min,
+    obj = (
         delay_cost * sum(sum(R[v, ω] for v in job_indices) for ω in Ω) / nb_scenarios # average total delay
-            +
-            vehicle_cost * sum(y[1, v] for v in job_indices) # nb_vehicles
+        +
+        vehicle_cost * sum(y[1, v] for v in job_indices) # nb_vehicles
     )
+    if !isnothing(θ)
+        @assert length(θ) == ne(graph)
+        obj += sum(θ[a] * y[src(edge), dst(edge)] for (a, edge) in enumerate(edges(graph)))
+    end
+
+    @objective(model, Min, obj)
 
     # Flow contraints
     @constraint(
@@ -170,6 +186,8 @@ $TYPEDSIGNATURES
 SAA variant: build stochastic instance from `scenarios` then solve via
 [`compact_mip`](@ref).
 """
-function compact_mip(instance::Instance, scenarios::Vector{VSPScenario}; kwargs...)
-    return compact_mip(build_stochastic_instance(instance, scenarios); kwargs...)
+function compact_mip(
+    instance::Instance, scenarios::Vector{VSPScenario}, θ=nothing; kwargs...
+)
+    return compact_mip(build_stochastic_instance(instance, scenarios), θ; kwargs...)
 end

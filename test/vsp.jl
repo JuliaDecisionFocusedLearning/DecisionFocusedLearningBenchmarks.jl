@@ -95,4 +95,28 @@
     sample = unlabeled[1]
     y_anticipative = anticipative_solver(sample.scenario; sample.context...)
     @test y_anticipative isa BitVector
+
+    # Extract necessary dependencies
+    parametric_solver = generate_parametric_anticipative_solver(b)
+    nb_edges = ne(sample.instance.graph)
+
+    # 1. Zero perturbation equivalence
+    θ_zero = zeros(nb_edges)
+    y_zero = parametric_solver(θ_zero, sample.scenario; sample.context...)
+
+    @test y_zero == y_anticipative
+    @test y_zero isa BitVector
+
+    # 2. Perturbation execution
+    θ_random = randn(nb_edges)
+    y_rand = parametric_solver(θ_random, sample.scenario; sample.context...)
+
+    @test length(y_rand) == nb_edges
+    @test y_rand isa BitVector
+
+    # 3. High negative perturbation on edge forces activation (it's minimization)
+    θ_extreme = zeros(nb_edges)
+    θ_extreme[1] = -100000.0  # large negative pull for edge 1
+    y_extreme = parametric_solver(θ_extreme, sample.scenario; sample.context...)
+    @test y_extreme[1] == 1.0 # BitVector
 end
