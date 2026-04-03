@@ -81,13 +81,7 @@ function plot_solution(bench::FixedSizeShortestPathBenchmark, sample::DataSample
         end
     end
     Plots.scatter!(
-        p2,
-        path_xs,
-        path_ys;
-        color=:white,
-        markersize=6,
-        markerstrokewidth=0,
-        label=false,
+        p2, path_xs, path_ys; color=:white, markersize=6, markerstrokewidth=0, label=false
     )
 
     return Plots.plot(p1, p2; layout=(1, 2), size=(700, 320), kwargs...)

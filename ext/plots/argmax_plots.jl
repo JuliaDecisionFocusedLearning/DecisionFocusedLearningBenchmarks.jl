@@ -31,10 +31,7 @@ function plot_solution(::ArgmaxBenchmark, sample::DataSample; kwargs...)
     n = length(θ)
 
     p1 = Plots.heatmap(
-        x;
-        ylabel="Feature",
-        title="x (features, observable)",
-        xticks=(1:n, fill("", n)),
+        x; ylabel="Feature", title="x (features, observable)", xticks=(1:n, fill("", n))
     )
     θ_min, θ_max = extrema(θ)
     p2 = Plots.heatmap(

@@ -10,10 +10,11 @@ b = ContextualStochasticArgmaxBenchmark()
 # Stochastic benchmarks need a labeling policy to generate training targets.
 # We use the anticipative oracle: given realized scenario ξ it returns the best item.
 anticipative = generate_anticipative_solver(b)
-policy = (ctx, scenarios) -> [
-    DataSample(; ctx.context..., x=ctx.x, y=anticipative(ξ), extra=(; scenario=ξ))
-    for ξ in scenarios
-]
+policy =
+    (ctx, scenarios) -> [
+        DataSample(; ctx.context..., x=ctx.x, y=anticipative(ξ), extra=(; scenario=ξ))
+        for ξ in scenarios
+    ]
 dataset = generate_dataset(b, 20; target_policy=policy, seed=0)
 sample = first(dataset)
 

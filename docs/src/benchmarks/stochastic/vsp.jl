@@ -27,7 +27,9 @@ maximizer = generate_maximizer(b)         # deterministic VSP solver (HiGHS MIP)
 # Run the solver on predicted costs to see a route visualization:
 θ_pred = model(sample.x)
 y_pred = maximizer(θ_pred; sample.context...)
-plot_solution(b, DataSample(; sample.context..., x=sample.x, θ=θ_pred, y=y_pred, extra=sample.extra))
+plot_solution(
+    b, DataSample(; sample.context..., x=sample.x, θ=θ_pred, y=y_pred, extra=sample.extra)
+)
 
 # ---
 # ## Problem Description

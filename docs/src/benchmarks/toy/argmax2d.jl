@@ -35,7 +35,12 @@ maximizer = generate_maximizer(b)         # vertex maximizing θᵀv over polyto
 
 # A randomly initialized policy predicts an arbitrary cost direction:
 θ_pred = model(sample.x)
-plot_solution(b, DataSample(; sample.context..., x=sample.x, θ=θ_pred, y=maximizer(θ_pred; sample.context...)))
+plot_solution(
+    b,
+    DataSample(;
+        sample.context..., x=sample.x, θ=θ_pred, y=maximizer(θ_pred; sample.context...)
+    ),
+)
 
 # ---
 # ## Problem Description
