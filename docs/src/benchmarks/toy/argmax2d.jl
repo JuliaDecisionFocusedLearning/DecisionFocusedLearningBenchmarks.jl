@@ -1,6 +1,8 @@
 # # Argmax on a 2D polytope
-# Select the best vertex of a random 2D polytope: predict a 2D cost vector from features,
-# then return the vertex maximizing the dot product with it.
+# Select the best vertex of a random convex polytope in 2D: predict a cost direction θ from
+# features, then return the vertex `v` maximizing `θᵀv`. The 2D setting makes this benchmark
+# visual: the cost direction and selected vertex can be plotted directly, and the loss
+# landscape can be shown as a contour plot over the 2D θ space.
 
 using DecisionFocusedLearningBenchmarks
 using Plots

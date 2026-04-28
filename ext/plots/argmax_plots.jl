@@ -21,8 +21,8 @@ end
 """
 $TYPEDSIGNATURES
 
-Plot the features `x`, scores `θ`, and decision `y` in `sample` as heatmaps.
-All three share the same item axis (columns).
+Plot the features `x` as a heatmap, the scores `θ` as a bar chart, and the
+decision `y` as a one-hot heatmap. All three share the same item axis.
 """
 function plot_solution(::ArgmaxBenchmark, sample::DataSample; kwargs...)
     x = sample.x  # nb_features × n
@@ -33,14 +33,13 @@ function plot_solution(::ArgmaxBenchmark, sample::DataSample; kwargs...)
     p1 = Plots.heatmap(
         x; ylabel="Feature", title="x (features, observable)", xticks=(1:n, fill("", n))
     )
-    θ_min, θ_max = extrema(θ)
-    p2 = Plots.heatmap(
-        reshape(Float64.(θ), 1, n);
-        ylabel="θ",
-        title="θ: scores [$(round(θ_min; sigdigits=2)), $(round(θ_max; sigdigits=2))]",
-        yticks=false,
+    p2 = Plots.bar(
+        1:n,
+        Float64.(θ);
+        legend=false,
+        ylabel="Score",
+        title="θ (scores)",
         xticks=(1:n, fill("", n)),
-        colorbar=false,
     )
     p3 = Plots.heatmap(
         reshape(Float64.(y), 1, n);
@@ -53,6 +52,6 @@ function plot_solution(::ArgmaxBenchmark, sample::DataSample; kwargs...)
         colorbar=false,
     )
 
-    l = Plots.@layout [a{0.65h}; b{0.175h}; c{0.175h}]
-    return Plots.plot(p1, p2, p3; layout=l, size=(600, 420), kwargs...)
+    l = Plots.@layout [a{0.55h}; b{0.3h}; c{0.15h}]
+    return Plots.plot(p1, p2, p3; layout=l, size=(600, 480), kwargs...)
 end

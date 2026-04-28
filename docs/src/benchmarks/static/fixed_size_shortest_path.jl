@@ -7,6 +7,14 @@ using Plots
 
 b = FixedSizeShortestPathBenchmark()
 
+# ## Observable input
+#
+# At inference time the decision-maker observes the feature vector `x` and the fixed grid
+# structure (source top-left, sink bottom-right):
+dataset = generate_dataset(b, 50; seed=0)
+sample = first(dataset)
+plot_instance(b, sample)
+
 # ## A training sample
 #
 # Each sample is a labeled triple `(x, θ, y)`:
@@ -14,12 +22,7 @@ b = FixedSizeShortestPathBenchmark()
 # - `θ`: true edge costs (training supervision only, hidden at test time)
 # - `y`: path indicator vector (`y[e] = 1` if edge `e` is on the optimal path)
 #
-# True edge costs θ, averaged per vertex for display (hidden at test time — the model observes only `x`):
-dataset = generate_dataset(b, 50; seed=0)
-sample = first(dataset)
-plot_instance(b, sample)
-
-# Left: edge costs. Right: optimal path (white dots):
+# Top: feature vector x. Bottom left: edge costs θ. Bottom right: optimal path y (white dots):
 plot_solution(b, sample)
 
 # ## Untrained policy

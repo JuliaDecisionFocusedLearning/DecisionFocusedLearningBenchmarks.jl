@@ -7,24 +7,33 @@ using Plots
 
 b = StochasticVehicleSchedulingBenchmark()
 
-# ## A sample instance
+# ## Observable input
 #
-# Each instance is a city with task locations and scheduled times.
+# Each instance is a city with task locations and scheduled times. Task spatial positions
+# and scheduled times are observable at inference time.
 # `store_city=true` is required to visualize the map (not needed for training):
 sample = generate_dataset(b, 1; store_city=true)[1]
 plot_instance(b, sample)
 
-# ## Untrained policy
+# ## A training sample
 #
-# Each edge `(u, v)` has a 20-dimensional feature vector encoding schedule slack, travel
-# times, and timing — this is what the model receives as `x` per edge:
+# Each sample is a labeled triple `(x, θ, y)`:
+# - `x`: 20-dimensional feature vector per edge, encoding schedule slack and travel times
+# - `θ`: adjusted edge costs (training supervision only, hidden at test time)
+# - `y`: binary assignment (`y[(u,v)] = 1` if a vehicle travels edge `(u, v)` in the schedule)
+#
+# Unlike static benchmarks, `y` labels are not available by default and must be attached
+# via a `target_policy` (e.g., the deterministic VSP solver). Routes are visualized
+# in the untrained policy section below.
+
+# ## Untrained policy
+
 # A DFL policy chains two components: a statistical model predicting adjusted edge costs:
-model = generate_statistical_model(b)     # linear map: task features → adjusted edge costs
+model = generate_statistical_model(b)     # linear map: task features -> adjusted edge costs
 # and a maximizer solving the deterministic VSP given those costs:
 maximizer = generate_maximizer(b)         # deterministic VSP solver (HiGHS MIP)
 
-# The untrained model predicts random edge costs; the resulting schedule is arbitrary.
-# Run the solver on predicted costs to see a route visualization:
+# The untrained model predicts random edge costs; the resulting schedule is arbitrary:
 θ_pred = model(sample.x)
 y_pred = maximizer(θ_pred; sample.context...)
 plot_solution(
@@ -109,9 +118,9 @@ plot_solution(
 # costs ``\hat{c}`` that implicitly account for expected stochastic delays, while keeping
 # the fast deterministic solver at inference time.
 #
-# **Model:** `Chain(Dense(20 → 1; bias=false), vec)` — predicts one adjusted cost per edge.
+# **Model:** `Chain(Dense(20 -> 1; bias=false), vec)`: predicts one adjusted cost per edge.
 #
-# **Maximizer:** `StochasticVehicleSchedulingMaximizer` — HiGHS MIP solver on the
+# **Maximizer:** `StochasticVehicleSchedulingMaximizer`: HiGHS MIP solver on the
 # deterministic VSP instance.
 #
 # !!! note "Reference"

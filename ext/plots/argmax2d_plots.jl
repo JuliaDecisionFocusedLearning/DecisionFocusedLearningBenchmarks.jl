@@ -39,7 +39,7 @@ function _plot_y!(pl, y)
         color="#CB3C33",
         markersize=9,
         markershape=:square,
-        label=L"f(\theta)",
+        label=L"y = \mathrm{argmax}_v\; \theta^\top v",
     )
 end
 

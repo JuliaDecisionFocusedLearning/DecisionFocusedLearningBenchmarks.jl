@@ -7,19 +7,32 @@ using Plots
 
 b = DynamicVehicleSchedulingBenchmark()
 
-# ## A sample episode
+# ## Observable input
 #
-# Generate one environment and roll it out with the greedy policy (serves all pending
-# customers immediately):
+# Generate one environment and roll it out with the greedy policy to collect a sample
+# trajectory. At each step the agent observes customer positions, start times, and which
+# customers have reached their dispatch deadline:
 policies = generate_baseline_policies(b)
 env = generate_environments(b, 1)[1]
 _, trajectory = evaluate_policy!(policies.greedy, env)
 
-# One step: depot (green square), must-dispatch customers (red stars; deadline reached),
-# postponable customers (blue triangles), vehicle routes (lines):
+# The observable state at step 1: depot (green square), must-dispatch customers
+# (red stars; deadline reached), postponable customers (blue triangles):
+plot_instance(b, trajectory[1])
+
+# ## A training sample
+#
+# Each step in a trajectory is a labeled tuple `(x, θ, y)` plus state and reward:
+# - `x`: 27-dimensional feature vector per customer (schedule slack, travel times, reachability)
+# - `θ`: prize per customer (predicted by the model; used as optimization input)
+# - `y`: routes dispatched at this step
+# - `instance`: full DVSP state (customer positions, deadlines, current epoch)
+# - `reward`: negative travel cost incurred at this step
+#
+# One step with dispatched routes:
 plot_solution(b, trajectory[1])
 
-# Multiple steps side by side — customers accumulate and routes change over time:
+# Multiple steps side by side: customers accumulate and routes change over time:
 plot_trajectory(b, trajectory[1:min(3, length(trajectory))])
 
 # ## DFL pipeline components

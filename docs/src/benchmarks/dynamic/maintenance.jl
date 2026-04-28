@@ -7,15 +7,27 @@ using Plots
 
 b = MaintenanceBenchmark(; N=5, K=2)  # 5 components, maintain up to 2 per step
 
-# ## A sample episode
+# ## Observable input
 #
-# Generate one environment and roll out with the greedy policy (maintains the most degraded
-# components up to capacity):
+# Generate one environment and roll it out with the greedy policy to collect a sample
+# trajectory. At each step the agent observes the degradation level of each component:
 policies = generate_baseline_policies(b)
 env = generate_environments(b, 1)[1]
 _, trajectory = evaluate_policy!(policies.greedy, env)
 
-# One step: bars show degradation levels (1 = new, n = failed), green = maintained, red = failed:
+# The observable state at step 1: degradation levels per component (1 = new, n = failed):
+plot_instance(b, trajectory[1])
+
+# ## A training sample
+#
+# Each step in a trajectory is a labeled tuple `(x, θ, y)` plus state and reward:
+# - `x`: degradation state vector (values in `1..n` per component)
+# - `θ`: urgency score per component (predicted by model)
+# - `y`: which components are maintained at this step (BitVector of length N)
+# - `instance`: degradation state vector
+# - `reward`: negative cost (maintenance and failure costs) at this step
+#
+# One step with maintenance decisions (green = maintained, red = failed):
 plot_solution(b, trajectory[1])
 
 # A few steps side by side showing degradation evolving over time:
@@ -95,8 +107,8 @@ maximizer = generate_maximizer(b)         # top-K selection among components wit
 # \xrightarrow[\text{Maintenance}]{a_t}
 # ```
 #
-# **Model:** `Chain(Dense(N → N), Dense(N → N), vec)` — two-layer MLP predicting one
+# **Model:** `Chain(Dense(N → N), Dense(N → N), vec)`: two-layer MLP predicting one
 # urgency score per component.
 #
-# **Maximizer:** `TopKPositiveMaximizer(K)` — selects the ``K`` components with the
+# **Maximizer:** `TopKPositiveMaximizer(K)`: selects the ``K`` components with the
 # highest positive scores for maintenance.

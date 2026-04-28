@@ -1,14 +1,18 @@
 # # Contextual Stochastic Argmax
-# Select the best item when utilities are random but correlated with observable context:
-# a linear model must learn the mapping from context to expected utilities.
+# Select the best item from a set of `n` items with stochastic utilities: each scenario draws
+# a different utility vector, but utilities depend on observable context features. This is a
+# toy benchmark designed so that a linear model can exactly recover the optimal
+# context-to-utility mapping.
 
 using DecisionFocusedLearningBenchmarks
 using Plots
 
 b = ContextualStochasticArgmaxBenchmark()
 
-# Stochastic benchmarks need a labeling policy to generate training targets.
-# We use the anticipative oracle: given realized scenario ξ it returns the best item.
+# `generate_dataset` returns unlabeled samples (`y = nothing`) for this benchmark.
+# A `target_policy` must be provided to attach labels. Here we use the anticipative
+# oracle: it returns the item with the highest realized utility for each scenario,
+# giving one labeled sample per scenario per instance.
 anticipative = generate_anticipative_solver(b)
 policy =
     (ctx, scenarios) -> [
@@ -20,8 +24,8 @@ sample = first(dataset)
 
 # ## Observable input
 #
-# At inference time `c_base` and `x_raw` are known (not the realized utility vector ξ).
-# `plot_instance` shows the base utilities `c_base`:
+# At inference time the model observes `x = [c_base; x_raw]`. `plot_instance` shows both
+# components: base utilities `c_base` (left) and context features `x_raw` (right):
 plot_instance(b, sample)
 
 # ## A training sample

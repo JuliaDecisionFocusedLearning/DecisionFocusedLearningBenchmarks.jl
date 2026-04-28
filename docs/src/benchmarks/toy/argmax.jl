@@ -1,9 +1,8 @@
 # # Argmax
-# Select the single best item from a set of `n` items. Item scores are **hidden**, 
-# only a feature matrix `x` correlated with these scores is observable.
-# This problem can also be seen as a multiclass classification problem where
-# we use an argmax layer instead of a softmax. This is not very useful in practice, it's more a
-# minimalist toy problem to showcase DFL concepts in the simplest possible setting.
+# Select the single best item from a set of `n` items, given features correlated with hidden
+# item scores. This is the **simplest possible DFL setting**: equivalent to multiclass
+# classification, but with an argmax layer instead of softmax. Useful as a minimal sandbox for
+# understanding DFL concepts.
 
 using DecisionFocusedLearningBenchmarks
 using Plots

@@ -15,8 +15,8 @@ function plot_solution(
     ::WarcraftBenchmark,
     sample::DataSample;
     θ_true=sample.θ,
-    θ_title="Weights",
-    y_title="Path",
+    θ_title="Cell costs θ",
+    y_title="Path y",
     kwargs...,
 )
     x = sample.x

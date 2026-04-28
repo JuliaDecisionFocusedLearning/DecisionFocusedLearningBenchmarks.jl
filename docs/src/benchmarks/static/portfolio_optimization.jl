@@ -7,6 +7,13 @@ using Plots
 
 b = PortfolioOptimizationBenchmark()
 
+# ## Observable input
+#
+# At inference time the decision-maker observes only the contextual feature vector `x`:
+dataset = generate_dataset(b, 20; seed=0)
+sample = first(dataset)
+plot_instance(b, sample)
+
 # ## A training sample
 #
 # Each sample is a labeled triple `(x, θ, y)`:
@@ -14,12 +21,7 @@ b = PortfolioOptimizationBenchmark()
 # - `θ`: true expected asset returns (training supervision only, hidden at test time)
 # - `y`: optimal portfolio weights solving the Markowitz QP given `θ`
 #
-# True expected returns θ (hidden at test time — the model observes only the feature vector `x`):
-dataset = generate_dataset(b, 20; seed=0)
-sample = first(dataset)
-plot_instance(b, sample)
-
-# Left: true returns θ. Right: optimal portfolio weights y:
+# Top: feature vector x. Bottom left: true returns θ. Bottom right: optimal weights y:
 plot_solution(b, sample)
 
 # ## Untrained policy

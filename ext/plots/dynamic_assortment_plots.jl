@@ -10,7 +10,7 @@ function plot_instance(::DynamicAssortmentBenchmark, sample::DataSample; kwargs.
         legend=false,
         xlabel="Item",
         ylabel="Price",
-        title="Instance (item prices) — step $(length(sample.instance[2]) + 1)",
+        title="Instance (item prices): step $(length(sample.instance[2]) + 1)",
         color=:steelblue,
         kwargs...,
     )
@@ -27,7 +27,7 @@ function plot_solution(::DynamicAssortmentBenchmark, sample::DataSample; kwargs.
         legend=false,
         xlabel="Item",
         ylabel="Price",
-        title="Assortment (green = offered) — step $(length(sample.instance[2]) + 1)",
+        title="Assortment (green = offered): step $(length(sample.instance[2]) + 1)",
         color=colors,
         kwargs...,
     )

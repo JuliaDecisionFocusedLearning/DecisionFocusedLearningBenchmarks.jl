@@ -5,21 +5,23 @@
 using DecisionFocusedLearningBenchmarks
 using Plots
 
-b = SubsetSelectionBenchmark()
+b = SubsetSelectionBenchmark(; identity_mapping=false)
+
+# ## Observable input
+#
+# At inference time the decision-maker observes only the feature vector `x`:
+dataset = generate_dataset(b, 50; seed=0)
+sample = first(dataset)
+plot_instance(b, sample)
 
 # ## A training sample
 #
 # Each sample is a labeled triple `(x, θ, y)`:
 # - `x`: item feature vector (observable at train and test time)
-# - `θ`: true item values (equal to `x` by default; otherwise derived via a hidden encoder)
+# - `θ`: true item values, derived from `x` via a hidden encoder (training supervision only)
 # - `y`: selection indicator (`y[i] = 1` for the `k` highest-value items, 0 otherwise)
 #
-# True item values θ (hidden at test time — the model observes only the feature vector `x`):
-dataset = generate_dataset(b, 50; seed=0)
-sample = first(dataset)
-plot_instance(b, sample)
-
-# The same values, with the `k` selected items highlighted in green:
+# The full training triple (features, hidden values, and selection):
 plot_solution(b, sample)
 
 # ## Untrained policy

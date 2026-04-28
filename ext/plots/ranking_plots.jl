@@ -1,35 +1,46 @@
 has_visualization(::RankingBenchmark) = true
 
 function plot_instance(::RankingBenchmark, sample::DataSample; kwargs...)
-    θ = sample.θ
-    n = length(θ)
-    return Plots.bar(
-        1:n,
-        θ;
-        legend=false,
+    x = sample.x  # nb_features × n
+    n = size(x, 2)
+    return Plots.heatmap(
+        x;
         xlabel="Item",
-        ylabel="Cost",
-        title="Instance (costs θ)",
-        color=:steelblue,
+        ylabel="Feature",
+        title="Features x (observable input)",
+        xticks=1:n,
         kwargs...,
     )
 end
 
 function plot_solution(::RankingBenchmark, sample::DataSample; kwargs...)
-    θ = sample.θ
+    x = sample.x  # nb_features × n
+    θ = sample.θ  # length n
     y = sample.y  # y[i] = rank of item i (1 = best)
     n = length(θ)
-    # Color by rank: rank 1 (best) in dark blue, rank n (worst) in light
-    palette = Plots.cgrad(:Blues, n; rev=true, categorical=true)
-    colors = [palette[y[i]] for i in 1:n]
-    return Plots.bar(
+
+    p1 = Plots.heatmap(
+        x; ylabel="Feature", title="x (features, observable)", xticks=(1:n, fill("", n))
+    )
+    p2 = Plots.bar(
         1:n,
-        θ;
+        Float64.(θ);
+        legend=false,
+        ylabel="Cost",
+        title="θ (costs)",
+        xticks=(1:n, fill("", n)),
+    )
+    p3 = Plots.bar(
+        1:n,
+        Float64.(y);
         legend=false,
         xlabel="Item",
-        ylabel="Cost",
-        title="Solution (color = rank, dark = best)",
-        color=colors,
-        kwargs...,
+        ylabel="Rank",
+        title="y (rank, lower = better)",
+        color=:steelblue,
+        xticks=1:n,
     )
+
+    l = Plots.@layout [a{0.55h}; b{0.225h}; c{0.225h}]
+    return Plots.plot(p1, p2, p3; layout=l, size=(600, 500), kwargs...)
 end

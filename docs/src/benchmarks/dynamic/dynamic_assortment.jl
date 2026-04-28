@@ -7,15 +7,28 @@ using Plots
 
 b = DynamicAssortmentBenchmark()
 
-# ## A sample episode
+# ## Observable input
 #
-# Generate one environment and roll out with the greedy policy (offers the K highest-priced
-# items at every step):
+# Generate one environment and roll it out with the greedy policy to collect a sample
+# trajectory. At each step the agent observes item prices, hype levels, saturation, and
+# purchase history:
 policies = generate_baseline_policies(b)
 env = generate_environments(b, 1)[1]
 _, trajectory = evaluate_policy!(policies.greedy, env)
 
-# One step: bar chart of item prices, green = items in the offered assortment:
+# The observable state at step 1: item prices (fixed across steps):
+plot_instance(b, trajectory[1])
+
+# ## A training sample
+#
+# Each step in a trajectory is a labeled tuple `(x, θ, y)` plus state and reward:
+# - `x`: `(d+8) × N` feature matrix per step (prices, hype, saturation, history, time)
+# - `θ`: predicted utility score per item
+# - `y`: offered assortment at this step (BitVector of length N, true = offered)
+# - `instance`: full state tuple (features matrix, purchase history)
+# - `reward`: price of the purchased item (0 if no purchase)
+#
+# One step with the offered assortment highlighted (green = offered):
 plot_solution(b, trajectory[1])
 
 # A few steps side by side (prices are fixed; assortment composition changes over time):
@@ -103,10 +116,10 @@ maximizer = generate_maximizer(b)         # top-K selection by predicted utility
 # \xrightarrow[\text{Assortment}]{a_t}
 # ```
 #
-# **Model:** `Chain(Dense(d+8 → 5), Dense(5 → 1), vec)` — predicts one utility score
+# **Model:** `Chain(Dense(d+8 → 5), Dense(5 → 1), vec)`: predicts one utility score
 # per item from the current state features.
 #
-# **Maximizer:** `TopKMaximizer(K)` — selects the top ``K`` items by predicted utility.
+# **Maximizer:** `TopKMaximizer(K)`: selects the top ``K`` items by predicted utility.
 #
 # !!! note "Reference"
 #     [Structured Reinforcement Learning for Combinatorial Decision-Making](https://arxiv.org/abs/2505.19053)

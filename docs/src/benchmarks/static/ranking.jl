@@ -1,25 +1,29 @@
 # # Ranking
-# Rank a set of items by predicted cost: the model must learn to sort items by their
-# hidden scores from observable features alone.
+# Rank a set of items. Each item has a hidden score, correlated with observable input
+# features. The goal is to learn to sort items by their hidden scores, using observable
+# features alone.
 
 using DecisionFocusedLearningBenchmarks
 using Plots
 
 b = RankingBenchmark()
 
+# ## Observable input
+#
+# At inference time the decision-maker observes only the feature matrix `x`
+# (rows = features, columns = items):
+dataset = generate_dataset(b, 50; seed=0)
+sample = first(dataset)
+plot_instance(b, sample)
+
 # ## A training sample
 #
 # Each sample is a labeled triple `(x, θ, y)`:
 # - `x`: feature matrix (rows = features, columns = items; observable at train and test time)
 # - `θ`: true item costs (training supervision only, hidden at test time)
-# - `y`: ordinal ranks derived from `θ` (`y[i] = 1` means item `i` has the highest cost)
+# - `y`: ordinal ranks derived from `θ` (`y[i] = 1` means item `i` has the lowest cost)
 #
-# True costs θ (hidden at test time — the model observes only the feature matrix `x`):
-dataset = generate_dataset(b, 50; seed=0)
-sample = first(dataset)
-plot_instance(b, sample)
-
-# The same costs, colored by rank (dark blue = best, light = worst):
+# The full training triple (features, true costs, and derived ranking):
 plot_solution(b, sample)
 
 # ## Untrained policy
