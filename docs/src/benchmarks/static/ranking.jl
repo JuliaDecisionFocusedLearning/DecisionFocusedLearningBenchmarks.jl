@@ -68,6 +68,3 @@ compute_gap(b, dataset, model, maximizer)
 # **Model:** `Chain(Dense(nb_features → 1; bias=false), vec)` — predicts one score per item.
 #
 # **Maximizer:** `ranking(θ)` — returns a vector of ordinal ranks via `invperm(sortperm(θ))`.
-#
-# !!! note "Reference"
-#     TODO: add original reference.

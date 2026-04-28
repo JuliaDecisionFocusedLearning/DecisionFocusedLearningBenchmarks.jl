@@ -112,4 +112,7 @@ maximizer = generate_maximizer(b)         # prize-collecting VSP solver
 # - Full features: `Dense(27 → 1)` applied independently per customer
 #
 # !!! note "Reference"
-#     TODO: add original reference.
+#     This problem is a simplified version of the
+#     [EURO-NeurIPS challenge 2022](https://euro-neurips-vrp-2022.challenges.ortec.com/),
+#     and solved using DFL in [Combinatorial Optimization enriched Machine Learning to solve the
+#     Dynamic Vehicle Routing Problem with Time Windows](https://arxiv.org/abs/2304.00789).

@@ -53,8 +53,9 @@ Single-stage optimization problems with no randomness involved:
 - [`FixedSizeShortestPathBenchmark`](@ref): find shortest path on grid graphs with fixed size
 - [`WarcraftBenchmark`](@ref): shortest path on image maps
 
-### Stochastic Benchmarks (`AbstractStochasticBenchmark`)  
+### Stochastic Benchmarks (`AbstractStochasticBenchmark`)
 Single-stage optimization problems under uncertainty:
+- [`ContextualStochasticArgmaxBenchmark`](@ref): contextual argmax with stochastic utilities
 - [`StochasticVehicleSchedulingBenchmark`](@ref): stochastic vehicle scheduling under delay uncertainty
 
 ### Dynamic Benchmarks (`AbstractDynamicBenchmark`)

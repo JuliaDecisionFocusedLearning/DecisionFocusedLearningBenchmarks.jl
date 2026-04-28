@@ -100,6 +100,3 @@ maximizer = generate_maximizer(b)         # top-K selection among components wit
 #
 # **Maximizer:** `TopKPositiveMaximizer(K)` — selects the ``K`` components with the
 # highest positive scores for maintenance.
-#
-# !!! note "Reference"
-#     TODO: add original reference.

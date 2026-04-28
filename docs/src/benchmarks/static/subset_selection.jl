@@ -74,4 +74,4 @@ compute_gap(b, dataset, model, maximizer)
 # highest-scoring positions.
 #
 # !!! note "Reference"
-#     TODO: add original reference.
+#     Setting from [Decision-Focused Learning: Foundations, State of the Art, Benchmark and Future Opportunities](https://arxiv.org/abs/2307.13565)

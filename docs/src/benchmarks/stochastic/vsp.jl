@@ -115,4 +115,4 @@ plot_solution(
 # deterministic VSP instance.
 #
 # !!! note "Reference"
-#     TODO: add original reference.
+#     [Learning to Approximate Industrial Problems by Operations Research Classic Problems](https://hal.science/hal-02396091/document)
