@@ -121,6 +121,16 @@ include("policies.jl")
 """
 $TYPEDSIGNATURES
 
+Return the named baseline policies for [`ContextualStochasticArgmaxBenchmark`](@ref).
+Each policy has signature `(ctx_sample, scenarios) -> Vector{DataSample}`.
+"""
+function Utils.generate_baseline_policies(::ContextualStochasticArgmaxBenchmark)
+    return (; saa=Policy("SAA", "argmax of mean scenarios", csa_saa_policy))
+end
+
+"""
+$TYPEDSIGNATURES
+
 Generates the anticipative solver for the benchmark.
 """
 function Utils.generate_anticipative_solver(::ContextualStochasticArgmaxBenchmark)

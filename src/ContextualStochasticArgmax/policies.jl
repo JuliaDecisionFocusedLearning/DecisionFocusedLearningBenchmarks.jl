@@ -18,16 +18,6 @@ function csa_saa_policy(ctx_sample, scenarios)
 end
 
 """
-$TYPEDSIGNATURES
-
-Return the named baseline policies for [`ContextualStochasticArgmaxBenchmark`](@ref).
-Each policy has signature `(ctx_sample, scenarios) -> Vector{DataSample}`.
-"""
-function Utils.generate_baseline_policies(::ContextualStochasticArgmaxBenchmark)
-    return (; saa=Policy("SAA", "argmax of mean scenarios", csa_saa_policy))
-end
-
-"""
 $TYPEDEF
 
 A policy that acts with perfect information about the future scenario.
