@@ -59,13 +59,23 @@ function plot_solution(::ContextualStochasticArgmaxBenchmark, sample::DataSample
     end
 
     p1 = Plots.bar(
-        1:n, u; legend=false, xlabel="Item", ylabel="Utility",
-        title=u_title, color=:steelblue,
+        1:n,
+        u;
+        legend=false,
+        xlabel="Item",
+        ylabel="Utility",
+        title=u_title,
+        color=:steelblue,
     )
 
     colors = [y[i] > 0 ? :firebrick : :steelblue for i in 1:n]
     p2 = Plots.bar(
-        1:n, u; color=colors, legend=false, xlabel="Item", ylabel="Utility",
+        1:n,
+        u;
+        color=colors,
+        legend=false,
+        xlabel="Item",
+        ylabel="Utility",
         title="Selected item (red)",
     )
 
