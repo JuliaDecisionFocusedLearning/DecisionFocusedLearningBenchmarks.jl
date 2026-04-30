@@ -356,3 +356,23 @@ end
     @test length(y) == DAP.item_count(b)
     @test sum(y) == DAP.assortment_size(b)
 end
+
+@testset "DynamicAssortment - Plots" begin
+    using DecisionFocusedLearningBenchmarks
+    using Plots
+
+    b = DynamicAssortmentBenchmark(; N=4, d=2, K=2, max_steps=5, exogenous=true)
+    envs = generate_environments(b, 2; seed=0)
+    policies = generate_baseline_policies(b)
+    _, traj = evaluate_policy!(policies[1], envs)
+
+    @test has_visualization(b)
+    fig1 = plot_instance(b, traj[1])
+    @test fig1 isa Plots.Plot
+    fig2 = plot_solution(b, traj[1])
+    @test fig2 isa Plots.Plot
+    fig3 = plot_solution(b, traj[1], traj[2].y)
+    @test fig3 isa Plots.Plot
+    fig4 = plot_trajectory(b, traj)
+    @test fig4 isa Plots.Plot
+end
