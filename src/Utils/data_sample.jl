@@ -82,6 +82,16 @@ function DataSample(; x=nothing, θ=nothing, y=nothing, extra=NamedTuple(), kwar
     return DataSample(x, θ, y, context, extra)
 end
 
+
+"""
+$TYPEDSIGNATURES
+
+Copy constructor for `DataSample` with optional overrides.
+"""
+function DataSample(sample::DataSample; x=sample.x, θ=sample.θ, y=sample.y, extra=sample.extra, context=sample.context, kwargs...)
+    return DataSample(x=x, θ=θ, y=y, extra=extra, context..., kwargs...)
+end
+
 """
 $TYPEDSIGNATURES
 

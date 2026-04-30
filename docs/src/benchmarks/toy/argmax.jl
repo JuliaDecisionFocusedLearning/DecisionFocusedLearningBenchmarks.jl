@@ -8,7 +8,7 @@ using DecisionFocusedLearningBenchmarks
 using Plots
 using Statistics
 
-b = ArgmaxBenchmark(; instance_dim=10, nb_features=5, seed=0)
+b = ArgmaxBenchmark(; seed=0)
 
 # ## Observable input
 #
@@ -39,7 +39,7 @@ maximizer = generate_maximizer(b)         # one-hot argmax
 θ_pred = model(sample.x)
 y_pred = maximizer(θ_pred)
 #
-plot_solution(b, DataSample(; x=sample.x, θ=θ_pred, y=y_pred, sample.context...))
+plot_solution(b, DataSample(sample; θ=θ_pred, y=y_pred))
 
 # The goal of training is to find parameters that maximize accuracy.
 # Current accuracy on the dataset:
