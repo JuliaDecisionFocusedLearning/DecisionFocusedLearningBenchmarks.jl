@@ -51,14 +51,14 @@ function plot_instance(::Argmax2DBenchmark, sample::DataSample; kwargs...)
     return pl
 end
 
-function plot_solution(::Argmax2DBenchmark, sample::DataSample; kwargs...)
+function plot_sample(::Argmax2DBenchmark, sample::DataSample; kwargs...)
     pl = _init_plot(; kwargs...)
     _plot_polytope!(pl, sample.instance)
     _plot_objective!(pl, sample.θ)
     return _plot_y!(pl, sample.y)
 end
 
-function plot_solution(::Argmax2DBenchmark, sample::DataSample, y; θ=sample.θ, kwargs...)
+function plot_sample(::Argmax2DBenchmark, sample::DataSample, y; θ=sample.θ, kwargs...)
     pl = _init_plot(; kwargs...)
     _plot_polytope!(pl, sample.instance)
     _plot_objective!(pl, θ)

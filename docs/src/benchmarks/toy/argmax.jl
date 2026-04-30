@@ -26,7 +26,7 @@ plot_instance(b, sample)
 # - `y`: optimal one-hot decision derived from `θ`
 #
 # The full training triple (features, true scores, and optimal decision):
-plot_solution(b, sample)
+plot_sample(b, sample)
 
 # ## Untrained policy
 
@@ -39,7 +39,7 @@ maximizer = generate_maximizer(b)         # one-hot argmax
 θ_pred = model(sample.x)
 y_pred = maximizer(θ_pred)
 #
-plot_solution(b, DataSample(sample; θ=θ_pred, y=y_pred))
+plot_sample(b, DataSample(sample; θ=θ_pred, y=y_pred))
 
 # The goal of training is to find parameters that maximize accuracy.
 # Current accuracy on the dataset:

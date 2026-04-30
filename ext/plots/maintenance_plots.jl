@@ -18,7 +18,7 @@ function plot_instance(bench::MaintenanceBenchmark, sample::DataSample; kwargs..
     )
 end
 
-function plot_solution(bench::MaintenanceBenchmark, sample::DataSample; kwargs...)
+function plot_sample(bench::MaintenanceBenchmark, sample::DataSample; kwargs...)
     state = sample.instance
     y = sample.y  # BitVector, maintained components
     N = length(state)
@@ -47,7 +47,7 @@ function plot_trajectory(
     n = min(length(trajectory), max_steps)
     rows = ceil(Int, n / cols)
     steps = round.(Int, range(1, length(trajectory); length=n))
-    plots = [plot_solution(bench, trajectory[t]) for t in steps]
+    plots = [plot_sample(bench, trajectory[t]) for t in steps]
     return Plots.plot(
         plots...; layout=(rows, cols), size=(cols * 300, rows * 250), kwargs...
     )

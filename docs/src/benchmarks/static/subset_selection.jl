@@ -22,7 +22,7 @@ plot_instance(b, sample)
 # - `y`: selection indicator (`y[i] = 1` for the `k` highest-value items, 0 otherwise)
 #
 # The full training triple (features, hidden values, and selection):
-plot_solution(b, sample)
+plot_sample(b, sample)
 
 # ## Untrained policy
 
@@ -33,7 +33,7 @@ maximizer = generate_maximizer(b)         # top-k selection
 
 # A randomly initialized policy selects items with no relation to their true values:
 θ_pred = model(sample.x)
-plot_solution(b, DataSample(; sample.context..., x=sample.x, θ=θ_pred, y=maximizer(θ_pred)))
+plot_sample(b, DataSample(; sample.context..., x=sample.x, θ=θ_pred, y=maximizer(θ_pred)))
 
 # Optimality gap on the dataset (0 = optimal, higher is worse):
 compute_gap(b, dataset, model, maximizer)
@@ -65,7 +65,7 @@ compute_gap(b, dataset, model, maximizer)
 # ```math
 # \xrightarrow[\text{Features}]{x}
 # \fbox{Linear model}
-# \xrightarrow{\hat{\theta}}
+# \xrightarrow{\theta}
 # \fbox{top-k}
 # \xrightarrow{y}
 # ```

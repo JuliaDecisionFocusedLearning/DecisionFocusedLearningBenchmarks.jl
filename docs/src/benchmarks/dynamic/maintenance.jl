@@ -28,7 +28,7 @@ plot_instance(b, trajectory[1])
 # - `reward`: negative cost (maintenance and failure costs) at this step
 #
 # One step with maintenance decisions (green = maintained, red = failed):
-plot_solution(b, trajectory[1])
+plot_sample(b, trajectory[1])
 
 # A few steps side by side showing degradation evolving over time:
 plot_trajectory(b, trajectory[1:min(4, length(trajectory))])

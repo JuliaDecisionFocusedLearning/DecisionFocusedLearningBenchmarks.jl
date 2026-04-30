@@ -238,9 +238,9 @@ end
     @test has_visualization(b)
     fig1 = plot_instance(b, traj[1])
     @test fig1 isa Plots.Plot
-    fig2 = plot_solution(b, traj[1])
+    fig2 = plot_sample(b, traj[1])
     @test fig2 isa Plots.Plot
-    fig3 = plot_solution(b, traj[1], traj[2].y)
+    fig3 = plot_sample(b, traj[1], traj[2].y)
     @test fig3 isa Plots.Plot
     fig4 = plot_trajectory(b, traj)
     @test fig4 isa Plots.Plot

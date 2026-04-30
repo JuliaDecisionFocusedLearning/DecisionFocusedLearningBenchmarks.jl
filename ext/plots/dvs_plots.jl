@@ -200,7 +200,7 @@ function plot_instance(
     return plot_state(sample.instance; kwargs...)
 end
 
-function plot_solution(
+function plot_sample(
     bench::DynamicVehicleSchedulingBenchmark, sample::DataSample; kwargs...
 )
     return plot_routes(sample.instance, sample.y; reward=sample.reward, kwargs...)

@@ -26,7 +26,7 @@ plot_instance(b, sample)
 # - `instance` (in `context`): polytope vertices (observable problem structure)
 #
 # The full training triple (polytope, cost direction θ, optimal vertex y):
-plot_solution(b, sample)
+plot_sample(b, sample)
 
 # ## Untrained policy
 
@@ -38,7 +38,7 @@ maximizer = generate_maximizer(b)         # vertex maximizing θᵀv over polyto
 # A randomly initialized policy predicts an arbitrary cost direction:
 θ_pred = model(sample.x)
 y_pred = maximizer(θ_pred; sample.context...)
-plot_solution(b, DataSample(sample; θ=θ_pred, y=y_pred))
+plot_sample(b, DataSample(sample; θ=θ_pred, y=y_pred))
 
 # ---
 # ## Problem Description

@@ -13,7 +13,7 @@ function plot_instance(::RankingBenchmark, sample::DataSample; kwargs...)
     )
 end
 
-function plot_solution(::RankingBenchmark, sample::DataSample; kwargs...)
+function plot_sample(::RankingBenchmark, sample::DataSample; kwargs...)
     x = sample.x  # nb_features × n
     θ = sample.θ  # length n
     y = sample.y  # y[i] = rank of item i (1 = best)

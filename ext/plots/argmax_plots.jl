@@ -24,7 +24,7 @@ $TYPEDSIGNATURES
 Plot the features `x` as a heatmap, the scores `θ` as a bar chart, and the
 decision `y` as a one-hot heatmap. All three share the same item axis.
 """
-function plot_solution(::ArgmaxBenchmark, sample::DataSample; kwargs...)
+function plot_sample(::ArgmaxBenchmark, sample::DataSample; kwargs...)
     x = sample.x  # nb_features × n
     θ = sample.θ  # length n
     y = sample.y  # one-hot, length n

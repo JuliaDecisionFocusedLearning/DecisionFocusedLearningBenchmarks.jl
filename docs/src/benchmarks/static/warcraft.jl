@@ -21,7 +21,7 @@ plot_instance(b, sample)
 # - `y`: optimal path indicator (`y[i,j] = 1` if cell `(i,j)` is on the path)
 #
 # Left: terrain image. Middle: true costs θ. Right: optimal path y:
-plot_solution(b, sample)
+plot_sample(b, sample)
 
 # ## Untrained policy
 
@@ -32,7 +32,7 @@ maximizer = generate_maximizer(b)         # Dijkstra shortest path on the 12×12
 
 # An untrained CNN produces a near-uniform cost map, yielding a near-straight path:
 θ_pred = model(sample.x)
-plot_solution(b, DataSample(; sample.context..., x=sample.x, θ=θ_pred, y=maximizer(θ_pred)))
+plot_sample(b, DataSample(; sample.context..., x=sample.x, θ=θ_pred, y=maximizer(θ_pred)))
 
 # Optimality gap on this sample (0 = optimal, higher is worse):
 compute_gap(b, [sample], model, maximizer)
@@ -71,7 +71,7 @@ compute_gap(b, [sample], model, maximizer)
 # ```math
 # \xrightarrow[\text{Terrain image}]{x \in \mathbb{R}^{12 \times 12 \times 3}}
 # \fbox{ResNet18 CNN}
-# \xrightarrow[\text{Cell costs}]{\hat{\theta} \in \mathbb{R}^{12 \times 12}}
+# \xrightarrow[\text{Cell costs}]{\theta \in \mathbb{R}^{12 \times 12}}
 # \fbox{Dijkstra}
 # \xrightarrow[\text{Path}]{y \in \{0,1\}^{12 \times 12}}
 # ```

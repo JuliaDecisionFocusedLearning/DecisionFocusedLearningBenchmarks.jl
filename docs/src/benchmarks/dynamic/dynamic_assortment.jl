@@ -29,7 +29,7 @@ plot_instance(b, trajectory[1])
 # - `reward`: price of the purchased item (0 if no purchase)
 #
 # One step with the offered assortment highlighted (green = offered):
-plot_solution(b, trajectory[1])
+plot_sample(b, trajectory[1])
 
 # A few steps side by side (prices are fixed; assortment composition changes over time):
 plot_trajectory(b, trajectory[1:min(4, length(trajectory))])

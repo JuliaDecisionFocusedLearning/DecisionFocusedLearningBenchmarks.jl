@@ -51,7 +51,7 @@
     # Plots work unchanged
     figure_1 = plot_instance(b, saa_dataset[1])
     @test figure_1 isa Plots.Plot
-    figure_2 = plot_solution(b, saa_dataset[1])
+    figure_2 = plot_sample(b, saa_dataset[1])
     @test figure_2 isa Plots.Plot
 
     maximizer = generate_maximizer(b)

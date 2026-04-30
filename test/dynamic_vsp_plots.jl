@@ -17,11 +17,11 @@
     fig2 = plot_trajectory(b, y)
     @test fig2 isa Plots.Plot
 
-    # Test plot_solution via baseline policy
+    # Test plot_sample via baseline policy
     policies = generate_baseline_policies(b)
     lazy = policies[1]
     _, d = evaluate_policy!(lazy, env)
-    fig3 = plot_solution(b, d[1])
+    fig3 = plot_sample(b, d[1])
     @test fig3 isa Plots.Plot
 
     # Test animate_trajectory — returns Animation, save separately with gif()

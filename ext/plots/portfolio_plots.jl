@@ -16,7 +16,7 @@ function plot_instance(::PortfolioOptimizationBenchmark, sample::DataSample; kwa
     )
 end
 
-function plot_solution(::PortfolioOptimizationBenchmark, sample::DataSample; kwargs...)
+function plot_sample(::PortfolioOptimizationBenchmark, sample::DataSample; kwargs...)
     x = sample.x
     θ = sample.θ
     y = sample.y

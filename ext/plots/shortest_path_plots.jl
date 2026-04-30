@@ -92,7 +92,7 @@ function plot_instance(bench::FixedSizeShortestPathBenchmark, sample::DataSample
     return pl
 end
 
-function plot_solution(bench::FixedSizeShortestPathBenchmark, sample::DataSample; kwargs...)
+function plot_sample(bench::FixedSizeShortestPathBenchmark, sample::DataSample; kwargs...)
     x = sample.x
     p_feat = length(x)
     weight_grid, path_grid = _grid_matrices(bench, sample.θ, sample.y)

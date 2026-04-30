@@ -63,9 +63,7 @@ function plot_instance(
     return fig
 end
 
-function plot_solution(
-    ::StochasticVehicleSchedulingBenchmark, sample::DataSample; kwargs...
-)
+function plot_sample(::StochasticVehicleSchedulingBenchmark, sample::DataSample; kwargs...)
     @assert hasproperty(sample.instance, :city) "Sample does not contain city information."
     (; tasks, district_width, width) = sample.instance.city
     ticks = 0:district_width:width

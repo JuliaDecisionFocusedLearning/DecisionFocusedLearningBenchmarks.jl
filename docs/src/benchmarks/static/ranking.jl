@@ -24,7 +24,7 @@ plot_instance(b, sample)
 # - `y`: ordinal ranks derived from `θ` (`y[i] = 1` means item `i` has the lowest cost)
 #
 # The full training triple (features, true costs, and derived ranking):
-plot_solution(b, sample)
+plot_sample(b, sample)
 
 # ## Untrained policy
 
@@ -35,7 +35,7 @@ maximizer = generate_maximizer(b)         # ordinal ranking via sortperm
 
 # A randomly initialized policy produces an arbitrary ranking:
 θ_pred = model(sample.x)
-plot_solution(b, DataSample(; sample.context..., x=sample.x, θ=θ_pred, y=maximizer(θ_pred)))
+plot_sample(b, DataSample(; sample.context..., x=sample.x, θ=θ_pred, y=maximizer(θ_pred)))
 
 # Optimality gap on the dataset (0 = optimal, higher is worse):
 compute_gap(b, dataset, model, maximizer)
@@ -64,7 +64,7 @@ compute_gap(b, dataset, model, maximizer)
 # ```math
 # \xrightarrow[\text{Features}]{x}
 # \fbox{Linear model}
-# \xrightarrow{\hat{\theta}}
+# \xrightarrow{\theta}
 # \fbox{ranking}
 # \xrightarrow{y}
 # ```

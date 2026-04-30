@@ -23,7 +23,7 @@ plot_instance(b, sample)
 # - `y`: path indicator vector (`y[e] = 1` if edge `e` is on the optimal path)
 #
 # Top: feature vector x. Bottom left: edge costs θ. Bottom right: optimal path y (white dots):
-plot_solution(b, sample)
+plot_sample(b, sample)
 
 # ## Untrained policy
 
@@ -34,7 +34,7 @@ maximizer = generate_maximizer(b)         # Dijkstra shortest path on the grid g
 
 # A randomly initialized policy predicts arbitrary costs, yielding a near-straight path:
 θ_pred = model(sample.x)
-plot_solution(b, DataSample(; sample.context..., x=sample.x, θ=θ_pred, y=maximizer(θ_pred)))
+plot_sample(b, DataSample(; sample.context..., x=sample.x, θ=θ_pred, y=maximizer(θ_pred)))
 
 # Optimality gap on the dataset (0 = optimal, higher is worse):
 compute_gap(b, dataset, model, maximizer)
@@ -70,7 +70,7 @@ compute_gap(b, dataset, model, maximizer)
 # ```math
 # \xrightarrow[\text{Features}]{x \in \mathbb{R}^p}
 # \fbox{Linear model}
-# \xrightarrow[\text{Predicted costs}]{\hat{\theta} \in \mathbb{R}^E}
+# \xrightarrow[\text{Predicted costs}]{\theta \in \mathbb{R}^E}
 # \fbox{Dijkstra / Bellman-Ford}
 # \xrightarrow[\text{Path}]{y \in \{0,1\}^E}
 # ```

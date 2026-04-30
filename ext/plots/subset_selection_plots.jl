@@ -16,7 +16,7 @@ function plot_instance(::SubsetSelectionBenchmark, sample::DataSample; kwargs...
     )
 end
 
-function plot_solution(::SubsetSelectionBenchmark, sample::DataSample; kwargs...)
+function plot_sample(::SubsetSelectionBenchmark, sample::DataSample; kwargs...)
     x = sample.x  # length n feature vector
     θ = sample.θ  # length n hidden values
     y = sample.y  # y[i] = true if item i is selected

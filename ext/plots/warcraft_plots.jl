@@ -11,7 +11,7 @@ function plot_instance(::WarcraftBenchmark, sample::DataSample; kwargs...)
     )
 end
 
-function plot_solution(
+function plot_sample(
     ::WarcraftBenchmark,
     sample::DataSample;
     θ_true=sample.θ,

@@ -16,7 +16,7 @@ function plot_instance(::DynamicAssortmentBenchmark, sample::DataSample; kwargs.
     )
 end
 
-function plot_solution(::DynamicAssortmentBenchmark, sample::DataSample; kwargs...)
+function plot_sample(::DynamicAssortmentBenchmark, sample::DataSample; kwargs...)
     prices = sample.instance[1][1, :] .* 10
     y = sample.y  # BitVector, selected items
     N = length(prices)
@@ -43,7 +43,7 @@ function plot_trajectory(
     n = min(length(trajectory), max_steps)
     rows = ceil(Int, n / cols)
     steps = round.(Int, range(1, length(trajectory); length=n))
-    plots = [plot_solution(bench, trajectory[t]) for t in steps]
+    plots = [plot_sample(bench, trajectory[t]) for t in steps]
     return Plots.plot(
         plots...; layout=(rows, cols), size=(cols * 300, rows * 250), kwargs...
     )

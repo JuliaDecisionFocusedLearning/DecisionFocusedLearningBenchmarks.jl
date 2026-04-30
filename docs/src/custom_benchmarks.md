@@ -76,7 +76,7 @@ objective_value(bench::MyBenchmark, sample::DataSample, y) -> Real
 compute_gap(bench::MyBenchmark, dataset, model, maximizer) -> Float64
 has_visualization(bench::MyBenchmark) -> Bool                            # default: false; return true when plot methods are implemented/available
 plot_instance(bench::MyBenchmark, sample::DataSample; kwargs...)
-plot_solution(bench::MyBenchmark, sample::DataSample; kwargs...)
+plot_sample(bench::MyBenchmark, sample::DataSample; kwargs...)
 ```
 
 ---

@@ -36,7 +36,7 @@ maximizer = generate_maximizer(b)         # deterministic VSP solver (HiGHS MIP)
 # The untrained model predicts random edge costs; the resulting schedule is arbitrary:
 θ_pred = model(sample.x)
 y_pred = maximizer(θ_pred; sample.context...)
-plot_solution(
+plot_sample(
     b, DataSample(; sample.context..., x=sample.x, θ=θ_pred, y=y_pred, extra=sample.extra)
 )
 
@@ -109,13 +109,13 @@ plot_solution(
 # ```math
 # \xrightarrow[\text{Features}]{x \in \mathbb{R}^{20}}
 # \fbox{Linear model $\varphi_w$}
-# \xrightarrow[\text{Predicted cost}]{\hat{c}}
+# \xrightarrow[\text{Predicted cost}]{c}
 # \fbox{Deterministic VSP solver}
 # \xrightarrow[\text{Routes}]{y}
 # ```
 #
 # By training end-to-end with the deterministic solver, the linear model learns adjusted
-# costs ``\hat{c}`` that implicitly account for expected stochastic delays, while keeping
+# costs ``c`` that implicitly account for expected stochastic delays, while keeping
 # the fast deterministic solver at inference time.
 #
 # **Model:** `Chain(Dense(20 -> 1; bias=false), vec)`: predicts one adjusted cost per edge.

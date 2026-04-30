@@ -22,7 +22,7 @@ plot_instance(b, sample)
 # - `y`: optimal portfolio weights solving the Markowitz QP given `θ`
 #
 # Top: feature vector x. Bottom left: true returns θ. Bottom right: optimal weights y:
-plot_solution(b, sample)
+plot_sample(b, sample)
 
 # ## Untrained policy
 
@@ -33,7 +33,7 @@ maximizer = generate_maximizer(b)         # Markowitz QP solver (Ipopt via JuMP)
 
 # A randomly initialized policy predicts arbitrary returns, leading to a suboptimal allocation:
 θ_pred = model(sample.x)
-plot_solution(b, DataSample(; sample.context..., x=sample.x, θ=θ_pred, y=maximizer(θ_pred)))
+plot_sample(b, DataSample(; sample.context..., x=sample.x, θ=θ_pred, y=maximizer(θ_pred)))
 
 # Optimality gap on the dataset (0 = optimal, higher is worse):
 compute_gap(b, dataset, model, maximizer)
@@ -43,11 +43,11 @@ compute_gap(b, dataset, model, maximizer)
 #
 # A **Markowitz portfolio optimization** problem where asset expected returns are unknown.
 # Given contextual features ``x \in \mathbb{R}^p``, the learner predicts returns
-# ``\hat{\theta} \in \mathbb{R}^d`` and solves:
+# ``\theta \in \mathbb{R}^d`` and solves:
 #
 # ```math
 # \begin{aligned}
-# \max_{y} \quad & \hat{\theta}^\top y \\
+# \max_{y} \quad & \theta^\top y \\
 # \text{s.t.} \quad & y^\top \Sigma y \leq \gamma \\
 # & \mathbf{1}^\top y \leq 1 \\
 # & y \geq 0

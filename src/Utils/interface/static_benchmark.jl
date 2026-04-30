@@ -28,7 +28,7 @@ Also implement:
 - [`objective_value`](@ref)`(bench, sample, y)`: must be implemented by every static benchmark
 
 # Optional methods (no default, require `Plots` to be loaded)
-- [`plot_instance`](@ref), [`plot_solution`](@ref)
+- [`plot_instance`](@ref), [`plot_sample`](@ref)
 - [`generate_baseline_policies`](@ref)
 """
 abstract type AbstractStaticBenchmark <: AbstractBenchmark end
@@ -56,7 +56,7 @@ end
     generate_dataset(::AbstractStaticBenchmark, dataset_size::Int; target_policy=nothing, kwargs...) -> Vector{<:DataSample}
 
 Generate a `Vector` of [`DataSample`](@ref) of length `dataset_size` for given benchmark.
-Content of the dataset can be visualized using [`plot_solution`](@ref), when it applies.
+Content of the dataset can be visualized using [`plot_sample`](@ref), when it applies.
 
 By default, it uses [`generate_sample`](@ref) to create each sample in the dataset, and passes any
 keyword arguments to it. `target_policy` is applied if provided, it is called on each sample

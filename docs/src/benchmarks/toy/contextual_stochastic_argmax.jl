@@ -39,8 +39,9 @@ plot_instance(b, sample)
 # - `y`: optimal item for the realized scenario ξ (one-hot; anticipative oracle label)
 # - `extra.scenario`: realized utility vector ξ (available only during training)
 #
-# Left: realized scenario ξ. Right: selected item (red):
-plot_solution(b, sample)
+# Top: feature vector x. Bottom: realized scenario ξ acting as the cost vector,
+# with the anticipative-optimal item in red:
+plot_sample(b, DataSample(sample; θ=sample.scenario))
 
 # ## Untrained policy
 
@@ -50,9 +51,9 @@ model = generate_statistical_model(b)     # linear map: features → predicted e
 maximizer = generate_maximizer(b)         # one-hot argmax
 
 # A randomly initialized policy selects items with no relation to their expected utilities.
-# Left: predicted utilities θ̂. Right: selected item (red):
+# Top: feature vector x. Bottom: predicted utilities θ̂ with the selected item in red:
 θ_pred = model(sample.x)
-plot_solution(b, DataSample(; sample.context..., x=sample.x, θ=θ_pred, y=maximizer(θ_pred)))
+plot_sample(b, DataSample(sample; θ=θ_pred, y=maximizer(θ_pred)))
 
 # ---
 # ## Problem Description
@@ -76,7 +77,7 @@ plot_solution(b, DataSample(; sample.context..., x=sample.x, θ=θ_pred, y=maxim
 # y^* = \mathrm{argmax}(\xi)
 # ```
 #
-# A linear model ``\hat{\theta} = [I \mid W] \cdot x`` can exactly recover the optimal
+# A linear model ``\theta = [I \mid W] \cdot x`` can exactly recover the optimal
 # solution in expectation.
 #
 # ## Key Parameters
@@ -96,7 +97,7 @@ plot_solution(b, DataSample(; sample.context..., x=sample.x, θ=θ_pred, y=maxim
 # ```math
 # \xrightarrow[\text{Features}]{x = [c_\text{base}; x_\text{raw}]}
 # \fbox{Linear model}
-# \xrightarrow{\hat{\theta} \in \mathbb{R}^n}
+# \xrightarrow{\theta \in \mathbb{R}^n}
 # \fbox{argmax}
 # \xrightarrow{y}
 # ```

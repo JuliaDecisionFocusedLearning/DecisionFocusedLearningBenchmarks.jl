@@ -38,9 +38,9 @@
         @test has_visualization(b)
         fig1 = plot_instance(b, dataset[1])
         @test fig1 isa Plots.Plot
-        fig2 = plot_solution(b, dataset[1])
+        fig2 = plot_sample(b, dataset[1])
         @test fig2 isa Plots.Plot
-        fig3 = plot_solution(b, dataset[1], dataset[2].y)
+        fig3 = plot_sample(b, dataset[1], dataset[2].y)
         @test fig3 isa Plots.Plot
     end
 end
