@@ -32,12 +32,12 @@ Where:
 
 ## Package Overview
 
-**DecisionFocusedLearningBenchmarks.jl** provides a collection of benchmark problems for evaluating decision-focused learning algorithms. The package offers:
+**DecisionFocusedLearningBenchmarks.jl** provides a collection of benchmark problems for evaluating decision-focused learning algorithms. The package contains:
 
-- **Collection of benchmark problems** spanning diverse applications
+- A **collection of benchmark problems** spanning diverse applications
 - **Common tools** for creating datasets, statistical models, and optimization algorithms
-- **Generic interface** for building custom benchmarks
-- Compatibility with [InferOpt.jl](https://github.com/JuliaDecisionFocusedLearning/InferOpt.jl) and the whole [JuliaDecisionFocusedLearning](https://github.com/JuliaDecisionFocusedLearning) ecosystem
+- A **generic interface** for building custom benchmarks
+- **Compatibility** with [InferOpt.jl](https://github.com/JuliaDecisionFocusedLearning/InferOpt.jl) and the whole [JuliaDecisionFocusedLearning](https://github.com/JuliaDecisionFocusedLearning) ecosystem
 
 ## Benchmark Categories
 

@@ -1,6 +1,6 @@
 # # Argmax
 # Select the single best item from a set of `n` items, given features correlated with hidden
-# item scores. This is the **simplest possible DFL setting**: equivalent to multiclass
+# item scores. This is a minimalist DFL setting: equivalent to multiclass
 # classification, but with an argmax layer instead of softmax. Useful as a minimal sandbox for
 # understanding DFL concepts.
 
@@ -72,7 +72,7 @@ mean(maximizer(model(s.x)) == s.y for s in dataset)
 # ```math
 # \xrightarrow[\text{Features}]{x \in \mathbb{R}^{p \times n}}
 # \fbox{Linear model $f_w$}
-# \xrightarrow[\text{Predicted scores}]{\hat{\theta} \in \mathbb{R}^n}
+# \xrightarrow[\text{Predicted scores}]{\theta \in \mathbb{R}^n}
 # \fbox{argmax}
 # \xrightarrow[\text{Selection}]{y \in \{0,1\}^n}
 # ```

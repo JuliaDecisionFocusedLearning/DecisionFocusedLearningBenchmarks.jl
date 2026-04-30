@@ -71,7 +71,7 @@ plot_solution(
 # ```math
 # \xrightarrow[\text{Features}]{x}
 # \fbox{Linear model}
-# \xrightarrow{\hat{\theta} \in \mathbb{R}^2}
+# \xrightarrow{\theta \in \mathbb{R}^2}
 # \fbox{Polytope argmax}
 # \xrightarrow{y}
 # ```
