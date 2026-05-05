@@ -22,7 +22,7 @@ dataset = generate_dataset(b, 50);
 # Subdatasets can be created through regular slicing:
 train_dataset, test_dataset = dataset[1:45], dataset[46:50]
 
-# And getting an individual sample will return a [`DataSample`](@ref) with four fields: `x`, `info`, `θ`, and `y`:
+# And getting an individual sample will return a [`DataSample`](@ref) with five fields: `x`, `θ`, `y`, `context`, and `extra`:
 sample = test_dataset[1]
 # `x` correspond to the input features, i.e. the input image (3D array) in the Warcraft benchmark case:
 x = sample.x
@@ -32,6 +32,8 @@ x = sample.x
 y_true = sample.y
 # `context` is not used in this benchmark (no solver kwargs needed), so it is empty:
 isempty(sample.context)
+# `extra` is also not used in this benchmark, so it is empty as well:
+isempty(sample.extra)
 
 # For some benchmarks, we provide the following plotting method [`plot_sample`](@ref) to visualize the data:
 plot_sample(b, sample)
@@ -48,7 +50,7 @@ model = generate_statistical_model(b)
 
 # Finally, the [`generate_maximizer`](@ref) method can be used to generate a combinatorial optimization algorithm that takes the predicted cell weights as input and returns the corresponding shortest path:
 maximizer = generate_maximizer(b; dijkstra=true)
-# In the case o fthe Warcraft benchmark, the method has an additional keyword argument to chose the algorithm to use: Dijkstra's algorithm or Bellman-Ford algorithm.
+# In the case of the Warcraft benchmark, the method has an additional keyword argument to chose the algorithm to use: Dijkstra's algorithm or Bellman-Ford algorithm.
 y = maximizer(θ)
 # As we can see, currently the pipeline predicts random noise as cell weights, and therefore the maximizer returns a straight line path.
 plot_sample(b, DataSample(; x, θ, y))
