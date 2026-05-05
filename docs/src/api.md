@@ -7,21 +7,11 @@ Modules = [DecisionFocusedLearningBenchmarks.Utils]
 Private = false
 ```
 
-```@autodocs
-Modules = [DecisionFocusedLearningBenchmarks.Utils]
-Public = false
-```
-
 ## Argmax2D
 
 ```@autodocs
 Modules = [DecisionFocusedLearningBenchmarks.Argmax2D]
 Private = false
-```
-
-```@autodocs
-Modules = [DecisionFocusedLearningBenchmarks.Argmax2D]
-Public = false
 ```
 
 ## Argmax
@@ -31,21 +21,11 @@ Modules = [DecisionFocusedLearningBenchmarks.Argmax]
 Private = false
 ```
 
-```@autodocs
-Modules = [DecisionFocusedLearningBenchmarks.Argmax]
-Public = false
-```
-
 ## Contextual Stochastic Argmax
 
 ```@autodocs
 Modules = [DecisionFocusedLearningBenchmarks.ContextualStochasticArgmax]
 Private = false
-```
-
-```@autodocs
-Modules = [DecisionFocusedLearningBenchmarks.ContextualStochasticArgmax]
-Public = false
 ```
 
 ## Dynamic Vehicle Scheduling
@@ -55,21 +35,11 @@ Modules = [DecisionFocusedLearningBenchmarks.DynamicVehicleScheduling]
 Private = false
 ```
 
-```@autodocs
-Modules = [DecisionFocusedLearningBenchmarks.DynamicVehicleScheduling]
-Public = false
-```
-
 ## Dynamic Assortment
 
 ```@autodocs
 Modules = [DecisionFocusedLearningBenchmarks.DynamicAssortment]
 Private = false
-```
-
-```@autodocs
-Modules = [DecisionFocusedLearningBenchmarks.DynamicAssortment]
-Public = false
 ```
 
 ## Fixed-size shortest path
@@ -79,21 +49,11 @@ Modules = [DecisionFocusedLearningBenchmarks.FixedSizeShortestPath]
 Private = false
 ```
 
-```@autodocs
-Modules = [DecisionFocusedLearningBenchmarks.FixedSizeShortestPath]
-Public = false
-```
-
 ## Maintenance
 
 ```@autodocs
 Modules = [DecisionFocusedLearningBenchmarks.Maintenance]
 Private = false
-```
-
-```@autodocs
-Modules = [DecisionFocusedLearningBenchmarks.Maintenance]
-Public = false
 ```
 
 ## Portfolio Optimization
@@ -103,21 +63,11 @@ Modules = [DecisionFocusedLearningBenchmarks.PortfolioOptimization]
 Private = false
 ```
 
-```@autodocs
-Modules = [DecisionFocusedLearningBenchmarks.PortfolioOptimization]
-Public = false
-```
-
 ## Ranking
 
 ```@autodocs
 Modules = [DecisionFocusedLearningBenchmarks.Ranking]
 Private = false
-```
-
-```@autodocs
-Modules = [DecisionFocusedLearningBenchmarks.Ranking]
-Public = false
 ```
 
 ## Subset selection
@@ -127,21 +77,11 @@ Modules = [DecisionFocusedLearningBenchmarks.SubsetSelection]
 Private = false
 ```
 
-```@autodocs
-Modules = [DecisionFocusedLearningBenchmarks.SubsetSelection]
-Public = false
-```
-
 ## Stochastic Vehicle Scheduling
 
 ```@autodocs
 Modules = [DecisionFocusedLearningBenchmarks.StochasticVehicleScheduling]
 Private = false
-```
-
-```@autodocs
-Modules = [DecisionFocusedLearningBenchmarks.StochasticVehicleScheduling]
-Public = false
 ```
 
 ## Warcraft
@@ -151,7 +91,23 @@ Modules = [DecisionFocusedLearningBenchmarks.Warcraft]
 Private = false
 ```
 
+## Internals
+
 ```@autodocs
-Modules = [DecisionFocusedLearningBenchmarks.Warcraft]
+Modules = [
+    DecisionFocusedLearningBenchmarks.Utils,
+    DecisionFocusedLearningBenchmarks.Argmax,
+    DecisionFocusedLearningBenchmarks.Argmax2D,
+    DecisionFocusedLearningBenchmarks.ContextualStochasticArgmax,
+    DecisionFocusedLearningBenchmarks.DynamicVehicleScheduling,
+    DecisionFocusedLearningBenchmarks.DynamicAssortment,
+    DecisionFocusedLearningBenchmarks.FixedSizeShortestPath,
+    DecisionFocusedLearningBenchmarks.Maintenance,
+    DecisionFocusedLearningBenchmarks.PortfolioOptimization,
+    DecisionFocusedLearningBenchmarks.Ranking,
+    DecisionFocusedLearningBenchmarks.SubsetSelection,
+    DecisionFocusedLearningBenchmarks.StochasticVehicleScheduling,
+    DecisionFocusedLearningBenchmarks.Warcraft,
+]
 Public = false
 ```

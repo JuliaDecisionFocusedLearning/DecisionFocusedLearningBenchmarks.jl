@@ -10,7 +10,6 @@ tutorial_files = readdir(tutorial_dir)
 md_tutorial_files = [split(file, ".")[1] * ".md" for file in tutorial_files]
 
 categories = [
-    "Toy problems" => "toy",
     "Static problems" => "static",
     "Stochastic problems" => "stochastic",
     "Dynamic problems" => "dynamic",
