@@ -33,7 +33,7 @@ plot_context(b, trajectory[1])
 plot_sample(b, trajectory[1])
 
 # Multiple steps side by side: customers accumulate and routes change over time:
-plot_trajectory(b, trajectory[1:min(3, length(trajectory))])
+plot_trajectory(b, trajectory)
 
 # ## DFL pipeline components
 

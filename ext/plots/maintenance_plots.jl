@@ -1,7 +1,14 @@
 has_visualization(::MaintenanceBenchmark) = true
 
+function _degradation_colors(state, n)
+    return [s == n ? :firebrick : :steelblue for s in state]
+end
+
+function _step_str(sample::DataSample)
+    return hasproperty(sample, :step) ? " (step $(sample.step))" : ""
+end
+
 function plot_context(bench::MaintenanceBenchmark, sample::DataSample; kwargs...)
-    # sample.instance = degradation_state (Vector{Int}, values 1..n)
     state = sample.instance
     N = length(state)
     n = bench.n
@@ -11,26 +18,26 @@ function plot_context(bench::MaintenanceBenchmark, sample::DataSample; kwargs...
         legend=false,
         xlabel="Component",
         ylabel="Degradation level",
-        title="Instance (degradation state)",
+        title="Degradation state$(_step_str(sample))",
         ylim=(0, n + 0.5),
-        color=:steelblue,
+        color=_degradation_colors(state, n),
         kwargs...,
     )
 end
 
 function plot_sample(bench::MaintenanceBenchmark, sample::DataSample; kwargs...)
     state = sample.instance
-    y = sample.y  # BitVector, maintained components
+    y = sample.y
     N = length(state)
     n = bench.n
-    colors = [y[i] ? :seagreen : (state[i] == n ? :firebrick : :steelblue) for i in 1:N]
-    labels = ["comp $i$(y[i] ? " ✓" : "")" for i in 1:N]
+    colors = [y[i] ? :seagreen : c for (i, c) in enumerate(_degradation_colors(state, n))]
     return Plots.bar(
-        labels,
+        1:N,
         state;
         legend=false,
+        xlabel="Component",
         ylabel="Degradation level",
-        title="Solution (green = maintained, red = failed)",
+        title="Maintenance$(_step_str(sample))",
         ylim=(0, n + 0.5),
         color=colors,
         kwargs...,

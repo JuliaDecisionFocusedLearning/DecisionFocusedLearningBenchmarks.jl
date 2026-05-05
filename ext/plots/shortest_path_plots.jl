@@ -72,20 +72,20 @@ function _plot_grid(
             end
         end
         Plots.scatter!(
-            pl, path_xs, path_ys; color=:white, markersize=6, markerstrokewidth=0, label=false
+            pl,
+            path_xs,
+            path_ys;
+            color=:white,
+            markersize=6,
+            markerstrokewidth=0,
+            label=false,
         )
     end
     Plots.scatter!(
         pl, [1], [1]; color=:seagreen, markersize=8, markershape=:square, label=false
     )
     Plots.scatter!(
-        pl,
-        [cols],
-        [rows];
-        color=:crimson,
-        markersize=8,
-        markershape=:square,
-        label=false,
+        pl, [cols], [rows]; color=:crimson, markersize=8, markershape=:square, label=false
     )
     return pl
 end

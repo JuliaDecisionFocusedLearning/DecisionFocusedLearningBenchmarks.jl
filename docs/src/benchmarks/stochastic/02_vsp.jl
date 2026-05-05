@@ -5,7 +5,7 @@
 using DecisionFocusedLearningBenchmarks
 using Plots
 
-b = StochasticVehicleSchedulingBenchmark()
+b = StochasticVehicleSchedulingBenchmark(; nb_tasks=10)
 
 # ## Observable input
 #
@@ -36,9 +36,7 @@ maximizer = generate_maximizer(b)         # deterministic VSP solver (HiGHS MIP)
 # The untrained model predicts random edge costs; the resulting schedule is arbitrary:
 θ_pred = model(sample.x)
 y_pred = maximizer(θ_pred; sample.context...)
-plot_sample(
-    b, DataSample(; sample.context..., x=sample.x, θ=θ_pred, y=y_pred, extra=sample.extra)
-)
+plot_sample(b, DataSample(sample; θ=θ_pred, y=y_pred))
 
 # ---
 # ## Problem Description
@@ -124,4 +122,4 @@ plot_sample(
 # deterministic VSP instance.
 #
 # !!! note "Reference"
-#     [Learning to Approximate Industrial Problems by Operations Research Classic Problems](https://hal.science/hal-02396091/document)
+#     Full details on this problem can be found in [Learning to Approximate Industrial Problems by Operations Research Classic Problems](https://hal.science/hal-02396091/document)

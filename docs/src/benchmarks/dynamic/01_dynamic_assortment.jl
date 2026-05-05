@@ -14,7 +14,7 @@ b = DynamicAssortmentBenchmark()
 # purchase history:
 policies = generate_baseline_policies(b)
 env = generate_environments(b, 1)[1]
-_, trajectory = evaluate_policy!(policies.greedy, env)
+_, trajectory = evaluate_policy!(policies.expert, env)
 
 # The observable state at step 1: item prices (fixed across steps):
 plot_context(b, trajectory[1])

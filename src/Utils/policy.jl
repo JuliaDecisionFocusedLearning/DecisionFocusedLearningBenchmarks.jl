@@ -39,12 +39,14 @@ function evaluate_policy!(
     end
     total_reward = 0.0
     labeled_dataset = DataSample[]
+    step = 0
     while !is_terminated(env)
+        step += 1
         y = policy(env; kwargs...)
         features, state = observe(env)
         state_copy = deepcopy(state)  # To avoid mutation issues
         reward = step!(env, y)
-        sample = DataSample(; x=features, y=y, instance=state_copy, extra=(; reward))
+        sample = DataSample(; x=features, y=y, instance=state_copy, extra=(; reward, step))
         if isempty(labeled_dataset)
             labeled_dataset = typeof(sample)[sample]
         else

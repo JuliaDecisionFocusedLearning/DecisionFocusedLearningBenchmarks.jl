@@ -9,16 +9,14 @@ using Plots
 
 b = ContextualStochasticArgmaxBenchmark()
 
-# `generate_dataset` returns unlabeled samples (`y = nothing`) for this benchmark.
+# By default, `generate_dataset` returns unlabeled samples (`y = nothing`) for this benchmark.
 # A `target_policy` must be provided to attach labels. Here we use the anticipative
 # oracle: it returns the item with the highest realized utility for each scenario,
 # giving one labeled sample per scenario per instance.
 anticipative = generate_anticipative_solver(b)
 policy =
-    (ctx, scenarios) -> [
-        DataSample(; ctx.context..., x=ctx.x, y=anticipative(ξ), extra=(; scenario=ξ))
-        for ξ in scenarios
-    ]
+    (ctx, scenarios) ->
+        [DataSample(ctx; y=anticipative(ξ), extra=(; scenario=ξ)) for ξ in scenarios]
 dataset = generate_dataset(b, 20; target_policy=policy, seed=0)
 sample = first(dataset)
 
@@ -53,7 +51,8 @@ maximizer = generate_maximizer(b)         # one-hot argmax
 # A randomly initialized policy selects items with no relation to their expected utilities.
 # Top: feature vector x. Bottom: predicted utilities θ̂ with the selected item in red:
 θ_pred = model(sample.x)
-plot_sample(b, DataSample(sample; θ=θ_pred, y=maximizer(θ_pred)))
+y_pred = maximizer(θ_pred)
+plot_sample(b, DataSample(sample; θ=θ_pred, y=y_pred))
 
 # ---
 # ## Problem Description
@@ -102,7 +101,7 @@ plot_sample(b, DataSample(sample; θ=θ_pred, y=maximizer(θ_pred)))
 # \xrightarrow{y}
 # ```
 #
-# **Model:** `Dense(n+d → n; bias=false)` — can in principle recover the exact mapping
+# **Model:** `Dense(n+d → n; bias=false)`: can in principle recover the exact mapping
 # ``[I \mid W]`` from training data.
 #
 # **Maximizer:** `one_hot_argmax`.

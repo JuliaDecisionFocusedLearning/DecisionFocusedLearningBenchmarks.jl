@@ -34,11 +34,11 @@ maximizer = generate_maximizer(b)         # Markowitz QP solver (Ipopt via JuMP)
 # A randomly initialized policy predicts arbitrary returns, leading to a suboptimal allocation:
 θ_pred = model(sample.x)
 y_pred = maximizer(θ_pred)
-plot_sample(b, DataSample(sample ; θ=θ_pred, y=y_pred))
+plot_sample(b, DataSample(sample; θ=θ_pred, y=y_pred))
 
 # Optimality gap on the dataset (lower is better):
 compute_gap(b, dataset, model, maximizer)
-    
+
 # ---
 # ## Problem Description
 #

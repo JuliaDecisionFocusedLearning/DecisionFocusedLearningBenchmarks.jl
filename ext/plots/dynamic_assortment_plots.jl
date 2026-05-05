@@ -1,7 +1,10 @@
 has_visualization(::DynamicAssortmentBenchmark) = true
 
+function _step_str(sample::DataSample)
+    return hasproperty(sample, :step) ? " (step $(sample.step))" : ""
+end
+
 function plot_context(::DynamicAssortmentBenchmark, sample::DataSample; kwargs...)
-    # sample.instance = (env.features, purchase_history); row 1 of features = prices (×10 to undo normalization)
     prices = sample.instance[1][1, :] .* 10
     N = length(prices)
     return Plots.bar(
@@ -10,7 +13,7 @@ function plot_context(::DynamicAssortmentBenchmark, sample::DataSample; kwargs..
         legend=false,
         xlabel="Item",
         ylabel="Price",
-        title="Instance (item prices): step $(length(sample.instance[2]) + 1)",
+        title="Item prices$(_step_str(sample))",
         color=:steelblue,
         kwargs...,
     )
@@ -18,7 +21,7 @@ end
 
 function plot_sample(::DynamicAssortmentBenchmark, sample::DataSample; kwargs...)
     prices = sample.instance[1][1, :] .* 10
-    y = sample.y  # BitVector, selected items
+    y = sample.y
     N = length(prices)
     colors = [y[i] ? :seagreen : :lightgray for i in 1:N]
     return Plots.bar(
@@ -27,7 +30,7 @@ function plot_sample(::DynamicAssortmentBenchmark, sample::DataSample; kwargs...
         legend=false,
         xlabel="Item",
         ylabel="Price",
-        title="Assortment (green = offered): step $(length(sample.instance[2]) + 1)",
+        title="Assortment$(_step_str(sample))",
         color=colors,
         kwargs...,
     )

@@ -3,43 +3,24 @@ using Printf: @sprintf
 
 has_visualization(::DynamicVehicleSchedulingBenchmark) = true
 
-# ── helpers (moved from static_vsp/plot.jl) ─────────────────────────────────
+# ── helpers ────────────────────────────────────────────────────────────────────
 
-function _plot_static_instance(
-    x_depot,
-    y_depot,
-    x_customers,
-    y_customers;
-    customer_markersize=4,
-    depot_markersize=7,
-    alpha_depot=0.8,
-    customer_color=:lightblue,
-    depot_color=:lightgreen,
-    kwargs...,
-)
-    fig = Plots.plot(;
-        legend=:topleft, xlabel="x coordinate", ylabel="y coordinate", kwargs...
-    )
-    Plots.scatter!(
-        fig,
-        x_customers,
-        y_customers;
-        label="Customers",
-        markercolor=customer_color,
-        marker=:circle,
-        markersize=customer_markersize,
-    )
-    Plots.scatter!(
-        fig,
-        [x_depot],
-        [y_depot];
-        label="Depot",
-        markercolor=depot_color,
-        marker=:rect,
-        markersize=depot_markersize,
-        alpha=alpha_depot,
-    )
-    return fig
+function _compute_bounds(pd; margin=0.05, legend_margin_factor=0.15)
+    x_min = minimum(min(data.x_depot, minimum(data.x_customers)) for data in pd)
+    x_max = maximum(max(data.x_depot, maximum(data.x_customers)) for data in pd)
+    y_min = minimum(min(data.y_depot, minimum(data.y_customers)) for data in pd)
+    y_max = maximum(max(data.y_depot, maximum(data.y_customers)) for data in pd)
+
+    xlims = (x_min - margin, x_max + margin)
+    y_range = y_max - y_min + 2 * margin
+    legend_margin = y_range * legend_margin_factor
+    ylims = (y_min - margin, y_max + margin + legend_margin)
+
+    min_start_time = minimum(minimum(data.start_times) for data in pd)
+    max_start_time = maximum(maximum(data.start_times) for data in pd)
+    clims = (min_start_time, max_start_time)
+
+    return (; xlims, ylims, clims)
 end
 
 # ── plot_state ───────────────────────────────────────────────────────────────
@@ -65,24 +46,18 @@ function plot_state(
     show_colorbar=true,
     kwargs...,
 )
-    (; x_depot, y_depot, x_customers, y_customers, is_must_dispatch, start_times) = DVS.build_state_data(
-        state
+    (; x_depot, y_depot, x_customers, y_customers, is_must_dispatch, start_times) =
+        DVS.build_state_data(state)
+
+    xlabel = show_axis_labels ? "x coordinate" : ""
+    ylabel = show_axis_labels ? "y coordinate" : ""
+    fig = Plots.plot(;
+        legend=:topleft,
+        title="DVSP State - Epoch $(state.current_epoch)",
+        xlabel=xlabel,
+        ylabel=ylabel,
+        kwargs...,
     )
-
-    plot_args = Dict(
-        :legend => :topleft, :title => "DVSP State - Epoch $(state.current_epoch)"
-    )
-
-    if show_axis_labels
-        plot_args[:xlabel] = "x coordinate"
-        plot_args[:ylabel] = "y coordinate"
-    end
-
-    for (k, v) in kwargs
-        plot_args[k] = v
-    end
-
-    fig = Plots.plot(; plot_args...)
 
     Plots.scatter!(
         fig,
@@ -96,45 +71,39 @@ function plot_state(
         markerstrokewidth=markerstrokewidth,
     )
 
-    scatter_must_dispatch_args = Dict(
-        :label => "Must-dispatch customers",
-        :markercolor => must_dispatch_color,
-        :marker => must_dispatch_marker,
-        :markersize => customer_markersize,
-        :markerstrokewidth => markerstrokewidth,
-    )
-
-    scatter_postponable_args = Dict(
-        :label => "Postponable customers",
-        :markercolor => postponable_color,
-        :marker => postponable_marker,
-        :markersize => customer_markersize,
-        :markerstrokewidth => markerstrokewidth,
-    )
-    if show_colorbar
-        scatter_must_dispatch_args[:marker_z] = start_times[is_must_dispatch]
-        scatter_postponable_args[:marker_z] = start_times[.!is_must_dispatch]
-        scatter_postponable_args[:colormap] = :plasma
-        scatter_must_dispatch_args[:colormap] = :plasma
-        scatter_postponable_args[:colorbar] = :right
-        scatter_must_dispatch_args[:colorbar] = :right
+    colorbar_args = if show_colorbar
+        (; colormap=:plasma, colorbar=:right)
+    else
+        (;)
     end
 
-    if length(x_customers[is_must_dispatch]) > 0
+    if any(is_must_dispatch)
         Plots.scatter!(
             fig,
             x_customers[is_must_dispatch],
             y_customers[is_must_dispatch];
-            scatter_must_dispatch_args...,
+            label="Must-dispatch",
+            markercolor=must_dispatch_color,
+            marker=must_dispatch_marker,
+            markersize=customer_markersize,
+            markerstrokewidth=markerstrokewidth,
+            marker_z=show_colorbar ? start_times[is_must_dispatch] : nothing,
+            colorbar_args...,
         )
     end
 
-    if length(x_customers[.!is_must_dispatch]) > 0
+    if any(.!is_must_dispatch)
         Plots.scatter!(
             fig,
             x_customers[.!is_must_dispatch],
             y_customers[.!is_must_dispatch];
-            scatter_postponable_args...,
+            label="Postponable",
+            markercolor=postponable_color,
+            marker=postponable_marker,
+            markersize=customer_markersize,
+            markerstrokewidth=markerstrokewidth,
+            marker_z=show_colorbar ? start_times[.!is_must_dispatch] : nothing,
+            colorbar_args...,
         )
     end
 
@@ -234,19 +203,7 @@ function plot_trajectory(
     end
     rows = ceil(Int, n_epochs / cols)
 
-    x_min = minimum(min(data.x_depot, minimum(data.x_customers)) for data in pd)
-    x_max = maximum(max(data.x_depot, maximum(data.x_customers)) for data in pd)
-    y_min = minimum(min(data.y_depot, minimum(data.y_customers)) for data in pd)
-    y_max = maximum(max(data.y_depot, maximum(data.y_customers)) for data in pd)
-
-    xlims = (x_min - margin, x_max + margin)
-    y_range = y_max - y_min + 2 * margin
-    legend_margin = y_range * legend_margin_factor
-    ylims = (y_min - margin, y_max + margin + legend_margin)
-
-    min_start_time = minimum(minimum(data.start_times) for data in pd)
-    max_start_time = maximum(maximum(data.start_times) for data in pd)
-    clims = (min_start_time, max_start_time)
+    (; xlims, ylims, clims) = _compute_bounds(pd; margin, legend_margin_factor)
 
     plots = map(1:n_epochs) do i
         sample = traj[i]
@@ -316,19 +273,7 @@ function animate_trajectory(
     pd = DVS.build_plot_data(traj)
     epoch_costs = [-sample.reward for sample in traj]
 
-    x_min = minimum(min(data.x_depot, minimum(data.x_customers)) for data in pd)
-    x_max = maximum(max(data.x_depot, maximum(data.x_customers)) for data in pd)
-    y_min = minimum(min(data.y_depot, minimum(data.y_customers)) for data in pd)
-    y_max = maximum(max(data.y_depot, maximum(data.y_customers)) for data in pd)
-
-    xlims = (x_min - margin, x_max + margin)
-    y_range = y_max - y_min + 2 * margin
-    legend_margin = y_range * legend_margin_factor
-    ylims = (y_min - margin, y_max + margin + legend_margin)
-
-    min_start_time = minimum(minimum(data.start_times) for data in pd)
-    max_start_time = maximum(maximum(data.start_times) for data in pd)
-    clims = (min_start_time, max_start_time)
+    (; xlims, ylims, clims) = _compute_bounds(pd; margin, legend_margin_factor)
 
     if show_cost_bar
         x_min, x_max = xlims
