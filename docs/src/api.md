@@ -1,90 +1,92 @@
 # API Reference
 
-## Interface
+## Public
+
+### Interface
 
 ```@autodocs
 Modules = [DecisionFocusedLearningBenchmarks.Utils]
 Private = false
 ```
 
-## Argmax2D
+### Argmax2D
 
 ```@autodocs
 Modules = [DecisionFocusedLearningBenchmarks.Argmax2D]
 Private = false
 ```
 
-## Argmax
+### Argmax
 
 ```@autodocs
 Modules = [DecisionFocusedLearningBenchmarks.Argmax]
 Private = false
 ```
 
-## Contextual Stochastic Argmax
+### Contextual Stochastic Argmax
 
 ```@autodocs
 Modules = [DecisionFocusedLearningBenchmarks.ContextualStochasticArgmax]
 Private = false
 ```
 
-## Dynamic Vehicle Scheduling
+### Dynamic Vehicle Scheduling
 
 ```@autodocs
 Modules = [DecisionFocusedLearningBenchmarks.DynamicVehicleScheduling]
 Private = false
 ```
 
-## Dynamic Assortment
+### Dynamic Assortment
 
 ```@autodocs
 Modules = [DecisionFocusedLearningBenchmarks.DynamicAssortment]
 Private = false
 ```
 
-## Fixed-size shortest path
+### Fixed-size shortest path
 
 ```@autodocs
 Modules = [DecisionFocusedLearningBenchmarks.FixedSizeShortestPath]
 Private = false
 ```
 
-## Maintenance
+### Maintenance
 
 ```@autodocs
 Modules = [DecisionFocusedLearningBenchmarks.Maintenance]
 Private = false
 ```
 
-## Portfolio Optimization
+### Portfolio Optimization
 
 ```@autodocs
 Modules = [DecisionFocusedLearningBenchmarks.PortfolioOptimization]
 Private = false
 ```
 
-## Ranking
+### Ranking
 
 ```@autodocs
 Modules = [DecisionFocusedLearningBenchmarks.Ranking]
 Private = false
 ```
 
-## Subset selection
+### Subset selection
 
 ```@autodocs
 Modules = [DecisionFocusedLearningBenchmarks.SubsetSelection]
 Private = false
 ```
 
-## Stochastic Vehicle Scheduling
+### Stochastic Vehicle Scheduling
 
 ```@autodocs
 Modules = [DecisionFocusedLearningBenchmarks.StochasticVehicleScheduling]
 Private = false
 ```
 
-## Warcraft
+### Warcraft
 
 ```@autodocs
 Modules = [DecisionFocusedLearningBenchmarks.Warcraft]
