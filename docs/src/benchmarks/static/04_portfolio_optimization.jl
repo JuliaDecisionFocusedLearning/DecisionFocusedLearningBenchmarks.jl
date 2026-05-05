@@ -33,11 +33,12 @@ maximizer = generate_maximizer(b)         # Markowitz QP solver (Ipopt via JuMP)
 
 # A randomly initialized policy predicts arbitrary returns, leading to a suboptimal allocation:
 θ_pred = model(sample.x)
-plot_sample(b, DataSample(; sample.context..., x=sample.x, θ=θ_pred, y=maximizer(θ_pred)))
+y_pred = maximizer(θ_pred)
+plot_sample(b, DataSample(sample ; θ=θ_pred, y=y_pred))
 
-# Optimality gap on the dataset (0 = optimal, higher is worse):
+# Optimality gap on the dataset (lower is better):
 compute_gap(b, dataset, model, maximizer)
-
+    
 # ---
 # ## Problem Description
 #
@@ -74,12 +75,12 @@ compute_gap(b, dataset, model, maximizer)
 # ```math
 # \xrightarrow[\text{Features}]{x \in \mathbb{R}^p}
 # \fbox{Linear model}
-# \xrightarrow[\text{Predicted returns}]{\hat{\theta} \in \mathbb{R}^d}
+# \xrightarrow[\text{Predicted returns}]{\theta \in \mathbb{R}^d}
 # \fbox{QP solver (Ipopt)}
 # \xrightarrow[\text{Portfolio}]{y \in \mathbb{R}^d}
 # ```
 #
-# **Model:** `Dense(p → d)` — predicts one expected return per asset.
+# **Model:** `Dense(p → d)`, predicts one expected return per asset.
 #
 # **Maximizer:** Ipopt QP solver enforcing the variance and budget constraints.
 #

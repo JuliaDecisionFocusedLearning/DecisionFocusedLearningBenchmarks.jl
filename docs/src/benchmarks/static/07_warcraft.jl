@@ -32,9 +32,10 @@ maximizer = generate_maximizer(b)         # Dijkstra shortest path on the 12×12
 
 # An untrained CNN produces a near-uniform cost map, yielding a near-straight path:
 θ_pred = model(sample.x)
-plot_sample(b, DataSample(; sample.context..., x=sample.x, θ=θ_pred, y=maximizer(θ_pred)))
+y_pred = maximizer(θ_pred)
+plot_sample(b, DataSample(sample; θ=θ_pred, y=y_pred))
 
-# Optimality gap on this sample (0 = optimal, higher is worse):
+# Optimality gap on this sample (lower is better):
 compute_gap(b, [sample], model, maximizer)
 
 # ---
@@ -48,7 +49,7 @@ compute_gap(b, [sample], model, maximizer)
 # Formally, let ``\theta_{ij}`` be the (unknown) cost of cell ``(i,j)`` and
 # ``y_{ij} \in \{0,1\}`` indicate whether cell ``(i,j)`` is on the path. The objective is:
 # ```math
-# y^* = \mathrm{argmin}_{y \in \mathcal{P}} \sum_{(i,j)} \theta_{ij} \, y_{ij}
+# y^* = \mathop{\mathrm{argmin}}\limits_{y \in \mathcal{P}} \sum_{(i,j)} \theta_{ij} \, y_{ij}
 # ```
 # where ``\mathcal{P}`` is the set of valid grid paths (4-connected, source to sink).
 #

@@ -138,7 +138,7 @@ function Utils.generate_statistical_model(
 )
     Random.seed!(seed)
     (; p, graph) = bench
-    return Chain(Dense(p, ne(graph)))
+    return Dense(p, ne(graph))
 end
 
 export FixedSizeShortestPathBenchmark

@@ -33,9 +33,10 @@ maximizer = generate_maximizer(b)         # top-k selection
 
 # A randomly initialized policy selects items with no relation to their true values:
 θ_pred = model(sample.x)
-plot_sample(b, DataSample(; sample.context..., x=sample.x, θ=θ_pred, y=maximizer(θ_pred)))
+y_pred = maximizer(θ_pred)
+plot_sample(b, DataSample(sample; θ=θ_pred, y=y_pred))
 
-# Optimality gap on the dataset (0 = optimal, higher is worse):
+# Optimality gap on the dataset (lower is better):
 compute_gap(b, dataset, model, maximizer)
 
 # ---
@@ -45,7 +46,10 @@ compute_gap(b, dataset, model, maximizer)
 # A feature vector ``x \in \mathbb{R}^n`` is observed (identity mapping by default).
 # The task is to select the ``k`` items with the highest values:
 # ```math
-# y = \mathrm{top}_k(\theta)
+# \begin{aligned}
+# y = \mathrm{top}_k(\theta) = & \mathop{\mathrm{argmax}}\limits_{y \in \{0,1\}^n} \; \theta^\top y \\
+# & \quad\text{s.t.} \quad \sum_{i=1}^n y_i = k
+# \end{aligned}
 # ```
 # where ``y \in \{0,1\}^n`` with exactly ``k`` ones.
 #
@@ -70,9 +74,9 @@ compute_gap(b, dataset, model, maximizer)
 # \xrightarrow{y}
 # ```
 #
-# **Model:** `Dense(n → n; bias=false)` — predicts a score per item.
+# **Model:** `Dense(n → n; bias=false)`: predicts a score per item.
 #
-# **Maximizer:** `top_k(θ, k)` — returns a boolean vector with `true` at the `k`
+# **Maximizer:** `top_k(θ, k)`: returns a boolean vector with `true` at the `k`
 # highest-scoring positions.
 #
 # !!! note "Reference"

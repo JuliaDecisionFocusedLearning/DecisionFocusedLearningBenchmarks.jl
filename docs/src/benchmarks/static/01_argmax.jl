@@ -53,7 +53,7 @@ mean(maximizer(model(s.x)) == s.y for s in dataset)
 # ``\theta = \text{encoder}(x) \in \mathbb{R}^n``. The task is to select the item with
 # the highest score:
 # ```math
-# y = \mathrm{argmax}(\theta)
+# y = \mathrm{argmax}(\theta) = \mathop{\mathrm{argmax}}\limits_{y\in\Delta^n} \theta^\top y
 # ```
 # The solution ``y`` is encoded as a one-hot vector.
 # The score vector ``\theta`` is never observed (only features ``x`` are available).

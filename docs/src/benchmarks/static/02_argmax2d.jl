@@ -49,7 +49,7 @@ plot_sample(b, DataSample(sample; θ=θ_pred, y=y_pred))
 # ``\theta \in \mathbb{R}^2``. The task is to find the polytope vertex maximizing
 # the dot product:
 # ```math
-# y^* = \mathrm{argmax}_{v \in \mathcal{Y}(x)} \; \theta^\top v
+# y^* = \mathop{\mathrm{argmax}}\limits_{v \in \mathcal{Y}(x)} \; \theta^\top v
 # ```
 #
 # This is a toy 2D combinatorial optimization problem useful for visualizing
@@ -72,6 +72,6 @@ plot_sample(b, DataSample(sample; θ=θ_pred, y=y_pred))
 # \xrightarrow{y}
 # ```
 #
-# **Model:** `Dense(nb_features → 2; bias=false)` — predicts a 2D cost direction.
+# **Model:** `Dense(nb_features → 2; bias=false)`: predicts a 2D cost direction.
 #
 # **Maximizer:** finds the vertex of the instance polytope with maximum dot product with θ.

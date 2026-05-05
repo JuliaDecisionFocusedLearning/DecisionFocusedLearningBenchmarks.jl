@@ -34,9 +34,10 @@ maximizer = generate_maximizer(b)         # Dijkstra shortest path on the grid g
 
 # A randomly initialized policy predicts arbitrary costs, yielding a near-straight path:
 θ_pred = model(sample.x)
-plot_sample(b, DataSample(; sample.context..., x=sample.x, θ=θ_pred, y=maximizer(θ_pred)))
+y_pred = maximizer(θ_pred)
+plot_sample(b, DataSample(sample; θ=θ_pred, y=y_pred))
 
-# Optimality gap on the dataset (0 = optimal, higher is worse):
+# Optimality gap on the dataset (lower is better):
 compute_gap(b, dataset, model, maximizer)
 
 # ---
@@ -48,7 +49,7 @@ compute_gap(b, dataset, model, maximizer)
 # ``x \in \mathbb{R}^p`` is observed. The task is to find the minimum-cost path from
 # vertex 1 (top-left) to vertex ``V`` (bottom-right):
 # ```math
-# y^* = \mathrm{argmin}_{y \in \mathcal{P}} \; \theta^\top y
+# y^* = \mathop{\mathrm{argmax}}\limits_{y \in \mathcal{P}} \; -\theta^\top y
 # ```
 # where ``y \in \{0,1\}^E`` indicates selected edges and ``\mathcal{P}`` is the set of
 # valid source-to-sink paths.
@@ -75,7 +76,7 @@ compute_gap(b, dataset, model, maximizer)
 # \xrightarrow[\text{Path}]{y \in \{0,1\}^E}
 # ```
 #
-# **Model:** `Chain(Dense(p → E))` — predicts one cost per edge.
+# **Model:** `Chain(Dense(p → E))`: predicts one cost per edge.
 #
 # **Maximizer:** Dijkstra (default) or Bellman-Ford on negated weights to find the
 # longest (maximum-weight) path.

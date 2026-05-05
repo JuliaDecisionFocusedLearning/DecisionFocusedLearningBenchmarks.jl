@@ -37,65 +37,62 @@ function _grid_matrices(bench::FixedSizeShortestPathBenchmark, θ, y)
     return weight_grid, path_grid
 end
 
-function plot_context(bench::FixedSizeShortestPathBenchmark, sample::DataSample; kwargs...)
+function _plot_grid(
+    bench::FixedSizeShortestPathBenchmark;
+    grid=nothing,
+    title="",
+    colorbar=false,
+    color=:viridis,
+    path_grid=nothing,
+    kwargs...,
+)
     rows, cols = bench.grid_size
-    # Show only the known graph structure (no edge costs)
-    interior_xs = [
-        c for r in 1:rows for
-        c in 1:cols if !(r == 1 && c == 1) && !(r == rows && c == cols)
-    ]
-    interior_ys = [
-        r for r in 1:rows for
-        c in 1:cols if !(r == 1 && c == 1) && !(r == rows && c == cols)
-    ]
-    pl = Plots.plot(;
-        xlim=(0.5, cols + 0.5),
-        ylim=(0.5, rows + 0.5),
+    if isnothing(grid)
+        grid = ones(rows, cols)
+    end
+    pl = Plots.heatmap(
+        grid;
         yflip=true,
         aspect_ratio=:equal,
-        legend=:topright,
-        title="Grid graph ($(rows)×$(cols))",
-        framestyle=:box,
-        grid=false,
+        title=title,
+        colorbar=colorbar,
+        framestyle=:none,
+        color=color,
         kwargs...,
     )
+    Plots.vline!(pl, (0.5):1:(cols + 0.5); color=:gray, lw=0.5, label=false)
+    Plots.hline!(pl, (0.5):1:(rows + 0.5); color=:gray, lw=0.5, label=false)
+    if !isnothing(path_grid)
+        path_xs = Int[]
+        path_ys = Int[]
+        for r in 1:rows, c in 1:cols
+            if path_grid[r, c]
+                push!(path_xs, c)
+                push!(path_ys, r)
+            end
+        end
+        Plots.scatter!(
+            pl, path_xs, path_ys; color=:white, markersize=6, markerstrokewidth=0, label=false
+        )
+    end
     Plots.scatter!(
-        pl,
-        interior_xs,
-        interior_ys;
-        color=:lightgray,
-        markersize=8,
-        markerstrokecolor=:gray,
-        markerstrokewidth=1,
-        label=false,
-    )
-    Plots.scatter!(
-        pl,
-        [1],
-        [1];
-        color=:seagreen,
-        markersize=10,
-        markershape=:square,
-        label="source",
-        markerstrokewidth=0,
+        pl, [1], [1]; color=:seagreen, markersize=8, markershape=:square, label=false
     )
     Plots.scatter!(
         pl,
         [cols],
         [rows];
         color=:crimson,
-        markersize=10,
+        markersize=8,
         markershape=:square,
-        label="sink",
-        markerstrokewidth=0,
+        label=false,
     )
     return pl
 end
 
-function plot_sample(bench::FixedSizeShortestPathBenchmark, sample::DataSample; kwargs...)
+function plot_context(bench::FixedSizeShortestPathBenchmark, sample::DataSample; kwargs...)
     x = sample.x
     p_feat = length(x)
-    weight_grid, path_grid = _grid_matrices(bench, sample.θ, sample.y)
     rows, cols = bench.grid_size
 
     p_x = Plots.bar(
@@ -104,37 +101,34 @@ function plot_sample(bench::FixedSizeShortestPathBenchmark, sample::DataSample; 
         legend=false,
         xlabel="Feature",
         ylabel="Value",
-        title="x (features, observable)",
+        title="x (features)",
         color=:steelblue,
         xticks=1:p_feat,
     )
-    p1 = Plots.heatmap(
-        weight_grid;
-        yflip=true,
-        aspect_ratio=:equal,
-        title="Edge weights θ",
-        colorbar=true,
-        framestyle=:none,
+    p_grid = _plot_grid(bench; title="Grid graph ($(rows)×$(cols))", color=:grays)
+
+    l = Plots.@layout [a{0.35w} b]
+    return Plots.plot(p_x, p_grid; layout=l, size=(700, 300), kwargs...)
+end
+
+function plot_sample(bench::FixedSizeShortestPathBenchmark, sample::DataSample; kwargs...)
+    x = sample.x
+    p_feat = length(x)
+    weight_grid, path_grid = _grid_matrices(bench, sample.θ, sample.y)
+
+    p_x = Plots.bar(
+        1:p_feat,
+        Float64.(x);
+        legend=false,
+        xlabel="Feature",
+        ylabel="Value",
+        title="x (features)",
+        color=:steelblue,
+        xticks=1:p_feat,
     )
-    p2 = Plots.heatmap(
-        weight_grid;
-        yflip=true,
-        aspect_ratio=:equal,
-        title="Shortest path y",
-        colorbar=false,
-        framestyle=:none,
-        color=:Blues,
-    )
-    path_xs = Int[]
-    path_ys = Int[]
-    for r in 1:rows, c in 1:cols
-        if path_grid[r, c]
-            push!(path_xs, c)
-            push!(path_ys, r)
-        end
-    end
-    Plots.scatter!(
-        p2, path_xs, path_ys; color=:white, markersize=6, markerstrokewidth=0, label=false
+    p1 = _plot_grid(bench; grid=weight_grid, title="Edge weights θ", colorbar=true)
+    p2 = _plot_grid(
+        bench; grid=weight_grid, title="Shortest path y", color=:Blues, path_grid=path_grid
     )
 
     l = Plots.@layout [a{0.25h}; [b c]]

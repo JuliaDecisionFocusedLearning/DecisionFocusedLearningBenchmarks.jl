@@ -35,9 +35,10 @@ maximizer = generate_maximizer(b)         # ordinal ranking via sortperm
 
 # A randomly initialized policy produces an arbitrary ranking:
 θ_pred = model(sample.x)
-plot_sample(b, DataSample(; sample.context..., x=sample.x, θ=θ_pred, y=maximizer(θ_pred)))
+y_pred = maximizer(θ_pred)
+plot_sample(b, DataSample(sample; θ=θ_pred, y=y_pred))
 
-# Optimality gap on the dataset (0 = optimal, higher is worse):
+# Optimality gap on the dataset (lower is better):
 compute_gap(b, dataset, model, maximizer)
 
 # ---
@@ -48,9 +49,9 @@ compute_gap(b, dataset, model, maximizer)
 # ``\theta \in \mathbb{R}^n``. The task is to compute the ordinal ranking of the items
 # by cost:
 # ```math
-# y_i = \mathrm{rank}(\theta_i \mid \theta_1, \ldots, \theta_n)
+# y_i = \mathrm{rank}(\theta_i \mid \theta_1, \ldots, \theta_n) = \mathop{\mathrm{argmax}}\limits_{y\in\sigma(n)} \theta^\top y
 # ```
-# where ``y_i = 1`` means item ``i`` has the highest cost.
+# where ``y_i = 1`` means item ``i`` has the lowest cost.
 #
 # ## Key Parameters
 #
@@ -69,6 +70,6 @@ compute_gap(b, dataset, model, maximizer)
 # \xrightarrow{y}
 # ```
 #
-# **Model:** `Chain(Dense(nb_features → 1; bias=false), vec)` — predicts one score per item.
+# **Model:** `Chain(Dense(nb_features → 1; bias=false), vec)`: predicts one score per item.
 #
-# **Maximizer:** `ranking(θ)` — returns a vector of ordinal ranks via `invperm(sortperm(θ))`.
+# **Maximizer:** `ranking(θ)`: returns a vector of ordinal ranks via `invperm(sortperm(θ))`.
