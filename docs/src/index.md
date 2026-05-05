@@ -66,6 +66,13 @@ Multi-stage sequential decision-making problems:
 
 ## Getting Started
 
+First, make sure to install the package from the Julia registry:
+
+```julia
+using Pkg
+Pkg.add("DecisionFocusedLearningBenchmarks")
+```
+
 In a few lines of code, you can create benchmark instances, generate datasets, initialize learning components, and evaluate performance, using the same syntax across all benchmarks:
 
 ```julia
