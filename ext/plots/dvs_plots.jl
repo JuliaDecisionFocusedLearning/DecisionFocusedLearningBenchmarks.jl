@@ -46,8 +46,9 @@ function plot_state(
     show_colorbar=true,
     kwargs...,
 )
-    (; x_depot, y_depot, x_customers, y_customers, is_must_dispatch, start_times) =
-        DVS.build_state_data(state)
+    (; x_depot, y_depot, x_customers, y_customers, is_must_dispatch, start_times) = DVS.build_state_data(
+        state
+    )
 
     xlabel = show_axis_labels ? "x coordinate" : ""
     ylabel = show_axis_labels ? "y coordinate" : ""
