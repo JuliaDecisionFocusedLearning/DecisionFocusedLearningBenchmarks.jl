@@ -28,7 +28,7 @@ Also implement:
 - [`objective_value`](@ref)`(bench, sample, y)`: must be implemented by every static benchmark
 
 # Optional methods (no default, require `Plots` to be loaded)
-- [`plot_instance`](@ref), [`plot_sample`](@ref)
+- [`plot_context`](@ref), [`plot_sample`](@ref)
 - [`generate_baseline_policies`](@ref)
 """
 abstract type AbstractStaticBenchmark <: AbstractBenchmark end

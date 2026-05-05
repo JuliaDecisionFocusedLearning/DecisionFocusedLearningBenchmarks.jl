@@ -125,7 +125,7 @@ end
     sample = DataSample(dataset[1]; θ=model(dataset[1].x))
 
     @test has_visualization(b)
-    fig1 = plot_instance(b, dataset[1])
+    fig1 = plot_context(b, dataset[1])
     @test fig1 isa Plots.Plot
     fig2 = plot_sample(b, sample)
     @test fig2 isa Plots.Plot

@@ -5,7 +5,7 @@ $TYPEDSIGNATURES
 
 Plot the input features as a heatmap. Columns correspond to items, rows correspond to features.
 """
-function plot_instance(::ArgmaxBenchmark, sample::DataSample; kwargs...)
+function plot_context(::ArgmaxBenchmark, sample::DataSample; kwargs...)
     x = sample.x  # nb_features × n
     n = size(x, 2)
     return Plots.heatmap(

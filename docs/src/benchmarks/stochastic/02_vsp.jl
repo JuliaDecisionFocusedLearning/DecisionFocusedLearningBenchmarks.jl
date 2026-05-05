@@ -13,7 +13,7 @@ b = StochasticVehicleSchedulingBenchmark()
 # and scheduled times are observable at inference time.
 # `store_city=true` is required to visualize the map (not needed for training):
 sample = generate_dataset(b, 1; store_city=true)[1]
-plot_instance(b, sample)
+plot_context(b, sample)
 
 # ## A training sample
 #

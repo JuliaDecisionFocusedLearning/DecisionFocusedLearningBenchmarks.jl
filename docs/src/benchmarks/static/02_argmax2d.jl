@@ -15,7 +15,7 @@ b = Argmax2DBenchmark(; seed=0)
 # but not the cost direction hidden `θ`:
 dataset = generate_dataset(b, 50; seed=0)
 sample = first(dataset)
-plot_instance(b, sample)
+plot_context(b, sample)
 
 # ## A training sample
 #

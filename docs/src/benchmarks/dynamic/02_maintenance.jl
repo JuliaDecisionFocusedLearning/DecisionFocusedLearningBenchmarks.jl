@@ -16,7 +16,7 @@ env = generate_environments(b, 1)[1]
 _, trajectory = evaluate_policy!(policies.greedy, env)
 
 # The observable state at step 1: degradation levels per component (1 = new, n = failed):
-plot_instance(b, trajectory[1])
+plot_context(b, trajectory[1])
 
 # ## A training sample
 #

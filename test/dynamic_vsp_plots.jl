@@ -9,8 +9,8 @@
     # Get a trajectory via the anticipative solver
     y = generate_anticipative_solver(b)(env; nb_epochs=3)
 
-    # Test plot_instance (shows first epoch state)
-    fig1 = plot_instance(b, y[1])
+    # Test plot_context (shows first epoch state)
+    fig1 = plot_context(b, y[1])
     @test fig1 isa Plots.Plot
 
     # Test plot_trajectory (grid of epoch subplots)

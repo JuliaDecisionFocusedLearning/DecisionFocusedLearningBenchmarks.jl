@@ -1,6 +1,6 @@
 has_visualization(::ContextualStochasticArgmaxBenchmark) = true
 
-function plot_instance(::ContextualStochasticArgmaxBenchmark, sample::DataSample; kwargs...)
+function plot_context(::ContextualStochasticArgmaxBenchmark, sample::DataSample; kwargs...)
     c_base = sample.c_base  # base utilities (first n components of x)
     x_raw = sample.x_raw    # context features (last d components of x)
     n = length(c_base)

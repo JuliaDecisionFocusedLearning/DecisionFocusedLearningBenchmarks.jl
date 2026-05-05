@@ -3,9 +3,7 @@ import DecisionFocusedLearningBenchmarks.StochasticVehicleScheduling:
 
 has_visualization(::StochasticVehicleSchedulingBenchmark) = true
 
-function plot_instance(
-    ::StochasticVehicleSchedulingBenchmark, sample::DataSample; kwargs...
-)
+function plot_context(::StochasticVehicleSchedulingBenchmark, sample::DataSample; kwargs...)
     @assert hasproperty(sample.instance, :city) "Sample does not contain city information."
     (; tasks, district_width, width) = sample.instance.city
     ticks = 0:district_width:width

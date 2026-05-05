@@ -12,7 +12,7 @@ b = PortfolioOptimizationBenchmark()
 # At inference time the decision-maker observes only the contextual feature vector `x`:
 dataset = generate_dataset(b, 20; seed=0)
 sample = first(dataset)
-plot_instance(b, sample)
+plot_context(b, sample)
 
 # ## A training sample
 #

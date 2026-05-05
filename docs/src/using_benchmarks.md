@@ -190,7 +190,7 @@ dataset = generate_dataset(bench, 10)
 sample = dataset[1]
 
 has_visualization(bench)           # true
-plot_instance(bench, sample)       # problem geometry only
+plot_context(bench, sample)       # problem geometry only
 plot_sample(bench, sample)       # sample.y overlaid on the instance
 plot_sample(bench, sample, y)    # convenience 3-arg form: override y before plotting
 
@@ -202,7 +202,7 @@ gif(anim, "episode.gif")
 ```
 
 - `has_visualization(bench)`: returns `true` for benchmarks that implement plot support (if Plots is loaded).
-- `plot_instance(bench, sample; kwargs...)`: renders the problem geometry without any solution.
+- `plot_context(bench, sample; kwargs...)`: renders the problem geometry without any solution.
 - `plot_sample(bench, sample; kwargs...)`: renders `sample.y` overlaid on the instance.
 - `plot_sample(bench, sample, y; kwargs...)`: 3-arg convenience form that overrides `y` before plotting.
 - `plot_trajectory(bench, traj; kwargs...)`: dynamic benchmarks only; produces a grid of per-epoch subplots.

@@ -1,6 +1,6 @@
 has_visualization(::MaintenanceBenchmark) = true
 
-function plot_instance(bench::MaintenanceBenchmark, sample::DataSample; kwargs...)
+function plot_context(bench::MaintenanceBenchmark, sample::DataSample; kwargs...)
     # sample.instance = degradation_state (Vector{Int}, values 1..n)
     state = sample.instance
     N = length(state)

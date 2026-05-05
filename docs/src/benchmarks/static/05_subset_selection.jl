@@ -12,7 +12,7 @@ b = SubsetSelectionBenchmark(; identity_mapping=false)
 # At inference time the decision-maker observes only the feature vector `x`:
 dataset = generate_dataset(b, 50; seed=0)
 sample = first(dataset)
-plot_instance(b, sample)
+plot_context(b, sample)
 
 # ## A training sample
 #

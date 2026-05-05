@@ -36,7 +36,7 @@
     @testset "Plots" begin
         using Plots
         @test has_visualization(b)
-        fig1 = plot_instance(b, dataset[1])
+        fig1 = plot_context(b, dataset[1])
         @test fig1 isa Plots.Plot
         fig2 = plot_sample(b, dataset[1])
         @test fig2 isa Plots.Plot

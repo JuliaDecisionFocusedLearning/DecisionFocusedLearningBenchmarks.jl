@@ -18,7 +18,7 @@ _, trajectory = evaluate_policy!(policies.greedy, env)
 
 # The observable state at step 1: depot (green square), must-dispatch customers
 # (red stars; deadline reached), postponable customers (blue triangles):
-plot_instance(b, trajectory[1])
+plot_context(b, trajectory[1])
 
 # ## A training sample
 #

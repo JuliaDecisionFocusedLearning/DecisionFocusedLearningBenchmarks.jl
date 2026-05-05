@@ -37,7 +37,7 @@ function _grid_matrices(bench::FixedSizeShortestPathBenchmark, θ, y)
     return weight_grid, path_grid
 end
 
-function plot_instance(bench::FixedSizeShortestPathBenchmark, sample::DataSample; kwargs...)
+function plot_context(bench::FixedSizeShortestPathBenchmark, sample::DataSample; kwargs...)
     rows, cols = bench.grid_size
     # Show only the known graph structure (no edge costs)
     interior_xs = [

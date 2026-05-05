@@ -11,7 +11,7 @@ b = WarcraftBenchmark()
 #
 # At inference time the decision-maker observes only the terrain image `x` (not the costs `θ`):
 sample = generate_dataset(b, 1)[1]
-plot_instance(b, sample)
+plot_context(b, sample)
 
 # ## A training sample
 #

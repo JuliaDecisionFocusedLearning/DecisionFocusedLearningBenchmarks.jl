@@ -16,7 +16,7 @@ b = ArgmaxBenchmark(; seed=0)
 # (rows = features, columns = items):
 dataset = generate_dataset(b, 100; seed=0)
 sample = first(dataset)
-plot_instance(b, sample)
+plot_context(b, sample)
 
 # ## A training sample
 #

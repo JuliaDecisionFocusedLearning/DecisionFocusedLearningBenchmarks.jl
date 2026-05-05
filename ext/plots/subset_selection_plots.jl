@@ -1,6 +1,6 @@
 has_visualization(::SubsetSelectionBenchmark) = true
 
-function plot_instance(::SubsetSelectionBenchmark, sample::DataSample; kwargs...)
+function plot_context(::SubsetSelectionBenchmark, sample::DataSample; kwargs...)
     x = sample.x  # length n feature vector
     n = length(x)
     return Plots.bar(

@@ -236,7 +236,7 @@ end
     _, traj = evaluate_policy!(policies[1], envs)
 
     @test has_visualization(b)
-    fig1 = plot_instance(b, traj[1])
+    fig1 = plot_context(b, traj[1])
     @test fig1 isa Plots.Plot
     fig2 = plot_sample(b, traj[1])
     @test fig2 isa Plots.Plot

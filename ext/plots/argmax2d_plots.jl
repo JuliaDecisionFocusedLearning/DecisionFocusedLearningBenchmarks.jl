@@ -45,7 +45,7 @@ end
 
 has_visualization(::Argmax2DBenchmark) = true
 
-function plot_instance(::Argmax2DBenchmark, sample::DataSample; kwargs...)
+function plot_context(::Argmax2DBenchmark, sample::DataSample; kwargs...)
     pl = _init_plot(; kwargs...)
     _plot_polytope!(pl, sample.instance)
     return pl

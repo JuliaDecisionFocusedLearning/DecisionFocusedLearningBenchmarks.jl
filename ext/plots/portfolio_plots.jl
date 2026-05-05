@@ -1,6 +1,6 @@
 has_visualization(::PortfolioOptimizationBenchmark) = true
 
-function plot_instance(::PortfolioOptimizationBenchmark, sample::DataSample; kwargs...)
+function plot_context(::PortfolioOptimizationBenchmark, sample::DataSample; kwargs...)
     x = sample.x
     p = length(x)
     return Plots.bar(

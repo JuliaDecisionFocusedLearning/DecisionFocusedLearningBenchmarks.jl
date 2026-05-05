@@ -1,6 +1,6 @@
 has_visualization(::RankingBenchmark) = true
 
-function plot_instance(::RankingBenchmark, sample::DataSample; kwargs...)
+function plot_context(::RankingBenchmark, sample::DataSample; kwargs...)
     x = sample.x  # nb_features × n
     n = size(x, 2)
     return Plots.heatmap(

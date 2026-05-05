@@ -24,9 +24,9 @@ sample = first(dataset)
 
 # ## Observable input
 #
-# At inference time the model observes `x = [c_base; x_raw]`. `plot_instance` shows both
+# At inference time the model observes `x = [c_base; x_raw]`. `plot_context` shows both
 # components: base utilities `c_base` (left) and context features `x_raw` (right):
-plot_instance(b, sample)
+plot_context(b, sample)
 
 # ## A training sample
 #

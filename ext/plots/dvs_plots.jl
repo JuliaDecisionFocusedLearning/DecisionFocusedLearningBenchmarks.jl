@@ -194,7 +194,7 @@ end
 
 # ── interface methods ────────────────────────────────────────────────────────
 
-function plot_instance(
+function plot_context(
     bench::DynamicVehicleSchedulingBenchmark, sample::DataSample; kwargs...
 )
     return plot_state(sample.instance; kwargs...)

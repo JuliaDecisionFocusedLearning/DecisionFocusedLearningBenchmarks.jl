@@ -1,6 +1,6 @@
 has_visualization(::DynamicAssortmentBenchmark) = true
 
-function plot_instance(::DynamicAssortmentBenchmark, sample::DataSample; kwargs...)
+function plot_context(::DynamicAssortmentBenchmark, sample::DataSample; kwargs...)
     # sample.instance = (env.features, purchase_history); row 1 of features = prices (×10 to undo normalization)
     prices = sample.instance[1][1, :] .* 10
     N = length(prices)
