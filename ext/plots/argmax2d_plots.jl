@@ -57,4 +57,3 @@ function plot_sample(::Argmax2DBenchmark, sample::DataSample; kwargs...)
     _plot_objective!(pl, sample.θ)
     return _plot_y!(pl, sample.y)
 end
-
