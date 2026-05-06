@@ -82,7 +82,7 @@ export is_exogenous, is_endogenous
 export is_minimization_problem
 
 export objective_value
-export has_visualization, plot_instance, plot_solution, plot_trajectory, animate_trajectory
+export has_visualization, plot_context, plot_sample, plot_trajectory, animate_trajectory
 export compute_gap
 
 # Export all benchmarks

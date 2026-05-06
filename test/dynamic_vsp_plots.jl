@@ -9,19 +9,19 @@
     # Get a trajectory via the anticipative solver
     y = generate_anticipative_solver(b)(env; nb_epochs=3)
 
-    # Test plot_instance (shows first epoch state)
-    fig1 = plot_instance(b, y[1])
+    # Test plot_context (shows first epoch state)
+    fig1 = plot_context(b, y[1])
     @test fig1 isa Plots.Plot
 
     # Test plot_trajectory (grid of epoch subplots)
     fig2 = plot_trajectory(b, y)
     @test fig2 isa Plots.Plot
 
-    # Test plot_solution via baseline policy
+    # Test plot_sample via baseline policy
     policies = generate_baseline_policies(b)
     lazy = policies[1]
     _, d = evaluate_policy!(lazy, env)
-    fig3 = plot_solution(b, d[1])
+    fig3 = plot_sample(b, d[1])
     @test fig3 isa Plots.Plot
 
     # Test animate_trajectory — returns Animation, save separately with gif()

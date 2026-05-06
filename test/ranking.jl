@@ -34,4 +34,15 @@
     gap = compute_gap(b, dataset[1:5], model, maximizer)
     @test isfinite(gap)
     @test gap >= 0
+
+    @testset "Plots" begin
+        using Plots
+        @test has_visualization(b)
+        fig1 = plot_context(b, dataset[1])
+        @test fig1 isa Plots.Plot
+        fig2 = plot_sample(b, dataset[1])
+        @test fig2 isa Plots.Plot
+        fig3 = plot_sample(b, DataSample(dataset[1]; y=dataset[2].y))
+        @test fig3 isa Plots.Plot
+    end
 end

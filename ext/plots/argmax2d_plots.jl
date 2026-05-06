@@ -39,28 +39,21 @@ function _plot_y!(pl, y)
         color="#CB3C33",
         markersize=9,
         markershape=:square,
-        label=L"f(\theta)",
+        label=L"y = \mathrm{argmax}_v\; \theta^\top v",
     )
 end
 
 has_visualization(::Argmax2DBenchmark) = true
 
-function plot_instance(::Argmax2DBenchmark, sample::DataSample; kwargs...)
+function plot_context(::Argmax2DBenchmark, sample::DataSample; kwargs...)
     pl = _init_plot(; kwargs...)
     _plot_polytope!(pl, sample.instance)
     return pl
 end
 
-function plot_solution(::Argmax2DBenchmark, sample::DataSample; kwargs...)
+function plot_sample(::Argmax2DBenchmark, sample::DataSample; kwargs...)
     pl = _init_plot(; kwargs...)
     _plot_polytope!(pl, sample.instance)
     _plot_objective!(pl, sample.θ)
     return _plot_y!(pl, sample.y)
-end
-
-function plot_solution(::Argmax2DBenchmark, sample::DataSample, y; θ=sample.θ, kwargs...)
-    pl = _init_plot(; kwargs...)
-    _plot_polytope!(pl, sample.instance)
-    _plot_objective!(pl, θ)
-    return _plot_y!(pl, y)
 end

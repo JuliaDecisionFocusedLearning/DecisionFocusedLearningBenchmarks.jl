@@ -3,7 +3,7 @@ using Images: Gray
 
 has_visualization(::WarcraftBenchmark) = true
 
-function plot_instance(::WarcraftBenchmark, sample::DataSample; kwargs...)
+function plot_context(::WarcraftBenchmark, sample::DataSample; kwargs...)
     im = dropdims(sample.x; dims=4)
     img = W.convert_image_for_plot(im)
     return Plots.plot(
@@ -11,12 +11,12 @@ function plot_instance(::WarcraftBenchmark, sample::DataSample; kwargs...)
     )
 end
 
-function plot_solution(
+function plot_sample(
     ::WarcraftBenchmark,
     sample::DataSample;
     θ_true=sample.θ,
-    θ_title="Weights",
-    y_title="Path",
+    θ_title="Cell costs θ",
+    y_title="Path y",
     kwargs...,
 )
     x = sample.x

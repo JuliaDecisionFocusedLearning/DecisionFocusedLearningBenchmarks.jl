@@ -113,3 +113,22 @@ end
     s = DataSample(; x=randn(Float32, 8), y=maximizer(randn(Float32, 5)))
     @test_throws Exception objective_value(b, s, s.y)
 end
+
+@testset "ContextualStochasticArgmax - Plots" begin
+    using DecisionFocusedLearningBenchmarks
+    using Plots
+
+    b = ContextualStochasticArgmaxBenchmark(; n=5, d=3, seed=0)
+    policies = generate_baseline_policies(b)
+    dataset = generate_dataset(b, 2; nb_scenarios=2, target_policy=policies.saa)
+    model = generate_statistical_model(b; seed=0)
+    sample = DataSample(dataset[1]; θ=model(dataset[1].x))
+
+    @test has_visualization(b)
+    fig1 = plot_context(b, dataset[1])
+    @test fig1 isa Plots.Plot
+    fig2 = plot_sample(b, sample)
+    @test fig2 isa Plots.Plot
+    fig3 = plot_sample(b, DataSample(sample; y=dataset[2].y))
+    @test fig3 isa Plots.Plot
+end

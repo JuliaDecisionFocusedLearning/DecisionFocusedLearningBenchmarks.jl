@@ -32,12 +32,12 @@ Where:
 
 ## Package Overview
 
-**DecisionFocusedLearningBenchmarks.jl** provides a collection of benchmark problems for evaluating decision-focused learning algorithms. The package offers:
+**DecisionFocusedLearningBenchmarks.jl** provides a collection of benchmark problems for evaluating decision-focused learning algorithms. The package contains:
 
-- **Collection of benchmark problems** spanning diverse applications
+- A **collection of benchmark problems** spanning diverse applications
 - **Common tools** for creating datasets, statistical models, and optimization algorithms
-- **Generic interface** for building custom benchmarks
-- Compatibility with [InferOpt.jl](https://github.com/JuliaDecisionFocusedLearning/InferOpt.jl) and the whole [JuliaDecisionFocusedLearning](https://github.com/JuliaDecisionFocusedLearning) ecosystem
+- A **generic interface** for building custom benchmarks
+- **Compatibility** with [InferOpt.jl](https://github.com/JuliaDecisionFocusedLearning/InferOpt.jl) and the whole [JuliaDecisionFocusedLearning](https://github.com/JuliaDecisionFocusedLearning) ecosystem
 
 ## Benchmark Categories
 
@@ -53,8 +53,9 @@ Single-stage optimization problems with no randomness involved:
 - [`FixedSizeShortestPathBenchmark`](@ref): find shortest path on grid graphs with fixed size
 - [`WarcraftBenchmark`](@ref): shortest path on image maps
 
-### Stochastic Benchmarks (`AbstractStochasticBenchmark`)  
+### Stochastic Benchmarks (`AbstractStochasticBenchmark`)
 Single-stage optimization problems under uncertainty:
+- [`ContextualStochasticArgmaxBenchmark`](@ref): contextual argmax with stochastic utilities
 - [`StochasticVehicleSchedulingBenchmark`](@ref): stochastic vehicle scheduling under delay uncertainty
 
 ### Dynamic Benchmarks (`AbstractDynamicBenchmark`)
@@ -64,6 +65,13 @@ Multi-stage sequential decision-making problems:
 - [`MaintenanceBenchmark`](@ref): maintenance problem with resource constraint
 
 ## Getting Started
+
+First, make sure to install the package from the Julia registry:
+
+```julia
+using Pkg
+Pkg.add("DecisionFocusedLearningBenchmarks")
+```
 
 In a few lines of code, you can create benchmark instances, generate datasets, initialize learning components, and evaluate performance, using the same syntax across all benchmarks:
 

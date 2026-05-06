@@ -225,3 +225,23 @@ end
     θ = fill(-1.0, 10)
     @test maximizer(θ) == falses(10)
 end
+
+@testset "Maintenance - Plots" begin
+    using DecisionFocusedLearningBenchmarks
+    using Plots
+
+    b = MaintenanceBenchmark()
+    envs = generate_environments(b, 2; seed=0)
+    policies = generate_baseline_policies(b)
+    _, traj = evaluate_policy!(policies[1], envs)
+
+    @test has_visualization(b)
+    fig1 = plot_context(b, traj[1])
+    @test fig1 isa Plots.Plot
+    fig2 = plot_sample(b, traj[1])
+    @test fig2 isa Plots.Plot
+    fig3 = plot_sample(b, DataSample(traj[1]; y=traj[2].y))
+    @test fig3 isa Plots.Plot
+    fig4 = plot_trajectory(b, traj)
+    @test fig4 isa Plots.Plot
+end

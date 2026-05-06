@@ -59,24 +59,24 @@ function generate_baseline_policies end
 """
     has_visualization(::AbstractBenchmark) -> Bool
 
-Return `true` if `plot_instance` and `plot_solution` are implemented for this benchmark
+Return `true` if `plot_context` and `plot_sample` are implemented for this benchmark
 (requires `Plots` to be loaded). Default is `false`.
 """
 has_visualization(::AbstractBenchmark) = false
 
 """
-    plot_instance(bench::AbstractBenchmark, sample::DataSample; kwargs...)
+    plot_context(bench::AbstractBenchmark, sample::DataSample; kwargs...)
 
-Plot the problem instance (no solution). Only available when `Plots` is loaded.
+Plot the observable context before making a decision (no solution). Only available when `Plots` is loaded.
 """
-function plot_instance end
+function plot_context end
 
 """
-    plot_solution(bench::AbstractBenchmark, sample::DataSample; kwargs...)
+    plot_sample(bench::AbstractBenchmark, sample::DataSample; kwargs...)
 
 Plot the instance with `sample.y` overlaid. Only available when `Plots` is loaded.
 """
-function plot_solution end
+function plot_sample end
 
 """
     objective_value(bench::AbstractBenchmark, sample::DataSample, y) -> Real

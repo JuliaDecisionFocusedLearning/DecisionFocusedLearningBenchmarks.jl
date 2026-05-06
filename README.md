@@ -23,6 +23,13 @@ maximizer = generate_maximizer(bench)
 
 For the full list of benchmarks, the common interface, and detailed usage examples, refer to the [documentation](https://JuliaDecisionFocusedLearning.github.io/DecisionFocusedLearningBenchmarks.jl/stable/).
 
+## Installation
+
+```julia
+using Pkg
+Pkg.add("DecisionFocusedLearningBenchmarks")
+```
+
 ## Related Packages
 
 This package is part of the [JuliaDecisionFocusedLearning](https://github.com/JuliaDecisionFocusedLearning) organization, and built to be compatible with other packages in the ecosystem:
