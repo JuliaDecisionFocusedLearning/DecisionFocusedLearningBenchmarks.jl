@@ -240,7 +240,7 @@ end
     @test fig1 isa Plots.Plot
     fig2 = plot_sample(b, traj[1])
     @test fig2 isa Plots.Plot
-    fig3 = plot_sample(b, traj[1], traj[2].y)
+    fig3 = plot_sample(b, DataSample(traj[1]; y=traj[2].y))
     @test fig3 isa Plots.Plot
     fig4 = plot_trajectory(b, traj)
     @test fig4 isa Plots.Plot

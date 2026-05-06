@@ -41,7 +41,7 @@
         @test fig1 isa Plots.Plot
         fig2 = plot_sample(b, dataset[1])
         @test fig2 isa Plots.Plot
-        fig3 = plot_sample(b, dataset[1], dataset[2].y)
+        fig3 = plot_sample(b, DataSample(dataset[1]; y=dataset[2].y))
         @test fig3 isa Plots.Plot
     end
 end

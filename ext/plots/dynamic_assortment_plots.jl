@@ -1,9 +1,5 @@
 has_visualization(::DynamicAssortmentBenchmark) = true
 
-function _step_str(sample::DataSample)
-    return hasproperty(sample, :step) ? " (step $(sample.step))" : ""
-end
-
 function plot_context(::DynamicAssortmentBenchmark, sample::DataSample; kwargs...)
     prices = sample.instance[1][1, :] .* 10
     N = length(prices)

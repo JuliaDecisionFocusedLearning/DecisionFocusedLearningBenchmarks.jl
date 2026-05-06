@@ -21,7 +21,7 @@
     @test figure isa Plots.Plot
     figure2 = plot_context(b, dataset[1])
     @test figure2 isa Plots.Plot
-    figure3 = plot_sample(b, dataset[1], dataset[2].y)
+    figure3 = plot_sample(b, DataSample(dataset[1]; y=dataset[2].y))
     @test figure3 isa Plots.Plot
 
     for (i, sample) in enumerate(dataset)

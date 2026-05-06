@@ -4,10 +4,6 @@ function _degradation_colors(state, n)
     return [s == n ? :firebrick : :steelblue for s in state]
 end
 
-function _step_str(sample::DataSample)
-    return hasproperty(sample, :step) ? " (step $(sample.step))" : ""
-end
-
 function plot_context(bench::MaintenanceBenchmark, sample::DataSample; kwargs...)
     state = sample.instance
     N = length(state)

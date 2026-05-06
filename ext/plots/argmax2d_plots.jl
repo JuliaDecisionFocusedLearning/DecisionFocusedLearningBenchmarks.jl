@@ -58,9 +58,3 @@ function plot_sample(::Argmax2DBenchmark, sample::DataSample; kwargs...)
     return _plot_y!(pl, sample.y)
 end
 
-function plot_sample(::Argmax2DBenchmark, sample::DataSample, y; θ=sample.θ, kwargs...)
-    pl = _init_plot(; kwargs...)
-    _plot_polytope!(pl, sample.instance)
-    _plot_objective!(pl, θ)
-    return _plot_y!(pl, y)
-end
