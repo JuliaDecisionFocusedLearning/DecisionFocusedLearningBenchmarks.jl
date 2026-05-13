@@ -2,6 +2,7 @@ import DecisionFocusedLearningBenchmarks.StochasticVehicleScheduling:
     Solution, compute_path_list
 
 has_visualization(::StochasticVehicleSchedulingBenchmark) = true
+has_visualization(::ContextualStochasticVehicleSchedulingBenchmark) = true
 
 # ── helpers ────────────────────────────────────────────────────────────────────
 
@@ -96,6 +97,20 @@ function _plot_routes(fig, city, path_list; route_linewidth=2, route_alpha=0.7)
     return fig
 end
 
+function _annotate_districts(fig, city, district_μ, district_σ; fontsize=6)
+    (; districts, district_width) = city
+    lin = LinearIndices(districts)
+    nx, ny = size(districts)
+    for ix in 1:nx, iy in 1:ny
+        cx = (ix - 0.5) * district_width
+        cy = (iy - 0.5) * district_width
+        i = lin[ix, iy]
+        label = "μ=$(round(district_μ[i]; digits=2))\nσ=$(round(district_σ[i]; digits=2))"
+        Plots.annotate!(fig, cx, cy, Plots.text(label, fontsize, :black, :center))
+    end
+    return fig
+end
+
 # ── interface methods ──────────────────────────────────────────────────────────
 
 function plot_context(::StochasticVehicleSchedulingBenchmark, sample::DataSample; kwargs...)
@@ -110,5 +125,30 @@ function plot_sample(::StochasticVehicleSchedulingBenchmark, sample::DataSample;
     solution = Solution(sample.y, sample.instance)
     path_list = compute_path_list(solution)
     _plot_routes(fig, city, path_list)
+    return fig
+end
+
+function plot_context(
+    ::ContextualStochasticVehicleSchedulingBenchmark, sample::DataSample; kwargs...
+)
+    @assert hasproperty(sample.instance, :city) "Sample does not contain city information."
+    city = sample.instance.city
+    fig = _plot_city(city; kwargs...)
+    _annotate_districts(fig, city, sample.district_μ, sample.district_σ)
+    return fig
+end
+
+function plot_sample(
+    ::ContextualStochasticVehicleSchedulingBenchmark, sample::DataSample; kwargs...
+)
+    @assert hasproperty(sample.instance, :city) "Sample does not contain city information."
+    city = sample.instance.city
+    fig = _plot_city(city; kwargs...)
+    _annotate_districts(fig, city, sample.district_μ, sample.district_σ)
+    if !isnothing(sample.y)
+        solution = Solution(sample.y, sample.instance)
+        path_list = compute_path_list(solution)
+        _plot_routes(fig, city, path_list)
+    end
     return fig
 end

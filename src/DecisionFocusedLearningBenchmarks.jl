@@ -107,6 +107,7 @@ export FixedSizeShortestPathBenchmark
 export PortfolioOptimizationBenchmark
 export RankingBenchmark
 export StochasticVehicleSchedulingBenchmark
+export ContextualStochasticVehicleSchedulingBenchmark
 export SubsetSelectionBenchmark
 export WarcraftBenchmark
 export MaintenanceBenchmark
