@@ -116,6 +116,7 @@ function compact_mip(
     scenario_range=nothing,
     model_builder=scip_model,
     silent=true,
+    kwargs...,
 )
     (; graph, slacks, intrinsic_delays, vehicle_cost, delay_cost) = instance
     nb_nodes = nv(graph)

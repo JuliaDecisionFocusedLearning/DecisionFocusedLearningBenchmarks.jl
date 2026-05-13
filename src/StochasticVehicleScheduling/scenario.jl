@@ -27,8 +27,18 @@ $TYPEDSIGNATURES
 
 Draw a single fresh scenario from the city's random distributions,
 independently of the stored scenario draws in the `City` struct.
+
+The `district_delay_fn(x, y) -> LogNormal{Float64}` keyword controls the per-district
+delay distribution used at grid position `(x, y)`. By default it reads from
+`city.districts[x, y].random_delay`; pass a custom callable to override the lookup
+(used by the contextual variant to build distributions from per-sample `(μ_d, σ_d)`).
 """
-function draw_scenario(city::City, graph::AbstractGraph, rng::AbstractRNG)
+function draw_scenario(
+    city::City,
+    graph::AbstractGraph,
+    rng::AbstractRNG;
+    district_delay_fn=(x, y) -> city.districts[x, y].random_delay,
+)
     tasks = city.tasks
     N = length(tasks)
 
@@ -46,8 +56,9 @@ function draw_scenario(city::City, graph::AbstractGraph, rng::AbstractRNG)
     for x in 1:nb_per_edge
         for y in 1:nb_per_edge
             prev = 0.0
+            d = district_delay_fn(x, y)
             for h in 1:24
-                prev = scenario_next_delay(prev, city.districts[x, y].random_delay, rng)
+                prev = scenario_next_delay(prev, d, rng)
                 district_delays[x, y][h] = prev
             end
         end

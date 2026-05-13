@@ -18,6 +18,7 @@ using Random
     include("maintenance.jl")
     include("warcraft.jl")
     include("vsp.jl")
+    include("contextual_vsp.jl")
     include("contextual_stochastic_argmax.jl")
     include("portfolio_optimization.jl")
 

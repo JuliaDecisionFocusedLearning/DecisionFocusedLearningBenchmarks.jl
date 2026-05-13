@@ -1,6 +1,7 @@
 module StochasticVehicleScheduling
 
 export StochasticVehicleSchedulingBenchmark
+export ContextualStochasticVehicleSchedulingBenchmark
 export generate_dataset, generate_maximizer, generate_statistical_model
 export compact_linearized_mip,
     compact_mip, column_generation_algorithm, local_search, deterministic_mip
@@ -12,7 +13,7 @@ using DocStringExtensions: TYPEDEF, TYPEDFIELDS, TYPEDSIGNATURES
 using ConstrainedShortestPaths:
     stochastic_routing_shortest_path, stochastic_routing_shortest_path_with_threshold
 using Distributions: Distribution, LogNormal, Uniform, DiscreteUniform
-using Flux: Chain, Dense
+using Flux: Chain, Dense, relu
 using Graphs:
     AbstractGraph,
     SimpleDiGraph,
@@ -50,6 +51,7 @@ include("solution/algorithms/deterministic_mip.jl")
 include("solution/algorithms/anticipative_solver.jl")
 
 include("maximizer.jl")
+include("contextual.jl")
 
 """
 $TYPEDEF
