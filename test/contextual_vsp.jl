@@ -9,6 +9,16 @@
 
     @test is_exogenous(b)
 
+    # Custom cost fields thread through to the instance
+    b_custom = ContextualStochasticVehicleSchedulingBenchmark(;
+        nb_tasks=10, vehicle_cost=100.0, delay_cost=5.0, p_storm=0.3, storm_multiplier=20.0
+    )
+    sample_custom = generate_dataset(
+        b_custom, 1; contexts_per_instance=1, nb_scenarios=1, seed=99
+    )[1]
+    @test sample_custom.instance.vehicle_cost == 100.0
+    @test sample_custom.instance.delay_cost == 5.0
+
     N = 2
     M = 3
     K = 2
@@ -19,11 +29,27 @@
     @test hasproperty(unlabeled[1].extra, :scenario)
     @test unlabeled[1].extra.scenario isa VSPScenario
 
-    # Each sample carries μ/σ in context
+    # Each sample carries μ/σ and storm fields in context
     @test hasproperty(unlabeled[1].context, :district_μ)
     @test hasproperty(unlabeled[1].context, :district_σ)
     @test length(unlabeled[1].district_μ) == length(unlabeled[1].instance.city.districts)
     @test length(unlabeled[1].district_σ) == length(unlabeled[1].instance.city.districts)
+    @test hasproperty(unlabeled[1].context, :storm_district)
+    @test hasproperty(unlabeled[1].context, :p_storm)
+    @test hasproperty(unlabeled[1].context, :storm_multiplier)
+    @test unlabeled[1].storm_district isa Int
+    @test 0 < unlabeled[1].p_storm < 1
+    @test unlabeled[1].storm_multiplier > 1
+
+    # storm_district is always drawn from occupied districts (≥1 task start_point inside)
+    let city = unlabeled[1].instance.city
+        lin = LinearIndices(city.districts)
+        occupied = unique([
+            lin[StochasticVehicleScheduling.get_district(t.start_point, city)...] for
+            t in city.tasks[2:(end - 1)]
+        ])
+        @test unlabeled[1].storm_district in occupied
+    end
 
     # Samples sharing an instance have identical city, but different μ/σ across contexts
     same_instance_block = unlabeled[1:(M * K)]
@@ -31,15 +57,23 @@
     @test length(cities) == 1
     μs = [s.district_μ for s in same_instance_block[1:K:end]]  # one per context
     @test length(unique(μs)) == M
+    # storm_district is re-drawn per context; coincidences are possible but unlikely
+    storm_districts = [s.storm_district for s in same_instance_block[1:K:end]]
+    @test all(d -> d isa Int, storm_districts)
 
-    # Features are 5 × ne(graph), Float32
+    # Features are 7 × ne(graph), Float32
+    # Columns: [μ_src, σ_src, μ_dst, σ_dst, travel_time, storm_exposure_src, storm_exposure_dst]
     sample = unlabeled[1]
     E = ne(sample.instance.graph)
-    @test size(sample.x) == (5, E)
+    @test size(sample.x) == (7, E)
     @test eltype(sample.x) === Float32
+    # Storm exposure features (6 and 7) must be non-zero for at least one arc,
+    # since storm_district is drawn from occupied districts
+    @test any(sample.x[6, :] .> 0) || any(sample.x[7, :] .> 0)
 
     # Statistical model + maximizer pipeline
     model = generate_statistical_model(b; seed=0)
+    @test size(model[1].weight) == (1, 7)
     maximizer = generate_maximizer(b)
     θ = model(sample.x)
     @test length(θ) == E

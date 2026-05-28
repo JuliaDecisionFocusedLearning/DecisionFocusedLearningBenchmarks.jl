@@ -111,6 +111,27 @@ function _annotate_districts(fig, city, district_μ, district_σ; fontsize=6)
     return fig
 end
 
+function _highlight_district(fig, city, district_idx; color=:red, alpha=0.25)
+    (; district_width, width) = city
+    nx = width ÷ district_width
+    ix = (district_idx - 1) % nx + 1
+    iy = (district_idx - 1) ÷ nx + 1
+    x0 = (ix - 1) * district_width
+    y0 = (iy - 1) * district_width
+    Plots.plot!(
+        fig,
+        Plots.Shape(
+            [x0, x0 + district_width, x0 + district_width, x0],
+            [y0, y0, y0 + district_width, y0 + district_width],
+        );
+        fillcolor=color,
+        fillalpha=alpha,
+        linewidth=0,
+        label=nothing,
+    )
+    return fig
+end
+
 # ── interface methods ──────────────────────────────────────────────────────────
 
 function plot_context(::StochasticVehicleSchedulingBenchmark, sample::DataSample; kwargs...)
@@ -135,6 +156,9 @@ function plot_context(
     city = sample.instance.city
     fig = _plot_city(city; kwargs...)
     _annotate_districts(fig, city, sample.district_μ, sample.district_σ)
+    if hasproperty(sample.context, :storm_district)
+        _highlight_district(fig, city, sample.storm_district)
+    end
     return fig
 end
 
@@ -145,6 +169,9 @@ function plot_sample(
     city = sample.instance.city
     fig = _plot_city(city; kwargs...)
     _annotate_districts(fig, city, sample.district_μ, sample.district_σ)
+    if hasproperty(sample.context, :storm_district)
+        _highlight_district(fig, city, sample.storm_district)
+    end
     if !isnothing(sample.y)
         solution = Solution(sample.y, sample.instance)
         path_list = compute_path_list(solution)

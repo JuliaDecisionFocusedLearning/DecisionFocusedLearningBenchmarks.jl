@@ -17,6 +17,14 @@ $TYPEDFIELDS
     nb_tasks::Int = 25
     "number of scenarios drawn per context (used for objective evaluation)"
     nb_scenarios::Int = 10
+    "cost of one vehicle (overrides `default_vehicle_cost` for this benchmark only)"
+    vehicle_cost::Float64 = 200.0
+    "cost of one minute of delay (overrides `default_delay_cost` for this benchmark only)"
+    delay_cost::Float64 = 20.0
+    "probability that the storm is active in each scenario"
+    p_storm::Float64 = 0.15
+    "delay multiplier for the storm hotspot district when the storm is active"
+    storm_multiplier::Float64 = 50.0
 end
 
 """
@@ -69,8 +77,8 @@ The returned `DataSample` carries the city + graph in `context.instance` and lea
 function Utils.generate_instance(
     benchmark::ContextualStochasticVehicleSchedulingBenchmark, rng::AbstractRNG; kwargs...
 )
-    (; nb_tasks) = benchmark
-    city = create_contextual_city(; nb_tasks, rng, kwargs...)
+    (; nb_tasks, vehicle_cost, delay_cost) = benchmark
+    city = create_contextual_city(; nb_tasks, rng, vehicle_cost, delay_cost, kwargs...)
     graph = create_VSP_graph(city)
     instance = Instance(
         graph,
@@ -87,19 +95,25 @@ end
 """
 $TYPEDSIGNATURES
 
-Build the `5 × ne(graph)` per-edge feature matrix for the contextual stochastic VSP.
+Build the `7 × ne(graph)` per-edge feature matrix for the contextual stochastic VSP.
 
-Each column `e = (u, v)` is `[μ_src, σ_src, μ_dst, σ_dst, travel_time]`, where the
-source district is the district containing `tasks[u].end_point` and the destination
-district is the district containing `tasks[v].start_point` (matching the slack
-computation in `draw_scenario`). `district_μ` and `district_σ` are indexed via
-`LinearIndices(city.districts)`.
+Each column `e = (u, v)` is
+`[μ_src, σ_src, μ_dst, σ_dst, travel_time, storm_exposure_src, storm_exposure_dst]`,
+where the source district is the district containing `tasks[u].end_point` and the
+destination district is the district containing `tasks[v].start_point`. Features 6 and 7
+encode the expected storm penalty: `p_storm` for arcs whose origin/destination lies in
+`storm_district`, and `0` otherwise.
 """
 function compute_contextual_features(
-    city::City, graph::AbstractGraph, district_μ::AbstractVector, district_σ::AbstractVector
+    city::City,
+    graph::AbstractGraph,
+    district_μ::AbstractVector,
+    district_σ::AbstractVector,
+    storm_district::Int,
+    p_storm::Float64,
 )
     lin = LinearIndices(city.districts)
-    features = Matrix{Float32}(undef, 5, ne(graph))
+    features = Matrix{Float32}(undef, 7, ne(graph))
     for (i, e) in enumerate(edges(graph))
         u, v = src(e), dst(e)
         ox, oy = get_district(city.tasks[u].end_point, city)
@@ -112,6 +126,8 @@ function compute_contextual_features(
         features[3, i] = district_μ[d]
         features[4, i] = district_σ[d]
         features[5, i] = travel_time
+        features[6, i] = Float32(p_storm * (o == storm_district))
+        features[7, i] = Float32(p_storm * (d == storm_district))
     end
     return features
 end
@@ -124,7 +140,7 @@ Draw `(district_μ, district_σ)` for every district from `default_district_μ` 
 feature matrix `x`.
 """
 function Utils.generate_context(
-    ::ContextualStochasticVehicleSchedulingBenchmark,
+    bench::ContextualStochasticVehicleSchedulingBenchmark,
     rng::AbstractRNG,
     instance_sample::DataSample,
 )
@@ -133,9 +149,23 @@ function Utils.generate_context(
     nb_districts = length(city.districts)
     district_μ = rand(rng, default_district_μ, nb_districts)
     district_σ = rand(rng, default_district_σ, nb_districts)
-    x = compute_contextual_features(city, instance.graph, district_μ, district_σ)
+    # Draw storm hotspot from occupied districts only (districts containing ≥1 task
+    # start_point), guaranteeing the storm always affects at least one arc.
+    tasks_jobs = city.tasks[2:(end - 1)]
+    lin = LinearIndices(city.districts)
+    occupied = unique([lin[get_district(t.start_point, city)...] for t in tasks_jobs])
+    storm_district = rand(rng, occupied)
+    x = compute_contextual_features(
+        city, instance.graph, district_μ, district_σ, storm_district, bench.p_storm
+    )
     return DataSample(;
-        x, instance_sample.context..., district_μ=district_μ, district_σ=district_σ
+        x,
+        instance_sample.context...,
+        district_μ=district_μ,
+        district_σ=district_σ,
+        storm_district=storm_district,
+        p_storm=bench.p_storm,
+        storm_multiplier=bench.storm_multiplier,
     )
 end
 
@@ -152,15 +182,25 @@ function Utils.generate_scenario(
     instance::Instance,
     district_μ::AbstractVector,
     district_σ::AbstractVector,
+    storm_district::Int,
+    p_storm::Float64,
+    storm_multiplier::Float64,
     kwargs...,
 )
     city = instance.city
     @assert !isnothing(city) "contextual SVS `generate_scenario` requires `store_city=true`"
     lin = LinearIndices(city.districts)
-    district_delay_fn = (x, y) -> begin
-        i = lin[x, y]
-        return LogNormal(district_μ[i], district_σ[i])
-    end
+    storm_active = rand(rng) < p_storm
+    district_delay_fn =
+        (x, y) -> begin
+            i = lin[x, y]
+            effective_μ = if (storm_active && i == storm_district)
+                district_μ[i] + log(storm_multiplier)
+            else
+                district_μ[i]
+            end
+            return LogNormal(effective_μ, district_σ[i])
+        end
     return draw_scenario(city, instance.graph, rng; district_delay_fn)
 end
 
@@ -174,7 +214,7 @@ function Utils.generate_statistical_model(
     ::ContextualStochasticVehicleSchedulingBenchmark; seed=nothing
 )
     Random.seed!(seed)
-    return Chain(Dense(5 => 1; bias=false), vec)
+    return Chain(Dense(7 => 1; bias=false), vec)
 end
 
 """
