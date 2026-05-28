@@ -169,6 +169,11 @@ function Utils.generate_context(
     )
 end
 
+struct ContextualScenario
+    scenario::VSPScenario
+    storm_active::Bool
+end
+
 """
 $TYPEDSIGNATURES
 
@@ -201,7 +206,9 @@ function Utils.generate_scenario(
             end
             return LogNormal(effective_μ, district_σ[i])
         end
-    return draw_scenario(city, instance.graph, rng; district_delay_fn)
+    return ContextualScenario(
+        draw_scenario(city, instance.graph, rng; district_delay_fn), storm_active
+    )
 end
 
 """
