@@ -96,7 +96,7 @@ SAA variant: build stochastic instance from `scenarios` then solve via
 [`compact_linearized_mip`](@ref).
 """
 function compact_linearized_mip(
-    instance::Instance, scenarios::Vector{VSPScenario}; kwargs...
+    instance::Instance, scenarios::Vector{<:VSPScenario}; kwargs...
 )
     return compact_linearized_mip(build_stochastic_instance(instance, scenarios); kwargs...)
 end
@@ -188,7 +188,7 @@ SAA variant: build stochastic instance from `scenarios` then solve via
 [`compact_mip`](@ref).
 """
 function compact_mip(
-    instance::Instance, scenarios::Vector{VSPScenario}, θ=nothing; kwargs...
+    instance::Instance, scenarios::Vector{<:VSPScenario}, θ=nothing; kwargs...
 )
     return compact_mip(build_stochastic_instance(instance, scenarios), θ; kwargs...)
 end

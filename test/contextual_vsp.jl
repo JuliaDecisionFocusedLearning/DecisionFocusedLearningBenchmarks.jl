@@ -28,6 +28,7 @@
     @test length(unlabeled) == N * M * K
     @test hasproperty(unlabeled[1].extra, :scenario)
     @test unlabeled[1].extra.scenario isa VSPScenario
+    @test unlabeled[1].extra.scenario.storm_active isa Bool
 
     # Each sample carries μ/σ and storm fields in context
     @test hasproperty(unlabeled[1].context, :district_μ)

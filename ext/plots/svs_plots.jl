@@ -218,7 +218,14 @@ function plot_sample(
     )
     _annotate_districts(fig, city, sample.district_μ, sample.district_σ)
     if hasproperty(sample.context, :storm_district)
-        if sample.extra.scenario.storm_active
+        storm_active = if hasproperty(sample.extra, :scenario)
+            sample.extra.scenario.storm_active
+        elseif hasproperty(sample.extra, :scenarios)
+            any(s -> s.storm_active, sample.extra.scenarios)
+        else
+            false
+        end
+        if storm_active
             _highlight_district(fig, city, sample.storm_district)
         else
             _highlight_district(fig, city, sample.storm_district; color=:green)
@@ -229,11 +236,9 @@ function plot_sample(
         path_list = filter(p -> length(p) > 2, compute_path_list(solution))
         _plot_routes(fig, city, path_list)
         eval_instance = if hasproperty(sample.extra, :scenario)
-            build_stochastic_instance(sample.instance, [sample.extra.scenario.scenario])
+            build_stochastic_instance(sample.instance, [sample.extra.scenario])
         elseif hasproperty(sample.extra, :scenarios)
-            build_stochastic_instance(
-                sample.instance, [s.scenario for s in sample.extra.scenarios]
-            )
+            build_stochastic_instance(sample.instance, sample.extra.scenarios)
         else
             sample.instance
         end
