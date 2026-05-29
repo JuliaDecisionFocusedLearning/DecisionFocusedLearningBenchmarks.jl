@@ -101,8 +101,9 @@ Each column `e = (u, v)` is
 `[μ_src, σ_src, μ_dst, σ_dst, travel_time, storm_exposure_src, storm_exposure_dst]`,
 where the source district is the district containing `tasks[u].end_point` and the
 destination district is the district containing `tasks[v].start_point`. Features 6 and 7
-encode the expected storm penalty: `p_storm` for arcs whose origin/destination lies in
-`storm_district`, and `0` otherwise.
+encode the expected storm penalty: `p_storm * storm_multiplier` for arcs whose
+origin/destination lies in `storm_district`, and `0` otherwise. This puts features 6–7
+on the same scale as `travel_time` (feature 5).
 """
 function compute_contextual_features(
     city::City,
@@ -111,6 +112,7 @@ function compute_contextual_features(
     district_σ::AbstractVector,
     storm_district::Int,
     p_storm::Float64,
+    storm_multiplier::Float64,
 )
     lin = LinearIndices(city.districts)
     features = Matrix{Float32}(undef, 7, ne(graph))
@@ -126,8 +128,8 @@ function compute_contextual_features(
         features[3, i] = district_μ[d]
         features[4, i] = district_σ[d]
         features[5, i] = travel_time
-        features[6, i] = Float32(p_storm * (o == storm_district))
-        features[7, i] = Float32(p_storm * (d == storm_district))
+        features[6, i] = Float32(p_storm * storm_multiplier * (o == storm_district))
+        features[7, i] = Float32(p_storm * storm_multiplier * (d == storm_district))
     end
     return features
 end
@@ -156,7 +158,13 @@ function Utils.generate_context(
     occupied = unique([lin[get_district(t.start_point, city)...] for t in tasks_jobs])
     storm_district = rand(rng, occupied)
     x = compute_contextual_features(
-        city, instance.graph, district_μ, district_σ, storm_district, bench.p_storm
+        city,
+        instance.graph,
+        district_μ,
+        district_σ,
+        storm_district,
+        bench.p_storm,
+        bench.storm_multiplier,
     )
     return DataSample(;
         x,

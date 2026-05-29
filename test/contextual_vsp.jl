@@ -63,6 +63,7 @@
 
     # Features are 7 × ne(graph), Float32
     # Columns: [μ_src, σ_src, μ_dst, σ_dst, travel_time, storm_exposure_src, storm_exposure_dst]
+    # Features 6–7 encode p_storm * storm_multiplier ∈ {0, 7.5}, on the same scale as travel_time
     sample = unlabeled[1]
     E = ne(sample.instance.graph)
     @test size(sample.x) == (7, E)
@@ -70,6 +71,10 @@
     # Storm exposure features (6 and 7) must be non-zero for at least one arc,
     # since storm_district is drawn from occupied districts
     @test any(sample.x[6, :] .> 0) || any(sample.x[7, :] .> 0)
+    # Non-zero storm features equal p_storm * storm_multiplier
+    expected_storm_val = Float32(b.p_storm * b.storm_multiplier)
+    @test all(v -> v == 0 || v ≈ expected_storm_val, sample.x[6, :])
+    @test all(v -> v == 0 || v ≈ expected_storm_val, sample.x[7, :])
 
     # Statistical model + maximizer pipeline
     model = generate_statistical_model(b; seed=0)
