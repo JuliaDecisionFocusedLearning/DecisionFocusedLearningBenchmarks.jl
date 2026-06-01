@@ -32,7 +32,7 @@ using JuMP:
 using Printf: @printf
 using Random: Random, AbstractRNG, MersenneTwister
 using SparseArrays: sparse, SparseMatrixCSC
-using Statistics: quantile, mean
+using Statistics: quantile, mean, std
 
 include("utils.jl")
 include("instance/constants.jl")
