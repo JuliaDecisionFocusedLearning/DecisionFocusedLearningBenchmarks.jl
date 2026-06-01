@@ -14,7 +14,7 @@ using DocStringExtensions: TYPEDEF, TYPEDFIELDS, TYPEDSIGNATURES
 using ConstrainedShortestPaths:
     stochastic_routing_shortest_path, stochastic_routing_shortest_path_with_threshold
 using Distributions: Distribution, LogNormal, Uniform, DiscreteUniform
-using Flux: Chain, Dense, relu
+using Flux: Chain, Dense, relu, softplus
 using Graphs:
     AbstractGraph,
     SimpleDiGraph,
