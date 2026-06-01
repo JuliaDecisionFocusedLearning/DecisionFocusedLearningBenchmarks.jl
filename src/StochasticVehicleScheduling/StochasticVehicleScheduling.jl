@@ -7,6 +7,7 @@ export compact_linearized_mip,
     compact_mip, column_generation_algorithm, local_search, deterministic_mip
 export evaluate_solution, is_feasible
 export VSPScenario, build_stochastic_instance
+export compute_feature_std
 
 using ..Utils
 using DocStringExtensions: TYPEDEF, TYPEDFIELDS, TYPEDSIGNATURES

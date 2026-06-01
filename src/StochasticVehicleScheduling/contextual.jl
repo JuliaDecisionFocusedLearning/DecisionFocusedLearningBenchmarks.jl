@@ -137,6 +137,23 @@ end
 """
 $TYPEDSIGNATURES
 
+Compute the per-feature standard deviation across all edges in `dataset`.
+
+Concatenates the `7 × ne` feature matrices of all samples horizontally and returns a
+length-7 vector of row-wise standard deviations. Any zero standard deviation (constant
+feature) is replaced by `1f0` to avoid division by zero when normalizing.
+Intended to be called on the training split only, to prevent data leakage.
+"""
+function compute_feature_std(dataset)
+    all_features = hcat([sample.x for sample in dataset]...)  # 7 × (total edges)
+    stds = vec(std(all_features; dims=2))                      # length-7
+    stds[stds .== 0f0] .= 1f0                                  # avoid division by zero
+    return Float32.(stds)
+end
+
+"""
+$TYPEDSIGNATURES
+
 Draw `(district_μ, district_σ)` for every district from `default_district_μ` and
 `default_district_σ`, add them to `instance_sample.context`, and compute the per-edge
 feature matrix `x`.
@@ -215,14 +232,18 @@ end
 """
 $TYPEDSIGNATURES
 
-Small MLP mapping the `5×ne(graph)` per-edge feature matrix to a length-`ne(graph)`
-score vector. Architecture: `Chain(Dense(5 => 16, relu), Dense(16 => 1; bias=false), vec)`.
+Linear model mapping the `7×ne(graph)` per-edge feature matrix to a length-`ne(graph)`
+positive score vector. Architecture: `Chain(Dense(7 => 1; bias=false), softplus, vec)`.
+
+The `softplus` activation ensures all arc scores θ are strictly positive, which gives
+the LP maximizer a well-defined ranking and prevents unconstrained negative drift of
+the weights during training.
 """
 function Utils.generate_statistical_model(
     ::ContextualStochasticVehicleSchedulingBenchmark; seed=nothing
 )
     Random.seed!(seed)
-    return Chain(Dense(7 => 1; bias=false), vec)
+    return Chain(Dense(7 => 1; bias=false), x -> softplus.(x), vec)
 end
 
 """
