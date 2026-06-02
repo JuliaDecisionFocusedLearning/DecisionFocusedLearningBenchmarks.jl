@@ -62,24 +62,23 @@
     storm_districts = [s.storm_district for s in same_instance_block[1:K:end]]
     @test all(d -> d isa Int, storm_districts)
 
-    # Features are 7 × ne(graph), Float32
-    # Columns: [μ_src, σ_src, μ_dst, σ_dst, travel_time, storm_exposure_src, storm_exposure_dst]
-    # Features 6–7 encode p_storm * storm_multiplier ∈ {0, 7.5}, on the same scale as travel_time
+    # Features are 20 × ne(graph), Float32
+    # Layout matches compute_features (non-contextual):
+    #   1: travel time, 2: vehicle cost (source arcs), 3-11: slack deciles, 12-20: slack CDF
     sample = unlabeled[1]
     E = ne(sample.instance.graph)
-    @test size(sample.x) == (7, E)
+    @test size(sample.x) == (20, E)
     @test eltype(sample.x) === Float32
-    # Storm exposure features (6 and 7) must be non-zero for at least one arc,
-    # since storm_district is drawn from occupied districts
-    @test any(sample.x[6, :] .> 0) || any(sample.x[7, :] .> 0)
-    # Non-zero storm features equal p_storm * storm_multiplier
-    expected_storm_val = Float32(b.p_storm * b.storm_multiplier)
-    @test all(v -> v == 0 || v ≈ expected_storm_val, sample.x[6, :])
-    @test all(v -> v == 0 || v ≈ expected_storm_val, sample.x[7, :])
+    # Travel-time feature (row 1) must be non-negative
+    @test all(sample.x[1, :] .>= 0)
+    # Deciles (rows 3–11) must be non-decreasing per arc
+    @test all(all(sample.x[k, :] .<= sample.x[k + 1, :]) for k in 3:10)
+    # CDF features (rows 12–20) must be in [0, 1]
+    @test all(0 .<= sample.x[12:20, :] .<= 1)
 
     # Statistical model + maximizer pipeline
     model = generate_statistical_model(b; seed=0)
-    @test size(model[1].weight) == (1, 7)
+    @test size(model[1].weight) == (1, 20)
     maximizer = generate_maximizer(b)
     θ = model(sample.x)
     @test length(θ) == E

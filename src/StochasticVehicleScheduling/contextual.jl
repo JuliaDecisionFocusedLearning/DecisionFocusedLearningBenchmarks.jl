@@ -25,6 +25,8 @@ $TYPEDFIELDS
     p_storm::Float64 = 0.15
     "delay multiplier for the storm hotspot district when the storm is active"
     storm_multiplier::Float64 = 50.0
+    "number of Monte Carlo draws used to compute per-arc slack quantile features"
+    nb_feat_scenarios::Int = 50
 end
 
 """
@@ -95,17 +97,32 @@ end
 """
 $TYPEDSIGNATURES
 
-Build the `7 × ne(graph)` per-edge feature matrix for the contextual stochastic VSP.
+Build the `20 × ne(graph)` per-edge feature matrix for the contextual stochastic VSP
+using Monte Carlo draws from the context-defined distributions.
 
-Each column `e = (u, v)` is
-`[μ_src, σ_src, μ_dst, σ_dst, travel_time, storm_exposure_src, storm_exposure_dst]`,
-where the source district is the district containing `tasks[u].end_point` and the
-destination district is the district containing `tasks[v].start_point`. Features 6 and 7
-encode the expected storm penalty: `p_storm * storm_multiplier` for arcs whose
-origin/destination lies in `storm_district`, and `0` otherwise. This puts features 6–7
-on the same scale as `travel_time` (feature 5).
+Mirrors [`compute_features`](@ref) from the non-contextual benchmark exactly:
+- Feature 1: nominal travel time (Euclidean distance between task endpoints).
+- Feature 2: vehicle cost if the arc leaves the depot source node, else 0.
+- Features 3–11: deciles (0.1 … 0.9) of the empirical slack distribution over
+  `nb_feat_scenarios` draws.
+- Features 12–20: empirical CDF of the slack at thresholds
+  `[-100, -50, -20, -10, 0, 10, 50, 200, 500]`.
+
+The slack for arc (u→v) in one draw uses **Formula A** (identical to `compute_slacks`
+in the non-contextual pipeline):
+```
+slack = scenario_start_time[v] - (scenario_end_time[u] + nominal_travel_time)
+```
+where `scenario_end_time[u]` and `scenario_start_time[v]` are drawn by replicating the
+`generate_scenarios!` + `compute_perturbed_end_times!` logic with the contextual
+`(district_μ, district_σ)`.  The storm is activated once per scenario draw (Bernoulli
+with probability `p_storm`) and shifts `district_μ[storm_district]` by
+`log(storm_multiplier)`, exactly as in [`generate_scenario`](@ref).
+
+A forked copy of `rng` is used so the main RNG state (used afterwards for scenario
+generation) is not consumed.
 """
-function compute_contextual_features(
+function compute_contextual_slack_features(
     city::City,
     graph::AbstractGraph,
     district_μ::AbstractVector,
@@ -113,24 +130,91 @@ function compute_contextual_features(
     storm_district::Int,
     p_storm::Float64,
     storm_multiplier::Float64,
+    rng::AbstractRNG;
+    nb_feat_scenarios::Int=50,
 )
     lin = LinearIndices(city.districts)
-    features = Matrix{Float32}(undef, 7, ne(graph))
+    tasks = city.tasks
+    N = length(tasks)
+    nb_per_edge = size(city.districts, 1)
+    E = ne(graph)
+
+    cumul = [-100, -50, -20, -10, 0, 10, 50, 200, 500]
+    nb_features = 2 + 9 + length(cumul)
+    features = zeros(Float32, nb_features, E)
+
+    # Use a forked RNG so the caller's state is untouched.
+    rng_feat = copy(rng)
+
+    # Accumulate per-arc slack samples across nb_feat_scenarios draws.
+    slack_samples = [Vector{Float64}(undef, nb_feat_scenarios) for _ in 1:E]
+
+    for s in 1:nb_feat_scenarios
+        # --- Storm activation (once per scenario, same as generate_scenario) ---
+        storm_active = rand(rng_feat) < p_storm
+
+        # --- Inter-area factor for 24 hours (mirrors generate_scenarios!) ---
+        inter_area = zeros(24)
+        prev_ia = 0.0
+        for h in 1:24
+            prev_ia = (prev_ia + 0.1) * rand(rng_feat, city.random_inter_area_factor)
+            inter_area[h] = prev_ia
+        end
+
+        # --- District delays for 24 hours (mirrors roll(district, rng)) ---
+        # Uses contextual LogNormal(effective_μ, σ) with storm correction.
+        district_delays = [zeros(24) for _ in 1:nb_per_edge, _ in 1:nb_per_edge]
+        for x in 1:nb_per_edge
+            for y in 1:nb_per_edge
+                i = lin[x, y]
+                effective_μ = if (storm_active && i == storm_district)
+                    district_μ[i] + log(storm_multiplier)
+                else
+                    district_μ[i]
+                end
+                d = LogNormal(effective_μ, district_σ[i])
+                prev_d = 0.0
+                for h in 1:24
+                    prev_d = prev_d / 2.0 + rand(rng_feat, d)
+                    district_delays[x, y][h] = prev_d
+                end
+            end
+        end
+
+        # --- Task start times (mirrors roll(task, rng)) ---
+        scenario_start_time = [t.start_time + rand(rng_feat, t.random_delay) for t in tasks]
+
+        # --- Task end times (mirrors compute_perturbed_end_times!) ---
+        scenario_end_time = [t.end_time for t in tasks]
+        for i in 2:(N - 1)
+            task = tasks[i]
+            origin_x, origin_y = get_district(task.start_point, city)
+            dest_x, dest_y = get_district(task.end_point, city)
+            ξ₁ = scenario_start_time[i]
+            ξ₂ = ξ₁ + district_delays[origin_x, origin_y][hour_of(ξ₁)]
+            ξ₃ = ξ₂ + (task.end_time - task.start_time) + inter_area[hour_of(ξ₂)]
+            scenario_end_time[i] = ξ₃ + district_delays[dest_x, dest_y][hour_of(ξ₃)]
+        end
+
+        # --- Slack per arc: Formula A (mirrors compute_slacks(city, u, v)) ---
+        for (j, e) in enumerate(edges(graph))
+            u, v = src(e), dst(e)
+            travel_time = distance(tasks[u].end_point, tasks[v].start_point)
+            slack_samples[j][s] =
+                scenario_start_time[v] - (scenario_end_time[u] + travel_time)
+        end
+    end
+
+    # --- Aggregate into feature matrix (mirrors compute_features loop) ---
     for (i, e) in enumerate(edges(graph))
         u, v = src(e), dst(e)
-        ox, oy = get_district(city.tasks[u].end_point, city)
-        dx, dy = get_district(city.tasks[v].start_point, city)
-        o = lin[ox, oy]
-        d = lin[dx, dy]
-        travel_time = distance(city.tasks[u].end_point, city.tasks[v].start_point)
-        features[1, i] = district_μ[o]
-        features[2, i] = district_σ[o]
-        features[3, i] = district_μ[d]
-        features[4, i] = district_σ[d]
-        features[5, i] = travel_time
-        features[6, i] = Float32(p_storm * storm_multiplier * (o == storm_district))
-        features[7, i] = Float32(p_storm * storm_multiplier * (d == storm_district))
+        features[1, i] = distance(tasks[u].end_point, tasks[v].start_point)
+        features[2, i] = u == 1 ? Float32(city.vehicle_cost) : 0.0f0
+        slacks = slack_samples[i]
+        features[3:11, i] = quantile(slacks, [0.1 * k for k in 1:9])
+        features[12:nb_features, i] = [mean(slacks .<= x) for x in cumul]
     end
+
     return features
 end
 
@@ -145,9 +229,9 @@ feature) is replaced by `1f0` to avoid division by zero when normalizing.
 Intended to be called on the training split only, to prevent data leakage.
 """
 function compute_feature_std(dataset)
-    all_features = hcat([sample.x for sample in dataset]...)  # 7 × (total edges)
-    stds = vec(std(all_features; dims=2))                      # length-7
-    stds[stds .== 0f0] .= 1f0                                  # avoid division by zero
+    all_features = hcat([sample.x for sample in dataset]...)  # 20 × (total edges)
+    stds = vec(std(all_features; dims=2))                      # length-20
+    stds[stds .== 0.0f0] .= 1.0f0                                  # avoid division by zero
     return Float32.(stds)
 end
 
@@ -174,7 +258,7 @@ function Utils.generate_context(
     lin = LinearIndices(city.districts)
     occupied = unique([lin[get_district(t.start_point, city)...] for t in tasks_jobs])
     storm_district = rand(rng, occupied)
-    x = compute_contextual_features(
+    x = compute_contextual_slack_features(
         city,
         instance.graph,
         district_μ,
@@ -182,6 +266,8 @@ function Utils.generate_context(
         storm_district,
         bench.p_storm,
         bench.storm_multiplier,
+        rng;
+        nb_feat_scenarios=bench.nb_feat_scenarios,
     )
     return DataSample(;
         x,
@@ -232,18 +318,14 @@ end
 """
 $TYPEDSIGNATURES
 
-Linear model mapping the `7×ne(graph)` per-edge feature matrix to a length-`ne(graph)`
-positive score vector. Architecture: `Chain(Dense(7 => 1; bias=false), softplus, vec)`.
-
-The `softplus` activation ensures all arc scores θ are strictly positive, which gives
-the LP maximizer a well-defined ranking and prevents unconstrained negative drift of
-the weights during training.
+Linear model mapping the `20×ne(graph)` per-edge feature matrix to a length-`ne(graph)`
+positive score vector. Architecture: `Chain(Dense(20 => 1; bias=false), vec)`.
 """
 function Utils.generate_statistical_model(
     ::ContextualStochasticVehicleSchedulingBenchmark; seed=nothing
 )
     Random.seed!(seed)
-    return Chain(Dense(7 => 1; bias=false), x -> softplus.(x), vec)
+    return Chain(Dense(20 => 1; bias=false), vec)
 end
 
 """
