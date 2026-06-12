@@ -94,7 +94,7 @@ end
     maximizer = generate_maximizer(saa)
     labeled = map(dataset) do s
         y_saa = maximizer(mean(s.scenarios))
-        DataSample(; s.context..., x=s.x, y=y_saa, extra=s.extra)
+        return DataSample(; s.context..., x=s.x, y=y_saa, extra=s.extra)
     end
     @test sum(first(labeled).y) ≈ 1.0
 

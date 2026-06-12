@@ -184,7 +184,7 @@ Transform the features in the dataset.
 function StatsBase.transform(t, dataset::AbstractVector{<:DataSample})
     return map(dataset) do d
         (; context, extra, x, θ, y) = d
-        DataSample(; x=StatsBase.transform(t, x), θ, y, context..., extra)
+        return DataSample(; x=StatsBase.transform(t, x), θ, y, context..., extra)
     end
 end
 
@@ -207,7 +207,7 @@ Reconstruct the features in the dataset.
 function StatsBase.reconstruct(t, dataset::AbstractVector{<:DataSample})
     return map(dataset) do d
         (; context, extra, x, θ, y) = d
-        DataSample(StatsBase.reconstruct(t, x), θ, y, context, extra)
+        return DataSample(StatsBase.reconstruct(t, x), θ, y, context, extra)
     end
 end
 
