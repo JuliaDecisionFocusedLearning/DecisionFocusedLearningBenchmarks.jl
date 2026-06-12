@@ -9,6 +9,8 @@
     @test !is_endogenous(b)
 
     environments = generate_environments(b, 10; seed=0)
+    @test environments isa Vector{<:SeededEnvironment}
+    @test generate_environment(b; seed=0) isa SeededEnvironment
 
     env = environments[1]
     get_seed(env)
