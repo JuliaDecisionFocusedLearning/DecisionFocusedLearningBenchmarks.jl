@@ -24,5 +24,4 @@ DecisionFocusedLearningBenchmarks = {path = ".."}
 [compat]
 Aqua = "0.8.14"
 JuliaFormatter = "2"
-LoweredCodeUtils = "<3.6" # pin until https://github.com/aviatesk/JET.jl/issues/823 is fixed
 Test = "1"
