@@ -99,7 +99,7 @@ function quantile_reachable_new_requests(
     # Store reachability percentages for each customer across samples
     reachability_matrix = zeros(Float64, n_current, n_samples)
 
-    rng = MersenneTwister(42)
+    rng = Xoshiro(42)
     for s in 1:n_samples
         # Sample new requests similar to scenario generation
         coordinate_indices = sample_indices(rng, max_requests_per_epoch, N)

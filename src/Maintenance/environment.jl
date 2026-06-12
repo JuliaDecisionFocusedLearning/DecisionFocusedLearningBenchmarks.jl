@@ -6,18 +6,13 @@ Environment for the maintenance problem.
 # Fields
 $TYPEDFIELDS
 """
-@kwdef mutable struct Environment{R<:AbstractRNG,S<:Union{Nothing,Int}} <:
-                      AbstractEnvironment
+@kwdef mutable struct Environment <: AbstractEnvironment
     "associated instance"
     instance::Instance
     "current step"
     step::Int
     "degradation state"
     degradation_state::Vector{Int}
-    "rng"
-    rng::R
-    "seed for RNG"
-    seed::S
 end
 
 """
@@ -25,11 +20,9 @@ $TYPEDSIGNATURES
 
 Creates an [`Environment`](@ref) from an [`Instance`](@ref) of the maintenance benchmark.
 """
-function Environment(instance::Instance; seed=0, rng::AbstractRNG=MersenneTwister(seed))
+function Environment(instance::Instance)
     degradation_state = copy(starting_state(instance))
-    env = Environment(; instance, step=1, degradation_state, rng=rng, seed=seed)
-    Utils.reset!(env; reset_rng=true)
-    return env
+    return Environment(; instance, step=1, degradation_state)
 end
 
 component_count(env::Environment) = component_count(env.instance)
@@ -43,13 +36,12 @@ starting_state(env::Environment) = starting_state(env.instance)
 
 """
 $TYPEDSIGNATURES
-Draw random degradations for all components.
+Draw random degradations for all components using `rng`.
 """
-function degrad!(env::Environment)
+function degrad!(env::Environment, rng::AbstractRNG)
     N = component_count(env)
     n = degradation_levels(env)
     p = degradation_probability(env)
-    rng = env.rng
 
     for i in 1:N
         if env.degradation_state[i] < n && rand(rng) < p
@@ -98,20 +90,11 @@ end
 """
 $TYPEDSIGNATURES
 
-Outputs the seed of the environment.
-"""
-Utils.get_seed(env::Environment) = env.seed
-
-"""
-$TYPEDSIGNATURES
-
 Resets the environment to the initial state:
-- reset the rng if `reset_rng` is true
 - reset the step to 1
 - reset the degradation state to the starting state
 """
-function Utils.reset!(env::Environment; reset_rng=false, seed=env.seed)
-    reset_rng && Random.seed!(env.rng, seed)
+function Utils.reset!(env::Environment, ::AbstractRNG)
     env.step = 1
     env.degradation_state .= starting_state(env)
     return nothing
@@ -145,10 +128,10 @@ $TYPEDSIGNATURES
 Performs one step in the environment given a maintenance.
 Draw random degradations for components that are not maintained.
 """
-function Utils.step!(env::Environment, maintenance::BitVector)
+function Utils.step!(env::Environment, maintenance::BitVector, rng::AbstractRNG)
     @assert !Utils.is_terminated(env) "Environment is terminated, cannot act!"
     cost = maintenance_cost(env, maintenance) + degradation_cost(env)
-    degrad!(env)
+    degrad!(env, rng)
     maintain!(env, maintenance)
     env.step += 1
     return cost

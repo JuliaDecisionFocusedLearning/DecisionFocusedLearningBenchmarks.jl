@@ -13,7 +13,7 @@ using IterTools: partition
 using JSON
 using JuMP
 using Printf: @printf, @sprintf
-using Random: Random, AbstractRNG, MersenneTwister, seed!, randperm
+using Random: Random, AbstractRNG, Xoshiro, seed!, randperm
 using Requires: @require
 using Statistics: mean, quantile
 
@@ -59,30 +59,32 @@ include("policy.jl")
 $TYPEDSIGNATURES
 
 Generate environments for the dynamic vehicle scheduling benchmark.
-Reads from pre-existing DVRPTW files and creates [`DVSPEnv`](@ref) environments.
+Reads from pre-existing DVRPTW files and creates [`DVSPEnv`](@ref) environments
+wrapped in [`SeededEnvironment`](@ref) for reproducible episode replay.
 """
 function Utils.generate_environments(
-    b::DynamicVehicleSchedulingBenchmark,
-    n::Int;
-    seed=nothing,
-    rng=MersenneTwister(seed),
-    kwargs...,
+    b::DynamicVehicleSchedulingBenchmark, n::Int; seed=nothing, rng=Xoshiro(seed), kwargs...
 )
     (; max_requests_per_epoch, Δ_dispatch, epoch_duration, two_dimensional_features) = b
     files = readdir(datadep"dvrptw"; join=true)
     n = min(n, length(files))
+    gen_rng = Xoshiro(rand(rng, UInt))
+    seed_rng = Xoshiro(rand(rng, UInt))
     return [
-        generate_environment(
-            b,
-            Instance(
-                read_vsp_instance(files[i]);
-                max_requests_per_epoch,
-                Δ_dispatch,
-                epoch_duration,
-                two_dimensional_features,
-            ),
-            rng;
-            kwargs...,
+        Utils.SeededEnvironment(
+            generate_environment(
+                b,
+                Instance(
+                    read_vsp_instance(files[i]);
+                    max_requests_per_epoch,
+                    Δ_dispatch,
+                    epoch_duration,
+                    two_dimensional_features,
+                ),
+                gen_rng;
+                kwargs...,
+            );
+            seed=rand(seed_rng, UInt),
         ) for i in 1:n
     ]
 end
@@ -91,13 +93,11 @@ end
 $TYPEDSIGNATURES
 
 Creates an environment from an [`Instance`](@ref) of the dynamic vehicle scheduling benchmark.
-The seed of the environment is randomly generated using the provided random number generator.
 """
 function generate_environment(
     ::DynamicVehicleSchedulingBenchmark, instance::Instance, rng::AbstractRNG; kwargs...
 )
-    seed = rand(rng, 1:typemax(Int))
-    return DVSPEnv(instance; seed)
+    return DVSPEnv(instance, rng)
 end
 
 """
@@ -119,8 +119,11 @@ as a `Vector{DataSample}`. Set `reset_env=true` (default) to reset the environme
 before solving, or `reset_env=false` to plan from the current state.
 """
 function Utils.generate_anticipative_solver(::DynamicVehicleSchedulingBenchmark)
-    return (env; reset_env=true, kwargs...) -> begin
-        _, trajectory = anticipative_solver(env; reset_env, kwargs...)
+    return (env::Utils.SeededEnvironment; reset_env=true, kwargs...) -> begin
+        # Anchor to the wrapper's initial seed so the solved scenario is reproducible,
+        # then solve from that state (the env was already reset).
+        reset_env && Utils.reset_to_initial!(env)
+        _, trajectory = anticipative_solver(env.env, env.rng; reset_env=false, kwargs...)
         return trajectory
     end
 end

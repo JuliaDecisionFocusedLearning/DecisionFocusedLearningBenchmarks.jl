@@ -35,13 +35,13 @@ end
 
 @testset "Maintenance - Instance Generation" begin
     b = MaintenanceBenchmark(; N=10, K=3, n=5, p=0.3, c_f=5.0, c_m=3.0, max_steps=50)
-    rng = MersenneTwister(42)
+    rng = Xoshiro(42)
 
     instance = maintenance.Instance(b, rng)
 
     # test state is randomly initialized
     state1 = maintenance.starting_state(instance)
-    rng2 = MersenneTwister(43)
+    rng2 = Xoshiro(43)
     instance2 = maintenance.Instance(b, rng2)
     state2 = maintenance.starting_state(instance2)
     @test state1 != state2
@@ -62,13 +62,12 @@ end
 
 @testset "Maintenance - Environment Initialization" begin
     b = MaintenanceBenchmark()
-    instance = maintenance.Instance(b, MersenneTwister(42))
+    instance = maintenance.Instance(b, Xoshiro(42))
 
-    env = maintenance.Environment(instance; seed=123)
+    env = maintenance.Environment(instance)
 
     # Test initial state
     @test env.step == 1
-    @test env.seed == 123
     @test !is_terminated(env)
 
     # Test accessor functions
@@ -83,14 +82,14 @@ end
 
 @testset "Maintenance - Environment Reset" begin
     b = MaintenanceBenchmark()
-    instance = maintenance.Instance(b, MersenneTwister(42))
-    env = maintenance.Environment(instance; seed=123)
+    instance = maintenance.Instance(b, Xoshiro(42))
+    env = maintenance.Environment(instance)
 
     # Modify environment state
     env.step = 3
 
     # Reset environment
-    reset!(env)
+    reset!(env, Xoshiro(123))
 
     # Check reset state
     @test env.step == 1
@@ -98,8 +97,8 @@ end
 
 @testset "Maintenance - Cost" begin
     b = MaintenanceBenchmark()
-    instance = maintenance.Instance(b, MersenneTwister(42))
-    env = maintenance.Environment(instance; seed=123)
+    instance = maintenance.Instance(b, Xoshiro(42))
+    env = maintenance.Environment(instance)
 
     env.degradation_state = [1, 1]
     @test maintenance.maintenance_cost(env, BitVector([false, false])) == 0.0
@@ -117,35 +116,36 @@ end
 
 @testset "Maintenance - Environment Step" begin
     b = MaintenanceBenchmark()
-    instance = maintenance.Instance(b, MersenneTwister(42))
-    env = maintenance.Environment(instance; seed=123)
+    instance = maintenance.Instance(b, Xoshiro(42))
+    env = maintenance.Environment(instance)
 
     maintenance_vect = BitVector([false, false])
+    rng = Xoshiro(123)
 
     initial_step = env.step
     # Take a step
-    reward = step!(env, maintenance_vect)
+    reward = step!(env, maintenance_vect, rng)
 
     # Check step progression
     @test env.step == initial_step + 1
-    @test reward ≥ 0.0  # Reward should be non-negative 
+    @test reward ≥ 0.0  # Reward should be non-negative
 
     # Test termination
     for _ in 1:(maintenance.max_steps(env) - 1)
         if !is_terminated(env)
-            step!(env, maintenance_vect)
+            step!(env, maintenance_vect, rng)
         end
     end
     @test is_terminated(env)
 
     # Test error on terminated environment
-    @test_throws AssertionError step!(env, maintenance_vect)
+    @test_throws AssertionError step!(env, maintenance_vect, rng)
 end
 
 @testset "Maintenance - Observation" begin
     b = MaintenanceBenchmark()
-    instance = maintenance.Instance(b, MersenneTwister(42))
-    env = maintenance.Environment(instance; seed=123)
+    instance = maintenance.Instance(b, Xoshiro(42))
+    env = maintenance.Environment(instance)
     env.degradation_state = [1, 1]
 
     state, features = observe(env)
@@ -181,9 +181,9 @@ end
 
     # Test policy output format
     env = environments[1]
-    reset!(env)
+    reset_to_initial!(env)
 
-    greedy_action = greedy(env)
+    greedy_action = greedy(env.env)
     @test greedy_action isa BitVector && length(greedy_action) == 2
 end
 
@@ -196,7 +196,7 @@ end
     maximizer = generate_maximizer(b)
 
     # Test integration with sample data
-    sample = generate_sample(b, MersenneTwister(42))
+    sample = generate_sample(b, Xoshiro(42))
     @test hasfield(typeof(sample), :context)
 
     environments = generate_environments(b, 3; seed=42)

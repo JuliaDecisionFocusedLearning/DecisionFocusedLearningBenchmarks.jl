@@ -133,11 +133,11 @@ rollout and returns the resulting trajectory.
 ## Seed / RNG control
 
 All `generate_dataset` and `generate_environments` calls accept either `seed`
-(creates an internal `MersenneTwister`) or `rng` for full control:
+(creates an internal `Xoshiro`) or `rng` for full control:
 
 ```julia
 using Random
-rng = MersenneTwister(42)
+rng = Xoshiro(42)
 dataset = generate_dataset(bench, 50; rng=rng)
 ```
 

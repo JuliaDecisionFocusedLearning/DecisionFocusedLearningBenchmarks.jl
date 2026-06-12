@@ -72,13 +72,16 @@ Primary entry point for dynamic training algorithms.
 Override when environments cannot be drawn independently (e.g. loading from files).
 """
 function generate_environments(
-    bench::AbstractDynamicBenchmark,
-    n::Int;
-    seed=nothing,
-    rng=MersenneTwister(seed),
-    kwargs...,
+    bench::AbstractDynamicBenchmark, n::Int; seed=nothing, kwargs...
 )
-    return [generate_environment(bench, rng; kwargs...) for _ in 1:n]
+    root_rng = Xoshiro(seed)
+    gen_rng = Xoshiro(rand(root_rng, UInt))
+    seed_rng = Xoshiro(rand(root_rng, UInt))
+    return [
+        SeededEnvironment(
+            generate_environment(bench, gen_rng; kwargs...); seed=rand(seed_rng, UInt)
+        ) for _ in 1:n
+    ]
 end
 
 """

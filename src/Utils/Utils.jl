@@ -5,7 +5,7 @@ using Flux: softplus
 using HiGHS: HiGHS
 using JuMP: Model
 using LinearAlgebra: dot
-using Random: Random, MersenneTwister, AbstractRNG
+using Random: Random, Xoshiro, AbstractRNG
 using SCIP: SCIP
 using SimpleWeightedGraphs: SimpleWeightedDiGraph
 using StatsBase: StatsBase
@@ -13,7 +13,8 @@ using Statistics: mean
 
 include("data_sample.jl")
 include("maximizers.jl")
-include("environment.jl")
+include("environment/abstract_environment.jl")
+include("environment/seeded_environment.jl")
 include("policy.jl")
 include("interface/abstract_benchmark.jl")
 include("interface/static_benchmark.jl")
@@ -27,7 +28,8 @@ export DataSample, Policy
 export evaluate_policy!
 export TopKMaximizer, one_hot_argmax
 
-export AbstractEnvironment, get_seed, is_terminated, observe, reset!, step!
+export AbstractEnvironment, SeededEnvironment
+export get_seed, is_terminated, observe, reset!, reset_to_initial!, step!
 
 export AbstractBenchmark,
     AbstractStaticBenchmark, AbstractStochasticBenchmark, AbstractDynamicBenchmark
