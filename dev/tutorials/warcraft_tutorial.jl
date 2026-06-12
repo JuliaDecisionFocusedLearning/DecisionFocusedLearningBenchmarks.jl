@@ -72,7 +72,7 @@ opt_state = Flux.setup(Adam(1e-3), model)
 loss_history = Float64[]
 for epoch in 1:50
     val, grads = Flux.withgradient(model) do m
-        sum(loss(m(x), y) for (; x, y) in train_dataset) / length(train_dataset)
+        return sum(loss(m(x), y) for (; x, y) in train_dataset) / length(train_dataset)
     end
     Flux.update!(opt_state, model, grads[1])
     push!(loss_history, val)
