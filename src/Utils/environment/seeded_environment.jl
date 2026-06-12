@@ -37,7 +37,7 @@ seeded with `seed` (so `seed=nothing` produces an unseeded generator). Pass `rng
 explicitly to supply a different generator.
 """
 function SeededEnvironment(env::AbstractEnvironment; seed=nothing, rng=Random.Xoshiro(seed))
-    return SeededEnvironment(seed, rng, env)
+    return SeededEnvironment(isnothing(seed) ? nothing : UInt(seed), rng, env)
 end
 
 """

@@ -102,9 +102,7 @@ $TYPEDSIGNATURES
 Creates an [`Environment`](@ref) for the dynamic assortment benchmark.
 The instance is randomly generated using the provided random number generator.
 """
-function Utils.generate_environment(
-    b::DynamicAssortmentBenchmark, rng::AbstractRNG; kwargs...
-)
+function Utils.build_environment(b::DynamicAssortmentBenchmark, rng::AbstractRNG; kwargs...)
     instance = Instance(b, rng)
     return Environment(instance)
 end

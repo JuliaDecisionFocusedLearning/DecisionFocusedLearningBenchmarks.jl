@@ -6,16 +6,17 @@ The `{exogenous}` parameter has the same meaning (whether uncertainty is indepen
 of decisions) as in [`AbstractStochasticBenchmark`](@ref).
 
 # Primary entry point
-- [`generate_environments`](@ref)`(bench, n; rng)`: mandatory (or implement
-  [`generate_environment`](@ref)`(bench, rng)`). The count-based default calls
-  [`generate_environment`](@ref) once per environment.
+- [`build_environment`](@ref)`(bench, rng)`: mandatory hook returning a single **bare**
+  environment. The framework wraps it in a [`SeededEnvironment`](@ref). Override
+  [`generate_environments`](@ref) instead when environments cannot be drawn independently.
 
 # Additional optional methods
-- [`generate_environment`](@ref)`(bench, rng)`: initialize a single rollout environment.
+- [`build_environment`](@ref)`(bench, rng)`: build a single bare rollout environment.
   Must return an [`AbstractEnvironment`](@ref) (see `environment.jl` for the full protocol:
-  [`reset!`](@ref), [`observe`](@ref), [`step!`](@ref), [`is_terminated`](@ref)).
-  Implement this instead of overriding [`generate_environments`](@ref) when environments
-  can be drawn independently.
+  [`reset!`](@ref), [`observe`](@ref), [`step!`](@ref), [`is_terminated`](@ref)). The
+  environment must not manage its own seed/rng: draw randomness from the passed `rng`.
+  Users obtain wrapped environments via [`generate_environment`](@ref) (one) or
+  [`generate_environments`](@ref) (many).
 - [`generate_baseline_policies`](@ref)`(bench)`: returns named baseline callables of
   signature `(env) -> Vector{DataSample}` (full trajectory rollout).
 - [`generate_anticipative_solver`](@ref)`(bench)`: returns a callable
@@ -55,21 +56,42 @@ const ExogenousDynamicBenchmark = AbstractDynamicBenchmark{true}
 const EndogenousDynamicBenchmark = AbstractDynamicBenchmark{false}
 
 """
-    generate_environment(::AbstractDynamicBenchmark, rng::AbstractRNG; kwargs...) -> AbstractEnvironment
+    build_environment(::AbstractDynamicBenchmark, rng::AbstractRNG; kwargs...) -> AbstractEnvironment
 
-Initialize a single environment for the given dynamic benchmark.
-Primary implementation target for the count-based [`generate_environments`](@ref) default.
-Override [`generate_environments`](@ref) directly when environments cannot be drawn
-independently (e.g. loading from files).
+Build a single environment for the given dynamic benchmark, drawing any
+randomness from `rng`. This is the implementation hook benchmark authors provide: the
+framework wraps the result in a [`SeededEnvironment`](@ref) (see [`generate_environment`](@ref)
+and [`generate_environments`](@ref)), so the returned environment must not manage its own
+seed or rng.
+
+Implement this for benchmarks whose environments are drawn independently. When
+environments cannot be drawn independently (e.g. loaded from files), override
+[`generate_environments`](@ref) instead.
 """
-function generate_environment end
+function build_environment end
 
 """
 $TYPEDSIGNATURES
 
-Generate `n` environments for the given dynamic benchmark.
-Primary entry point for dynamic training algorithms.
-Override when environments cannot be drawn independently (e.g. loading from files).
+Generate a single environment wrapped in a [`SeededEnvironment`](@ref), seeded from `seed`.
+Equivalent to `generate_environments(bench, 1; seed)[1]`.
+
+This should **not** be overridden: customize [`build_environment`](@ref) (independent environments)
+or [`generate_environments`](@ref) (non-independent environments) instead.
+"""
+function generate_environment(bench::AbstractDynamicBenchmark; seed=nothing, kwargs...)
+    return only(generate_environments(bench, 1; seed, kwargs...))
+end
+
+"""
+$TYPEDSIGNATURES
+
+Generate `n` environments for the given dynamic benchmark, each wrapped in a
+[`SeededEnvironment`](@ref). Primary entry point for dynamic training algorithms.
+
+The default implementation calls [`build_environment`](@ref) `n` times and wraps each
+result. Override this method when environments cannot be drawn independently (e.g. loading
+from files); an override must return already-wrapped [`SeededEnvironment`](@ref)s.
 """
 function generate_environments(
     bench::AbstractDynamicBenchmark, n::Int; seed=nothing, kwargs...
@@ -79,7 +101,7 @@ function generate_environments(
     seed_rng = Xoshiro(rand(root_rng, UInt))
     return [
         SeededEnvironment(
-            generate_environment(bench, gen_rng; kwargs...); seed=rand(seed_rng, UInt)
+            build_environment(bench, gen_rng; kwargs...); seed=rand(seed_rng, UInt)
         ) for _ in 1:n
     ]
 end

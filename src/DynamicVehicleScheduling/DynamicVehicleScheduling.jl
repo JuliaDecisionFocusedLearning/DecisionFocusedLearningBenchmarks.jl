@@ -72,8 +72,7 @@ function Utils.generate_environments(
     seed_rng = Xoshiro(rand(rng, UInt))
     return [
         Utils.SeededEnvironment(
-            generate_environment(
-                b,
+            DVSPEnv(
                 Instance(
                     read_vsp_instance(files[i]);
                     max_requests_per_epoch,
@@ -81,23 +80,11 @@ function Utils.generate_environments(
                     epoch_duration,
                     two_dimensional_features,
                 ),
-                gen_rng;
-                kwargs...,
+                gen_rng,
             );
             seed=rand(seed_rng, UInt),
         ) for i in 1:n
     ]
-end
-
-"""
-$TYPEDSIGNATURES
-
-Creates an environment from an [`Instance`](@ref) of the dynamic vehicle scheduling benchmark.
-"""
-function generate_environment(
-    ::DynamicVehicleSchedulingBenchmark, instance::Instance, rng::AbstractRNG; kwargs...
-)
-    return DVSPEnv(instance, rng)
 end
 
 """

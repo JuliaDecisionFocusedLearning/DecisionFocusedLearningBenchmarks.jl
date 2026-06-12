@@ -38,7 +38,7 @@ export ExogenousStochasticBenchmark,
 export generate_instance, generate_sample, generate_dataset
 export generate_statistical_model, generate_maximizer
 export generate_scenario, generate_context
-export generate_environment, generate_environments
+export build_environment, generate_environment, generate_environments
 export SampleAverageApproximation
 export generate_baseline_policies
 export generate_anticipative_solver, generate_parametric_anticipative_solver
