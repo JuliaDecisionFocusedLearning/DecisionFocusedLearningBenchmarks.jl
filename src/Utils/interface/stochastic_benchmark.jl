@@ -215,7 +215,7 @@ by the `target_policy`:
 - `target_policy`: when provided, called as
   `target_policy(ctx_sample, scenarios)` to compute labels.
   Defaults to `nothing` (unlabeled samples).
-- `seed`: passed to `MersenneTwister` when `rng` is not provided.
+- `seed`: passed to `Xoshiro` when `rng` is not provided.
 - `rng`: random number generator; overrides `seed` when provided.
 - `kwargs...`: forwarded to [`generate_sample`](@ref).
 """
@@ -226,7 +226,7 @@ function generate_dataset(
     nb_scenarios::Int=1,
     contexts_per_instance::Int=1,
     seed=nothing,
-    rng=MersenneTwister(seed),
+    rng=Xoshiro(seed),
     kwargs...,
 )
     nb_instances == 0 && return DataSample[]
@@ -315,7 +315,7 @@ function generate_dataset(
     nb_instances::Int;
     target_policy=nothing,
     seed=nothing,
-    rng=MersenneTwister(seed),
+    rng=Xoshiro(seed),
     kwargs...,
 )
     nb_instances == 0 && return DataSample[]
