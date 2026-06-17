@@ -1,18 +1,20 @@
 module StochasticVehicleScheduling
 
 export StochasticVehicleSchedulingBenchmark
+export ContextualStochasticVehicleSchedulingBenchmark
 export generate_dataset, generate_maximizer, generate_statistical_model
 export compact_linearized_mip,
     compact_mip, column_generation_algorithm, local_search, deterministic_mip
 export evaluate_solution, is_feasible
 export VSPScenario, build_stochastic_instance
+export compute_feature_std
 
 using ..Utils
 using DocStringExtensions: TYPEDEF, TYPEDFIELDS, TYPEDSIGNATURES
 using ConstrainedShortestPaths:
     stochastic_routing_shortest_path, stochastic_routing_shortest_path_with_threshold
 using Distributions: Distribution, LogNormal, Uniform, DiscreteUniform
-using Flux: Chain, Dense
+using Flux: Chain, Dense, relu, softplus
 using Graphs:
     AbstractGraph,
     SimpleDiGraph,
@@ -30,7 +32,7 @@ using JuMP:
 using Printf: @printf
 using Random: Random, AbstractRNG, MersenneTwister
 using SparseArrays: sparse, SparseMatrixCSC
-using Statistics: quantile, mean
+using Statistics: quantile, mean, std
 
 include("utils.jl")
 include("instance/constants.jl")
@@ -50,6 +52,7 @@ include("solution/algorithms/deterministic_mip.jl")
 include("solution/algorithms/anticipative_solver.jl")
 
 include("maximizer.jl")
+include("contextual.jl")
 
 """
 $TYPEDEF
