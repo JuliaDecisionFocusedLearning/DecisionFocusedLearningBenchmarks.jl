@@ -110,7 +110,7 @@ function objective_value end
 """
     generate_anticipative_solver(::AbstractBenchmark) -> callable
 
-Return a callable that computes the anticipative (oracle) solution.
+**Optional.** Return a callable that computes the anticipative (oracle) solution.
 The calling convention differs by benchmark category:
 
 **Stochastic benchmarks** ([`AbstractStochasticBenchmark`](@ref)):
