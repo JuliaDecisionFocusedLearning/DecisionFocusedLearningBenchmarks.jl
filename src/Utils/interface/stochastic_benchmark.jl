@@ -96,23 +96,6 @@ function generate_context(::AbstractStochasticBenchmark, rng, instance_sample::D
 end
 
 """
-    generate_anticipative_solver(::AbstractBenchmark) -> callable
-
-Return a callable that computes the anticipative (oracle) solution.
-The calling convention differs by benchmark category:
-
-**Stochastic benchmarks** ([`AbstractStochasticBenchmark`](@ref)):
-Returns `(scenario; context...) -> y`.
-Called once per scenario to obtain the optimal label.
-
-**Dynamic benchmarks** ([`AbstractDynamicBenchmark`](@ref)):
-Returns `(env; reset_env=true, kwargs...) -> Vector{DataSample}`, a full trajectory.
-`reset_env=true` resets the environment before solving (used for initial dataset building);
-`reset_env=false` starts from the current environment state (used inside DAgger rollouts).
-"""
-function generate_anticipative_solver end
-
-"""
     objective_value(::ExogenousStochasticBenchmark, sample::DataSample, y, scenario) -> Real
 
 Compute the objective value of solution `y` for a given `scenario`.
@@ -125,6 +108,25 @@ This is the primary evaluation hook for stochastic benchmarks. The 2-arg fallbac
 function objective_value end
 
 """
+    generate_anticipative_solver(::AbstractBenchmark) -> callable
+
+**Optional.** Return a callable that computes the anticipative (oracle) solution.
+The calling convention differs by benchmark category:
+
+**Stochastic benchmarks** ([`AbstractStochasticBenchmark`](@ref)):
+Returns `(scenario; context...) -> y`.
+Called once per scenario to obtain the optimal label.
+
+**Dynamic benchmarks** ([`AbstractDynamicBenchmark`](@ref)):
+Returns `(env; reset_env=true, kwargs...) -> Vector{DataSample}`, a full trajectory.
+`reset_env=true` resets the environment before solving (used for initial dataset building);
+`reset_env=false` starts from the current environment state (used inside DAgger rollouts).
+"""
+function generate_anticipative_solver(b::ExogenousStochasticBenchmark; kwargs...)
+    return error("generate_anticipative_solver is not implemented for $(typeof(b))")
+end
+
+"""
     generate_parametric_anticipative_solver(::ExogenousStochasticBenchmark) -> callable
 
 **Optional.** Return a callable `(θ, scenario; kwargs...) -> y` that solves the
@@ -132,7 +134,11 @@ parametric anticipative subproblem:
 
     argmin_{y ∈ Y(instance)}  c(y, scenario) + θᵀy
 """
-function generate_parametric_anticipative_solver end
+function generate_parametric_anticipative_solver(b::ExogenousStochasticBenchmark; kwargs...)
+    return error(
+        "generate_parametric_anticipative_solver is not implemented for $(typeof(b))"
+    )
+end
 
 """
 $TYPEDSIGNATURES
