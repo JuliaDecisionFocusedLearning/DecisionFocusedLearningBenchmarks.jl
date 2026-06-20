@@ -110,7 +110,9 @@ Returns `(env; reset_env=true, kwargs...) -> Vector{DataSample}`, a full traject
 `reset_env=true` resets the environment before solving (used for initial dataset building);
 `reset_env=false` starts from the current environment state (used inside DAgger rollouts).
 """
-function generate_anticipative_solver end
+function generate_anticipative_solver(b::ExogenousStochasticBenchmark; kwargs...)
+    return error("generate_anticipative_solver is not implemented for $(typeof(b))")
+end
 
 """
     objective_value(::ExogenousStochasticBenchmark, sample::DataSample, y, scenario) -> Real
@@ -132,7 +134,11 @@ parametric anticipative subproblem:
 
     argmin_{y ∈ Y(instance)}  c(y, scenario) + θᵀy
 """
-function generate_parametric_anticipative_solver end
+function generate_parametric_anticipative_solver(b::ExogenousStochasticBenchmark; kwargs...)
+    return error(
+        "generate_parametric_anticipative_solver is not implemented for $(typeof(b))"
+    )
+end
 
 """
 $TYPEDSIGNATURES
