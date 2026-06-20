@@ -96,6 +96,18 @@ function generate_context(::AbstractStochasticBenchmark, rng, instance_sample::D
 end
 
 """
+    objective_value(::ExogenousStochasticBenchmark, sample::DataSample, y, scenario) -> Real
+
+Compute the objective value of solution `y` for a given `scenario`.
+Must be implemented by each concrete [`ExogenousStochasticBenchmark`](@ref).
+
+This is the primary evaluation hook for stochastic benchmarks. The 2-arg fallback
+`objective_value(bench, sample, y)` dispatches here using the scenario stored in
+`sample.extra.scenario` (or averages over `sample.extra.scenarios`).
+"""
+function objective_value end
+
+"""
     generate_anticipative_solver(::AbstractBenchmark) -> callable
 
 Return a callable that computes the anticipative (oracle) solution.
@@ -113,18 +125,6 @@ Returns `(env; reset_env=true, kwargs...) -> Vector{DataSample}`, a full traject
 function generate_anticipative_solver(b::ExogenousStochasticBenchmark; kwargs...)
     return error("generate_anticipative_solver is not implemented for $(typeof(b))")
 end
-
-"""
-    objective_value(::ExogenousStochasticBenchmark, sample::DataSample, y, scenario) -> Real
-
-Compute the objective value of solution `y` for a given `scenario`.
-Must be implemented by each concrete [`ExogenousStochasticBenchmark`](@ref).
-
-This is the primary evaluation hook for stochastic benchmarks. The 2-arg fallback
-`objective_value(bench, sample, y)` dispatches here using the scenario stored in
-`sample.extra.scenario` (or averages over `sample.extra.scenarios`).
-"""
-function objective_value end
 
 """
     generate_parametric_anticipative_solver(::ExogenousStochasticBenchmark) -> callable
