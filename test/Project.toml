@@ -24,4 +24,5 @@ DecisionFocusedLearningBenchmarks = {path = ".."}
 Aqua = "0.8.14"
 DecisionFocusedLearningBenchmarks = "0.6.0"
 JuliaFormatter = "2"
+Plots = "1.41.6"
 Test = "1"
