@@ -9,6 +9,7 @@ Plots = "91a5bcdd-55d7-5caf-9e0b-520d859cae80"
 [compat]
 DecisionFocusedLearningBenchmarks = "0.6.0"
 Documenter = "1.17.0"
+Flux = "0.16.10"
 InferOpt = "0.7.2"
 Literate = "2.21.0"
 Plots = "1.41.6"
