@@ -6,7 +6,7 @@ using DocStringExtensions: TYPEDEF, TYPEDFIELDS, TYPEDSIGNATURES, SIGNATURES
 using Distributions: Uniform, Categorical
 using Flux: Chain, Dense
 using LinearAlgebra: dot
-using Random: Random, AbstractRNG, MersenneTwister
+using Random: Random, AbstractRNG, Xoshiro
 using Statistics: mean
 
 using Combinatorics: combinations
@@ -100,14 +100,11 @@ end
 $TYPEDSIGNATURES
 
 Creates an [`Environment`](@ref) for the dynamic assortment benchmark.
-The instance and seed are randomly generated using the provided random number generator.
+The instance is randomly generated using the provided random number generator.
 """
-function Utils.generate_environment(
-    b::DynamicAssortmentBenchmark, rng::AbstractRNG; kwargs...
-)
+function Utils.build_environment(b::DynamicAssortmentBenchmark, rng::AbstractRNG; kwargs...)
     instance = Instance(b, rng)
-    seed = rand(rng, 1:typemax(Int))
-    return Environment(instance; seed)
+    return Environment(instance)
 end
 
 """

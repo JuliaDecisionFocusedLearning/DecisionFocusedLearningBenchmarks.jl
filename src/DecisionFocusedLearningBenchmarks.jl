@@ -66,12 +66,17 @@ using .Utils
 export AbstractBenchmark, AbstractStochasticBenchmark, AbstractDynamicBenchmark, DataSample
 export ExogenousStochasticBenchmark,
     EndogenousStochasticBenchmark, ExogenousDynamicBenchmark, EndogenousDynamicBenchmark
-export AbstractEnvironment, get_seed, is_terminated, observe, reset!, step!
+export AbstractEnvironment, SeededEnvironment
+export get_seed, is_terminated, observe, reset!, reset_to_initial!, step!
 
 export Policy, evaluate_policy!
 
 export generate_instance,
-    generate_sample, generate_dataset, generate_environments, generate_environment
+    generate_sample,
+    generate_dataset,
+    build_environment,
+    generate_environment,
+    generate_environments
 export generate_scenario, generate_context
 export generate_baseline_policies
 export SampleAverageApproximation

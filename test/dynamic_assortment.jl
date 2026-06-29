@@ -28,7 +28,7 @@ end
 
 @testset "DynamicAssortment - Instance Generation" begin
     b = DynamicAssortmentBenchmark(; N=5, d=3, K=2)
-    rng = MersenneTwister(42)
+    rng = Xoshiro(42)
 
     instance = DAP.Instance(b, rng)
 
@@ -53,14 +53,13 @@ end
 
 @testset "DynamicAssortment - Environment Initialization" begin
     b = DynamicAssortmentBenchmark(; N=5, d=2, K=2, max_steps=10)
-    instance = DAP.Instance(b, MersenneTwister(42))
+    instance = DAP.Instance(b, Xoshiro(42))
 
-    env = DAP.Environment(instance; seed=123)
+    env = DAP.Environment(instance)
 
     # Test initial state
     @test env.step == 1
     @test isempty(env.purchase_history)
-    @test env.seed == 123
     @test !is_terminated(env)
 
     # Test features structure: [prices; hype_saturation; static_features]
@@ -80,8 +79,8 @@ end
 
 @testset "DynamicAssortment - Environment Reset" begin
     b = DynamicAssortmentBenchmark(; N=3, d=1, K=2, max_steps=5)
-    instance = DAP.Instance(b, MersenneTwister(42))
-    env = DAP.Environment(instance; seed=123)
+    instance = DAP.Instance(b, Xoshiro(42))
+    env = DAP.Environment(instance)
 
     # Modify environment state
     env.step = 3
@@ -89,7 +88,7 @@ end
     env.features[2, 1] *= 1.5  # Modify hype
 
     # Reset environment
-    reset!(env)
+    reset!(env, Xoshiro(123))
 
     # Check reset state
     @test env.step == 1
@@ -107,8 +106,8 @@ end
 
 @testset "DynamicAssortment - Hype Update Logic" begin
     b = DynamicAssortmentBenchmark(; N=5, d=1, K=2)
-    instance = DAP.Instance(b, MersenneTwister(42))
-    env = DAP.Environment(instance; seed=123)
+    instance = DAP.Instance(b, Xoshiro(42))
+    env = DAP.Environment(instance)
 
     # Test hype update with no history
     hype = DAP.hype_update(env)
@@ -135,8 +134,8 @@ end
 
 @testset "DynamicAssortment - Choice Probabilities" begin
     b = DynamicAssortmentBenchmark(; N=3, d=1, K=2)
-    instance = DAP.Instance(b, MersenneTwister(42))
-    env = DAP.Environment(instance; seed=123)
+    instance = DAP.Instance(b, Xoshiro(42))
+    env = DAP.Environment(instance)
 
     # Test with full assortment
     assortment = trues(3)
@@ -167,8 +166,8 @@ end
 
 @testset "DynamicAssortment - Expected Revenue" begin
     b = DynamicAssortmentBenchmark(; N=3, d=1, K=2)
-    instance = DAP.Instance(b, MersenneTwister(42))
-    env = DAP.Environment(instance; seed=123)
+    instance = DAP.Instance(b, Xoshiro(42))
+    env = DAP.Environment(instance)
 
     # Test with full assortment
     assortment = trues(3)
@@ -183,14 +182,15 @@ end
 
 @testset "DynamicAssortment - Environment Step" begin
     b = DynamicAssortmentBenchmark(; N=3, d=1, K=2, max_steps=5)
-    instance = DAP.Instance(b, MersenneTwister(42))
-    env = DAP.Environment(instance; seed=123)
+    instance = DAP.Instance(b, Xoshiro(42))
+    env = DAP.Environment(instance)
 
     initial_step = env.step
     assortment = trues(3)
+    rng = Xoshiro(123)
 
     # Take a step
-    reward = step!(env, assortment)
+    reward = step!(env, assortment, rng)
 
     # Check step progression
     @test env.step == initial_step + 1
@@ -208,20 +208,20 @@ end
     # Test termination
     for _ in 1:(DAP.max_steps(env) - 1)
         if !is_terminated(env)
-            step!(env, assortment)
+            step!(env, assortment, rng)
         end
     end
     @test is_terminated(env)
 
     # Test error on terminated environment
-    @test_throws AssertionError step!(env, assortment)
+    @test_throws AssertionError step!(env, assortment, rng)
 end
 
 @testset "DynamicAssortment - Endogenous vs Exogenous" begin
     # Test endogenous environment (features change with purchases)
     b_endo = DynamicAssortmentBenchmark(; N=3, d=1, K=2, exogenous=false)
-    instance_endo = DAP.Instance(b_endo, MersenneTwister(42))
-    env_endo = DAP.Environment(instance_endo; seed=123)
+    instance_endo = DAP.Instance(b_endo, Xoshiro(42))
+    env_endo = DAP.Environment(instance_endo)
 
     initial_features_endo = copy(env_endo.features)
     DAP.buy_item!(env_endo, 1)
@@ -231,8 +231,8 @@ end
 
     # Test exogenous environment (features don't change with purchases)
     b_exo = DynamicAssortmentBenchmark(; N=3, d=1, K=2, exogenous=true)
-    instance_exo = DAP.Instance(b_exo, MersenneTwister(42))
-    env_exo = DAP.Environment(instance_exo; seed=123)
+    instance_exo = DAP.Instance(b_exo, Xoshiro(42))
+    env_exo = DAP.Environment(instance_exo)
 
     initial_features_exo = copy(env_exo.features)
     DAP.buy_item!(env_exo, 1)
@@ -243,8 +243,8 @@ end
 
 @testset "DynamicAssortment - Observation" begin
     b = DynamicAssortmentBenchmark(; N=3, d=2, max_steps=10)
-    instance = DAP.Instance(b, MersenneTwister(42))
-    env = DAP.Environment(instance; seed=123)
+    instance = DAP.Instance(b, Xoshiro(42))
+    env = DAP.Environment(instance)
 
     features, state = observe(env)
 
@@ -277,6 +277,10 @@ end
 
     # Generate test data
     environments = generate_environments(b, 10; seed=0)
+    @test environments isa Vector{<:SeededEnvironment}
+    single = generate_environment(b; seed=0)
+    @test single isa SeededEnvironment
+    @test get_seed(single) == get_seed(generate_environments(b, 1; seed=0)[1])
 
     # Get policies
     policies = generate_baseline_policies(b)
@@ -300,14 +304,14 @@ end
 
     # Test policy output format
     env = environments[1]
-    reset!(env)
+    reset_to_initial!(env)
 
-    expert_action = expert(env)
-    greedy_action = greedy(env)
-    @test length(expert_action) == DAP.item_count(env)
-    @test length(greedy_action) == DAP.item_count(env)
-    @test sum(expert_action) == DAP.assortment_size(env)
-    @test sum(greedy_action) == DAP.assortment_size(env)
+    expert_action = expert(env.env)
+    greedy_action = greedy(env.env)
+    @test length(expert_action) == DAP.item_count(env.env)
+    @test length(greedy_action) == DAP.item_count(env.env)
+    @test sum(expert_action) == DAP.assortment_size(env.env)
+    @test sum(greedy_action) == DAP.assortment_size(env.env)
 end
 
 @testset "DynamicAssortment - generate_dataset with environments (exogenous)" begin

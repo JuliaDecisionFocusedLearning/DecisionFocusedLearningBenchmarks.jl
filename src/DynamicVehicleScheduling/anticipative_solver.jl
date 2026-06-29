@@ -45,16 +45,16 @@ For this, it uses the current environment history, so make sure that the environ
 """
 function anticipative_solver(
     env::DVSPEnv,
+    rng::AbstractRNG,
     scenario=env.scenario;
     model_builder=highs_model,
     two_dimensional_features=env.instance.two_dimensional_features,
     reset_env=true,
     nb_epochs=nothing,
-    seed=get_seed(env),
     verbose=false,
 )
     if reset_env
-        reset!(env; reset_rng=true, seed)
+        reset!(env, rng)
         scenario = env.scenario
     end
 

@@ -28,15 +28,10 @@ end
 """
 $TYPEDSIGNATURES
 
-Run the policy on the environment and return the total reward and a dataset of observations.
-By default, the environment is reset before running the policy.
+Run the policy from the environment's current state (without resetting), using `rng`
+for per-step randomness. Returns the total reward and a dataset of observations.
 """
-function evaluate_policy!(
-    policy, env::AbstractEnvironment; reset_env=true, seed=get_seed(env), kwargs...
-)
-    if reset_env
-        reset!(env; reset_rng=true, seed=seed)
-    end
+function rollout!(policy, env::AbstractEnvironment, rng::AbstractRNG; kwargs...)
     total_reward = 0.0
     labeled_dataset = DataSample[]
     step = 0
@@ -44,8 +39,8 @@ function evaluate_policy!(
         step += 1
         y = policy(env; kwargs...)
         features, state = observe(env)
-        state_copy = deepcopy(state)  # To avoid mutation issues
-        reward = step!(env, y)
+        state_copy = deepcopy(state)
+        reward = step!(env, y, rng)
         sample = DataSample(; x=features, y=y, instance=state_copy, extra=(; reward, step))
         if isempty(labeled_dataset)
             labeled_dataset = typeof(sample)[sample]
@@ -60,20 +55,35 @@ end
 """
 $TYPEDSIGNATURES
 
-Evaluate the policy on the environment and return the total reward and a dataset of observations.
-By default, the environment is reset before running the policy.
+Run the policy on a [`SeededEnvironment`](@ref) and return the total reward and a
+dataset of observations. The environment is reset to its initial seed state before
+running, which makes the rollout reproducible. Pass `seed` to override the wrapper's
+stored seed for this evaluation. The wrapper's `rng` is the single source of
+randomness threaded into the underlying environment.
+"""
+function evaluate_policy!(policy, env::SeededEnvironment; seed=nothing, kwargs...)
+    isnothing(seed) ? reset_to_initial!(env) : reset!(env, seed)
+    return rollout!(policy, env.env, env.rng; kwargs...)
+end
+
+"""
+$TYPEDSIGNATURES
+
+Evaluate the policy across multiple episodes. The first episode resets to the
+initial seed (or to `seed` if provided), subsequent episodes continue from the
+wrapper's evolving rng state.
 """
 function evaluate_policy!(
-    policy, env::AbstractEnvironment, episodes::Int; seed=get_seed(env), kwargs...
+    policy, env::SeededEnvironment, episodes::Int; seed=nothing, kwargs...
 )
     rewards = zeros(Float64, episodes)
     datasets = map(1:episodes) do _i
         if _i == 1
-            reset!(env; reset_rng=true, seed=seed)
+            isnothing(seed) ? reset_to_initial!(env) : reset!(env, seed)
         else
-            reset!(env; reset_rng=false)
+            reset!(env)
         end
-        reward, dataset = evaluate_policy!(policy, env; reset_env=false, kwargs...)
+        reward, dataset = rollout!(policy, env.env, env.rng; kwargs...)
         rewards[_i] = reward
         return dataset
     end
@@ -83,11 +93,10 @@ end
 """
 $TYPEDSIGNATURES
 
-Run the policy on the environments and return the total rewards and a dataset of observations.
-By default, the environments are reset before running the policy.
+Run the policy across a collection of [`SeededEnvironment`](@ref)s.
 """
 function evaluate_policy!(
-    policy, envs::Vector{<:AbstractEnvironment}, episodes::Int=1; kwargs...
+    policy, envs::Vector{<:SeededEnvironment}, episodes::Int=1; kwargs...
 )
     E = length(envs)
     avg_rewards = zeros(Float64, E)

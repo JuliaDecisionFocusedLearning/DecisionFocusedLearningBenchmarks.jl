@@ -67,7 +67,7 @@ function generate_dataset(
     dataset_size::Int;
     target_policy=nothing,
     seed=nothing,
-    rng=MersenneTwister(seed),
+    rng=Xoshiro(seed),
     kwargs...,
 )
     return [

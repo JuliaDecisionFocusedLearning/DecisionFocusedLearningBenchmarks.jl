@@ -5,7 +5,7 @@ using Test
 @testset "AbstractBenchmark interface" begin
     struct DummyBenchmark <: AbstractStaticBenchmark end
     b = DummyBenchmark()
-    rng = MersenneTwister(1234)
+    rng = Xoshiro(1234)
     @test_throws ErrorException generate_instance(b, rng)
     @test_throws ErrorException generate_maximizer(b)
     @test_throws ErrorException generate_statistical_model(b; seed=0)
