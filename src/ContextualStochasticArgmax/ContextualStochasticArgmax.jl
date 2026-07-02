@@ -4,7 +4,7 @@ using ..Utils
 using DocStringExtensions: TYPEDEF, TYPEDFIELDS, TYPEDSIGNATURES
 using Flux: Dense
 using LinearAlgebra: dot
-using Random: Random, AbstractRNG, MersenneTwister
+using Random: Random, AbstractRNG, Xoshiro
 using Statistics: mean
 
 """
@@ -37,7 +37,7 @@ end
 function ContextualStochasticArgmaxBenchmark(;
     n::Int=10, d::Int=5, noise_std::Float32=0.1f0, seed=nothing
 )
-    rng = MersenneTwister(seed)
+    rng = Xoshiro(seed)
     W = randn(rng, Float32, n, d)
     return ContextualStochasticArgmaxBenchmark(n, d, W, noise_std)
 end

@@ -132,14 +132,24 @@ rollout and returns the resulting trajectory.
 
 ## Seed / RNG control
 
-All `generate_dataset` and `generate_environments` calls accept either `seed`
-(creates an internal `MersenneTwister`) or `rng` for full control:
+`generate_dataset` accepts either `seed` (creates an internal `Xoshiro`) or `rng` (any `AbstractRNG`)::
 
 ```julia
 using Random
-rng = MersenneTwister(42)
+rng = Xoshiro(42)
 dataset = generate_dataset(bench, 50; rng=rng)
 ```
+
+`generate_environments` takes a `seed`:
+
+```julia
+envs = generate_environments(bench, 10; seed=0)
+```
+
+### Reproducibility in dynamic benchmarks
+
+Each environment returned by `generate_environments` or `generate_environment` is a `SeededEnvironment`: a wrapper that owns the random number generator and a stored seed.
+It is the single source of randomness for the episode, so re-running a policy on the same environment replays the exact same trajectory. `evaluate_policy!` resets to the stored seed before each run, which is what makes evaluation reproducible (pass `seed=...` to override the stored seed for a given run).
 
 ---
 

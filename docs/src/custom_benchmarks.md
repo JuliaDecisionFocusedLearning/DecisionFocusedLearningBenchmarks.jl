@@ -121,25 +121,38 @@ Dynamic benchmarks extend stochastic ones with an environment-based rollout inte
 ### Environment generation
 
 ```julia
-# Strategy A: generate one environment at a time (default implementation of
-#              generate_environments calls this repeatedly)
-generate_environment(bench::MyDynamicBenchmark, rng::AbstractRNG; kwargs...) -> AbstractEnvironment
+# Option A: build one bare environment (the framework wraps it in a SeededEnvironment)
+build_environment(bench::MyDynamicBenchmark, rng::AbstractRNG; kwargs...) -> AbstractEnvironment
 
-# Strategy B: override when environments are not independent (e.g. loaded from files)
-generate_environments(bench::MyDynamicBenchmark, n::Int; rng, kwargs...) -> Vector{<:AbstractEnvironment}
+# Option B: override when environments are not independent (e.g. loaded from files)
+generate_environments(bench::MyDynamicBenchmark, n::Int; seed=nothing, kwargs...) -> Vector{SeededEnvironment}
 ```
+
+You implement **`build_environment`**, which returns a *bare* environment. The package then automatically wraps it in a [`SeededEnvironment`](@ref) (attaching a seed and RNG) through two public entry points:
+
+```julia
+generate_environment(bench; seed=nothing, kwargs...)      -> SeededEnvironment       # one env
+generate_environments(bench, n; seed=nothing, kwargs...)  -> Vector{SeededEnvironment} # n envs
+```
+
+For environments that cannot be drawn independently (e.g. loaded from files), override `generate_environments` instead of implementing `build_environment`.
+An override must return already-wrapped `SeededEnvironment`s (use `SeededEnvironment(env; seed=...)`).
+Do not override `generate_environment`: it just delegates to `generate_environments`.
 
 ### `AbstractEnvironment` interface
 
-Your environment type must implement:
+Your environment must be **stateless about randomness**: it does *not* store its own RNG or seed.
+All randomness is owned by the wrapping [`SeededEnvironment`](@ref), which passes its `rng` into every `reset!` and `step!`.
+Draw all stochasticity from that `rng` so that re-seeding the wrapper (via [`reset_to_initial!`](@ref)) replays an episode exactly.
 
 ```julia
-get_seed(env::MyEnv)                             # Return the RNG seed used at creation
-reset!(env::MyEnv; reset_rng::Bool, seed=get_seed(env))  # Reset to initial state
-observe(env::MyEnv) -> (observation, info)       # Current observation
-step!(env::MyEnv, action) -> reward              # Apply action, advance state
-is_terminated(env::MyEnv) -> Bool                # True when episode has ended
+reset!(env::MyEnv, rng::AbstractRNG)                    # Reset to a starting state, sampling from rng
+observe(env::MyEnv) -> (observation, state)             # Current observation and internal state
+step!(env::MyEnv, action, rng::AbstractRNG) -> reward   # Apply action, advance state (draw from rng)
+is_terminated(env::MyEnv) -> Bool                       # True when the episode has ended
 ```
+
+Environments may ignore the `rng` argument.
 
 ### Baseline policies (required for `generate_dataset`)
 

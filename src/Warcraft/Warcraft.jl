@@ -41,7 +41,7 @@ function Utils.generate_dataset(
     dataset_size::Int=10;
     target_policy=nothing,
     seed=nothing,
-    rng=MersenneTwister(seed),
+    rng=Xoshiro(seed),
     kwargs...,
 )
     decompressed_path = datadep"warcraft/data"

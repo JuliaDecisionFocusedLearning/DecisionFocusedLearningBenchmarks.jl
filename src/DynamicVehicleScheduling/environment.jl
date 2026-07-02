@@ -1,26 +1,21 @@
-mutable struct DVSPEnv{S<:DVSPState,R<:AbstractRNG,SS} <: Utils.AbstractEnvironment
+mutable struct DVSPEnv{S<:DVSPState} <: Utils.AbstractEnvironment
     "associated instance"
     instance::Instance
     "current state"
     state::S
     "scenario the environment will use when not given a specific one"
     scenario::Scenario
-    "random number generator"
-    rng::R
-    "seed for the environment"
-    seed::SS
 end
 
 """
 $TYPEDSIGNATURES
 
-Constructor for [`DVSPEnv`](@ref).
+Constructor for [`DVSPEnv`](@ref). Draws an initial scenario from `rng`.
 """
-function DVSPEnv(instance::Instance; seed=nothing)
-    rng = MersenneTwister(seed)
+function DVSPEnv(instance::Instance, rng::AbstractRNG)
     scenario = Utils.generate_scenario(instance; rng)
     initial_state = DVSPState(instance; scenario[1]...)
-    return DVSPEnv(instance, initial_state, scenario, rng, seed)
+    return DVSPEnv(instance, initial_state, scenario)
 end
 
 """
@@ -28,18 +23,15 @@ $TYPEDSIGNATURES
 
 Constructor for [`DVSPEnv`](@ref) from a pre-existing scenario.
 """
-function DVSPEnv(instance::Instance, scenario::Scenario; seed=nothing)
-    rng = MersenneTwister(seed)
+function DVSPEnv(instance::Instance, scenario::Scenario)
     initial_state = DVSPState(instance; scenario[1]...)
-    return DVSPEnv(instance, initial_state, scenario, rng, seed)
+    return DVSPEnv(instance, initial_state, scenario)
 end
 
 currrent_epoch(env::DVSPEnv) = current_epoch(env.state)
 epoch_duration(env::DVSPEnv) = epoch_duration(env.instance)
 last_epoch(env::DVSPEnv) = last_epoch(env.instance)
 Δ_dispatch(env::DVSPEnv) = Δ_dispatch(env.instance)
-
-Utils.get_seed(env::DVSPEnv) = env.seed
 
 """
 $TYPEDSIGNATURES
@@ -80,14 +72,10 @@ Utils.is_terminated(env::DVSPEnv) = current_epoch(env) > last_epoch(env)
 """
 $TYPEDSIGNATURES
 
-Reset the environment to its initial state.
-Also reset the rng to `seed` if `reset_rng` is set to true.
+Reset the environment to its initial state, drawing a fresh scenario from `rng`.
 """
-function Utils.reset!(env::DVSPEnv; seed=get_seed(env), reset_rng=false)
-    if reset_rng
-        Random.seed!(env.rng, seed)
-    end
-    env.scenario = Utils.generate_scenario(env; rng=env.rng)
+function Utils.reset!(env::DVSPEnv, rng::AbstractRNG)
+    env.scenario = Utils.generate_scenario(env; rng)
     reset_state!(env.state, env.instance; env.scenario[1]...)
     return nothing
 end
@@ -96,12 +84,13 @@ end
 $TYPEDSIGNATURES
 
 Remove dispatched customers, advance time, and add new requests to the environment.
+The transition is deterministic (already sampled beforehand) given `env.scenario`, the `rng` argument is ignored.
 """
-function Utils.step!(env::DVSPEnv, routes, scenario=env.scenario)
+function Utils.step!(env::DVSPEnv, routes, ::AbstractRNG)
     reward = -apply_routes!(env.state, routes)
     env.state.current_epoch += 1
     if !Utils.is_terminated(env)
-        add_new_customers!(env.state, env.instance; scenario[current_epoch(env)]...)
+        add_new_customers!(env.state, env.instance; env.scenario[current_epoch(env)]...)
     end
     return reward
 end

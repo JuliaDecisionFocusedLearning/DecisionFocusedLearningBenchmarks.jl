@@ -9,6 +9,8 @@
     @test !is_endogenous(b)
 
     environments = generate_environments(b, 10; seed=0)
+    @test environments isa Vector{<:SeededEnvironment}
+    @test generate_environment(b; seed=0) isa SeededEnvironment
 
     env = environments[1]
     get_seed(env)
@@ -44,7 +46,7 @@
     @test size(x2, 1) == 27
 
     solution = generate_anticipative_solver(b)(env)
-    reset!(env; reset_rng=true)
+    reset_to_initial!(env)
     cost = sum(step!(env, sample.y) for sample in solution)
     cost2 = sum(sample.reward for sample in solution)
     @test isapprox(cost, cost2; atol=1e-5)

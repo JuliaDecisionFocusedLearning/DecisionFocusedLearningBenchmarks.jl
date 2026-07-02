@@ -28,7 +28,7 @@ using Graphs:
 using JuMP:
     JuMP, Model, @variable, @objective, @constraint, optimize!, value, set_silent, dual
 using Printf: @printf
-using Random: Random, AbstractRNG, MersenneTwister
+using Random: Random, AbstractRNG, Xoshiro
 using SparseArrays: sparse, SparseMatrixCSC
 using Statistics: quantile, mean
 

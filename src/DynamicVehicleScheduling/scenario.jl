@@ -16,7 +16,7 @@ function Base.getindex(scenario::Scenario, idx::Integer)
 end
 
 function Utils.generate_scenario(
-    instance::Instance; seed=nothing, rng::AbstractRNG=MersenneTwister(seed)
+    instance::Instance; seed=nothing, rng::AbstractRNG=Xoshiro(seed)
 )
     (; Δ_dispatch, static_instance, last_epoch, epoch_duration, max_requests_per_epoch) =
         instance

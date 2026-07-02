@@ -6,18 +6,13 @@ Environment for the dynamic assortment problem.
 # Fields
 $TYPEDFIELDS
 """
-@kwdef mutable struct Environment{I<:Instance,R<:AbstractRNG,S<:Union{Nothing,Int}} <:
-                      AbstractEnvironment
+@kwdef mutable struct Environment{I<:Instance} <: AbstractEnvironment
     "associated instance"
     instance::I
     "current step"
     step::Int
     "purchase history (used to update hype feature)"
     purchase_history::Vector{Int}
-    "rng"
-    rng::R
-    "seed for RNG"
-    seed::S
     "customer utility for each item"
     utility::Vector{Float64}
     "current full features"
@@ -31,25 +26,21 @@ $TYPEDSIGNATURES
 
 Creates an [`Environment`](@ref) from an [`Instance`](@ref) of the dynamic assortment benchmark.
 """
-function Environment(instance::Instance; seed=0, rng::AbstractRNG=MersenneTwister(seed))
+function Environment(instance::Instance)
     N = item_count(instance)
     (; prices, features, starting_hype_and_saturation) = instance
     full_features = vcat(
         reshape(prices[1:(end - 1)], 1, :), starting_hype_and_saturation, features
     )
     model = customer_choice_model(instance)
-    env = Environment(;
+    return Environment(;
         instance,
         step=1,
         purchase_history=Int[],
-        rng=rng,
-        seed=seed,
         utility=model(full_features),
         features=full_features,
         d_features=zeros(2, N),
     )
-    Utils.reset!(env; reset_rng=true)
-    return env
 end
 
 customer_choice_model(env::Environment) = customer_choice_model(env.instance)
@@ -144,36 +135,26 @@ end
 """
 $TYPEDSIGNATURES
 
-Outputs the seed of the environment.
-"""
-Utils.get_seed(env::Environment) = env.seed
-
-"""
-$TYPEDSIGNATURES
-
 Resets the environment to the initial state:
-- reset the rng if `reset_rng` is true
 - reset the step to 1
 - reset the features to the initial features
 - reset the change in features to zero
 - reset the utility to the initial utility
 - clear the purchase history
 """
-function Utils.reset!(env::Environment; reset_rng=false, seed=env.seed)
-    reset_rng && Random.seed!(env.rng, seed)
-
+function Utils.reset!(env::Environment, ::AbstractRNG)
     env.step = 1
 
     (; prices, starting_hype_and_saturation, features) = env.instance
-    features = vcat(
+    full_features = vcat(
         reshape(prices[1:(end - 1)], 1, :), starting_hype_and_saturation, features
     )
-    env.features .= features
+    env.features .= full_features
 
     env.d_features .= 0.0
 
     model = customer_choice_model(env)
-    env.utility .= model(features)
+    env.utility .= model(full_features)
 
     empty!(env.purchase_history)
     return nothing
@@ -224,12 +205,11 @@ $TYPEDSIGNATURES
 Performs one step in the environment given an assortment.
 Draw an item according to the customer choice model and updates the environment state.
 """
-function Utils.step!(env::Environment, assortment::BitVector)
+function Utils.step!(env::Environment, assortment::BitVector, rng::AbstractRNG)
     @assert !Utils.is_terminated(env) "Environment is terminated, cannot act!"
-    r = prices(env)
     probs = choice_probabilities(env, assortment)
-    item = rand(env.rng, Categorical(probs))
-    reward = r[item]
+    item = rand(rng, Categorical(probs))
+    reward = prices(env)[item]
     buy_item!(env, item)
     return reward
 end
