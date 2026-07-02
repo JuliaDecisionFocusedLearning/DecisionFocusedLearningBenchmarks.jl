@@ -6,12 +6,12 @@ The `{exogenous}` parameter has the same meaning (whether uncertainty is indepen
 of decisions) as in [`AbstractStochasticBenchmark`](@ref).
 
 # Primary entry point
-- [`build_environment`](@ref)`(bench, rng)`: mandatory hook returning a single **bare**
-  environment. The framework wraps it in a [`SeededEnvironment`](@ref). Override
-  [`generate_environments`](@ref) instead when environments cannot be drawn independently.
+- [`build_environment`](@ref)`(bench, rng)`: mandatory hook returning a single bare environment.
+  The framework wraps it in a [`SeededEnvironment`](@ref). Override [`generate_environments`](@ref)
+  instead when environments cannot be drawn independently.
 
 # Additional optional methods
-- [`build_environment`](@ref)`(bench, rng)`: build a single bare rollout environment.
+- [`build_environment`](@ref)`(bench, rng)`: build a single bare environment.
   Must return an [`AbstractEnvironment`](@ref) (see `environment.jl` for the full protocol:
   [`reset!`](@ref), [`observe`](@ref), [`step!`](@ref), [`is_terminated`](@ref)). The
   environment must not manage its own seed/rng: draw randomness from the passed `rng`.
