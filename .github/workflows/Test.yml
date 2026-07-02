@@ -33,6 +33,11 @@ jobs:
       - uses: julia-actions/cache@v3
       - uses: julia-actions/julia-buildpkg@v1
       - uses: julia-actions/julia-runtest@v1
+        with:
+          # On Dependabot PRs, "auto" forces the latest compatible version of the
+          # bumped package, which breaks Julia 1.10 when that version requires a
+          # newer Julia. Only enforce it on the latest-stable job.
+          force_latest_compatible_version: ${{ matrix.julia-version == '1' }}
       - uses: julia-actions/julia-processcoverage@v1
       - uses: codecov/codecov-action@v7
         with:
