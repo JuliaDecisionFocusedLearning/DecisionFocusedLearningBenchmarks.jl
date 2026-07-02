@@ -27,4 +27,5 @@ using Random
         include("dynamic_vsp_plots.jl")
     end
     include("dynamic_assortment.jl")
+    include("replenishment.jl")
 end
