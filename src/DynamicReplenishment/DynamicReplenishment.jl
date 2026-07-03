@@ -80,6 +80,7 @@ end
 Constructor for [`DynamicReplenishmentBenchmark`](@ref).
 By default, the benchmark has 10 items, feature dimension 5 (+1 for price), 10 steps per
 episode, a simple linear customer choice model (all weights are negative), a poisson arrival of 15 customer per time step, and is endogenous.
+- random constraint matrix with 2 constraints
 - random prices uniformly in [1, 10]
 - random features uniformly in [-10, 10]
 - stock costs are dependant on the price
@@ -181,14 +182,13 @@ include("environment.jl")
 include("statistical_model.jl")
 include("policies.jl")
 include("maximizer.jl")
-include("plot.jl")
 include("anticipative_solver.jl")
 include("features.jl")
 
 """
 $TYPEDSIGNATURES
 
-Creates an environment from an [`Instance`](@ref) of the dynamic vehicle scheduling benchmark.
+Creates an environment for the dynamic replenishment benchmark.
 The seed of the environment is randomly generated using the provided random number generator.
 """
 function Utils.generate_environment(

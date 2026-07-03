@@ -17,14 +17,12 @@ function plot_sample(
 
     stock = Float64.(state.stock)
     repl = Float64.(RB.get_replenishment_from_y(sample.y; state=state))
-    # check if extra field is present, otherwise use next_sales argument
 
     sales = if hasproperty(sample.context, :next_sales)
         Float64.(sample.context.next_sales)
     else
         n_sales
     end
-    println(sales)
     if sales !== nothing
         sales = -sales
         w = 0.5
