@@ -40,11 +40,12 @@ features(env::Environment) = features(env.config)
 virtual_stock_cost(env::Environment) = virtual_stock_cost(env.config)
 physical_stock_cost(env::Environment) = physical_stock_cost(env.config)
 over_stock_bound_cost(env::Environment) = over_stock_bound_cost(env.config)
-UB_item(env::Environment) = UB_item(env.config)
+max_quotas(env::Environment) = max_quotas(env.config)
 
 current_epoch(env::Environment) = current_epoch(env.state)
 stock_ini(env::Environment) = env.stock_ini
 stock(env::Environment) = stock(env.state)
+ub_per_item(env::Environment) = ub_per_item(env.state)
 
 """
 $TYPEDSIGNATURES
@@ -119,11 +120,15 @@ $TYPEDSIGNATURES
 Apply the replenishment to the stock, apply the sales and increase time.
 """
 function Utils.step!(env::Environment, replenishment)
-    replenishment = get_replenishment_from_y(replenishment; state=env.state)
+    replenishment = replenishment
     @assert !Utils.is_terminated(env) "Environment is terminated, cannot act!"
     apply_replenishment!(env.state, replenishment)
     delta_cost = apply_sales!(env.state; env.scenario[current_epoch(env)]...)
     add_customers!(env.state; env.scenario[current_epoch(env)]...)
+    if current_epoch(env) < max_steps(env)
+        env.state.ub_per_item =
+            env.state.stock .+ max_quotas(env.config)[current_epoch(env) + 1]
+    end
     env.state.current_epoch += 1
     return delta_cost
 end

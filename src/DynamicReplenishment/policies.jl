@@ -1,15 +1,15 @@
 function greedy_policy(env::Environment; model_builder=highs_model)
     _, state = observe(env)
     N = item_count(env)
-    ub_same_item = UB_item(env)
-    Θ = zeros(N + N*ub_same_item)
+    ub = ub_per_item(env)
+    Θ = zeros(N + sum(ub))
     Θ[1:N] .= prices(env)
     return (replenishment_problem(Θ; state, model_builder=model_builder))
 end
 
 function lazy_policy(env::Environment)
     N = item_count(env)
-    return y_oracle(env, zeros(N), stock(env))
+    return zeros(N)
 end
 
 function random_policy(env::Environment)
@@ -29,5 +29,5 @@ function random_policy(env::Environment)
         )
         replenishment[item] = rand(0:max_quota_item)
     end
-    return y_oracle(env, replenishment, stock(env))
+    return replenishment
 end

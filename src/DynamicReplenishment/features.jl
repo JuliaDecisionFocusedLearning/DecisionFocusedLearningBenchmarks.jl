@@ -142,28 +142,31 @@ The last 8 columns correspond to dynamic stock features:
 function create_stock_features(state::DRPState, item_features::Matrix{Float64})
     config = state.config
     N = item_count(config)
-    ub = UB_item(config)
+    ub = ub_per_item(state)
     nb_fi = size(item_features, 2)
-    stock_features = zeros(N * ub, nb_fi + 8)
+    total_rows = sum(ub)
+    stock_features = zeros(total_rows, nb_fi + 8)
     t = current_epoch(state)
-    max_quotas = max.(0, max_quota_per_step_per_item(config)[t, :] .- stock(state))
 
     pos_items = items_with_positive_stock(state)
     mean_stock = mean_stock_history(state)
-    js = 1:ub
 
     stock_inf = config.stock_inf
     stock_sup = config.stock_sup
 
+    starts = [1; cumsum(ub)[1:(end - 1)] .+ 1]
+    ends = cumsum(ub)
+
     for i in 1:N
-        rows = ((i - 1) * ub + 1):(i * ub)
+        rows = starts[i]:ends[i]
         stock_features[rows, 1:nb_fi] .= item_features[i:i, :]
 
         p = prices(config)[i]
+        js = 1:ub[i]
         stock_inf_dev = js .- stock_inf
         stock_sup_dev = stock_sup .- js
         stock_mean_dev = js .- item_mean_feature(mean_stock, i, pos_items)
-        max_quota_dev = max_quotas[i] .- js
+        max_quotas_dev = max_quotas(state.config)[t, i] .- js
 
         stock_features[rows, nb_fi + 1] = stock_inf_dev
         stock_features[rows, nb_fi + 2] = stock_inf_dev .* p
@@ -171,8 +174,8 @@ function create_stock_features(state::DRPState, item_features::Matrix{Float64})
         stock_features[rows, nb_fi + 4] = stock_sup_dev .* p
         stock_features[rows, nb_fi + 5] = stock_mean_dev
         stock_features[rows, nb_fi + 6] = stock_mean_dev .* p
-        stock_features[rows, nb_fi + 7] = max_quota_dev
-        stock_features[rows, nb_fi + 8] = max_quota_dev .* p
+        stock_features[rows, nb_fi + 7] = max_quotas_dev
+        stock_features[rows, nb_fi + 8] = max_quotas_dev .* p
     end
     return stock_features
 end

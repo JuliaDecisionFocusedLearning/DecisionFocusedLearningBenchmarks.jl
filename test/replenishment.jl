@@ -15,16 +15,20 @@ const DR = DecisionFocusedLearningBenchmarks.DynamicReplenishment
     @test size(b.constraints_matrix) == (12, 10)
     @test b.quotas[1, :] == [30, 30, 10, 10, 10, 10, 10, 10, 10, 10, 10, 10]
     @test size(b.quotas) == (10, 12)
+    @test size(b.max_quotas) == (b.max_steps, b.N)
+    @test all(b.max_quotas .≥ 0)
+    @test all(b.max_quotas .≤ b.ub_same_item)
+    @test b.max_quotas[1, :] == [10, 10, 10, 10, 10, 10, 10, 10, 10, 10]
 
     b_custom = DynamicReplenishmentBenchmark(;
         N=5,
         λ=10.0,
-        constraints_matrix=[1 1 1 1 1; 0 0 0 0 0; 0 0 1 1 0],
+        constraints_matrix=[1 1 1 0 0; 0 0 0 1 1; 0 0 0 0 1],
         quotas=[20, 15, 5],
         d=3,
         stock_inf=2,
         stock_sup=30,
-        ub_same_item=5,
+        ub_same_item=17,
         delivery_delay=1,
         max_steps=20,
     )
@@ -33,12 +37,14 @@ const DR = DecisionFocusedLearningBenchmarks.DynamicReplenishment
     @test b_custom.d == 3
     @test b_custom.stock_inf == 2
     @test b_custom.stock_sup == 30
-    @test b_custom.ub_same_item == 5
+    @test b_custom.ub_same_item == 17
     @test b_custom.delivery_delay == 1
     @test b_custom.max_steps == 20
     @test size(b_custom.constraints_matrix) == (8, 5)
-    @test b_custom.quotas[1, :] == [20, 15, 5, 5, 5, 5, 5, 5]
+    @test b_custom.quotas[1, :] == [20, 15, 5, 17, 17, 17, 17, 17]
     @test size(b_custom.quotas) == (20, 8)
+
+    @test b_custom.max_quotas[1, :] == [17, 17, 17, 15, 5]
 
     @test DR.item_count(b) == 10
     @test DR.feature_count(b) == 5
@@ -91,7 +97,7 @@ end
 
     s0 = copy(DR.stock_ini(env))
     N = DR.item_count(b)
-    repl = DR.y_oracle(env, zeros(Int, N), s0)
+    repl = zeros(Int, N)
     step!(env, repl)
     reset!(env)
 
@@ -105,19 +111,19 @@ end
     env = DR.Environment(b; seed=42)
     N = DR.item_count(b)
 
-    action = DR.y_oracle(env, zeros(Int, N), env.stock_ini)
+    action = zeros(Int, N)
     reward = step!(env, action)
     @test reward isa Float64
     @test DR.current_epoch(env) == 2
 
     # run to termination
     while !is_terminated(env)
-        repl = DR.y_oracle(env, zeros(Int, N), env.state.stock)
+        repl = zeros(Int, N)
         @test DR.is_feasible(env.state, repl)
         step!(env, repl)
     end
     @test is_terminated(env)
-    @test_throws AssertionError step!(env, DR.y_oracle(env, zeros(Int, N), env.state.stock))
+    @test_throws AssertionError step!(env, zeros(Int, N))
 end
 
 @testset "DynamicReplenishment - Feasibility" begin
@@ -126,23 +132,15 @@ end
     stock_ini = [0, 0]
     env = DR.Environment(b; seed=42, stock_ini=stock_ini)
     # zero replenishment is always feasible
-    @test DR.is_feasible(env.state, DR.y_oracle(env, [1, 0], env.state.stock))
-    @test DR.is_feasible(env.state, DR.y_oracle(env, [0, 1], env.state.stock))
-    @test DR.is_feasible(env.state, DR.y_oracle(env, [0, 0], env.state.stock))
+    @test DR.is_feasible(env.state, zeros(Int, N))
+    @test DR.is_feasible(env.state, [0, 1])
+    @test DR.is_feasible(env.state, [1, 0])
+    @test DR.is_feasible(env.state, [0, 0])
 
     # replenishment exceeding quota is infeasible
-    @test !DR.is_feasible(env.state, DR.y_oracle(env, [2, 0], env.state.stock))
-    @test !DR.is_feasible(env.state, DR.y_oracle(env, [0, 2], env.state.stock))
-    @test !DR.is_feasible(env.state, DR.y_oracle(env, [1, 1], env.state.stock))
-end
-
-@testset "DynamicReplenishment - Quota Constraints" begin
-    b = DynamicReplenishmentBenchmark()
-    max_quotas = DR.max_quota_per_step_per_item(b)
-
-    @test size(max_quotas) == (DR.max_steps(b), DR.item_count(b))
-    @test all(max_quotas .≥ 0)
-    @test all(max_quotas .≤ DR.ub_same_item(b))
+    @test !DR.is_feasible(env.state, [2, 0])
+    @test !DR.is_feasible(env.state, [0, 2])
+    @test !DR.is_feasible(env.state, [1, 1])
 end
 
 @testset "DynamicReplenishment - State" begin
@@ -161,7 +159,7 @@ end
     @test DR.stock_ini(state) == DR.stock_ini(env)
 
     # after one step
-    reward = step!(env, DR.y_oracle(env, zeros(Int, N), env.stock_ini))
+    reward = step!(env, zeros(Int, N))
     @test DR.current_epoch(state) == 2
     @test size(DR.stock_history(state)) == (2, N)
     @test size(DR.replenishment_history(state)) == (1, N)
@@ -174,17 +172,21 @@ end
     b = DynamicReplenishmentBenchmark()
     env = DR.Environment(b; seed=42)
     N = DR.item_count(b)
-    UB = DR.UB_item(b)
+    ub = DR.ub_per_item(env)
 
     x, state = observe(env)
 
-    # x is stock_features' : (nb_features, N*UB)
-    @test size(x, 2) == N * UB
+    # x is stock_features' : (nb_features, sum(UB))
+    @test size(x, 2) == sum(ub)
     @test size(x, 1) >= DR.feature_count(b) + 1
     static_features = x[1:(DR.feature_count(b) + 1), :]
+
+    starts = [1; cumsum(ub)[1:(end - 1)] .+ 1]
+    ends = cumsum(ub)
     for i in 1:N
-        ref = static_features[:, (i - 1) * UB + 1]
-        block = static_features[:, ((i - 1) * UB + 1):(i * UB)]
+        rows = starts[i]:ends[i]
+        ref = static_features[:, starts[i]]
+        block = static_features[:, rows]
         @test all(block .≈ ref)
     end
 end
@@ -192,7 +194,6 @@ end
 @testset "DynamicReplenishment - Statistical Model" begin
     b = DynamicReplenishmentBenchmark()
     N = DR.item_count(b)
-    UB = DR.UB_item(b)
 
     model = generate_statistical_model(b)
     @test model isa DR.statistical_model
@@ -200,9 +201,10 @@ end
     env = DR.Environment(b; seed=42)
     x, _ = observe(env)
 
-    θη = model(x, N, UB)
-    # θ : N outputs from θ_model, η : N*UB outputs from η_model
-    @test length(θη) == N + N * UB
+    ub = DR.ub_per_item(env)
+    θη = model(x, N, ub)
+    # θ : N outputs from θ_model, η : N*ub outputs from η_model
+    @test length(θη) == N + sum(ub)
     @test all(isfinite.(θη))
 end
 

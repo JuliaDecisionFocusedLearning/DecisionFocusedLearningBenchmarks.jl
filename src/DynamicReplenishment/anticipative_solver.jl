@@ -7,7 +7,7 @@ Compute big M values for a scenario of a specific environment.
 function compute_bigM!(env::Environment, scenario::Scenario)
     T = max_steps(env.config)
     N = item_count(env.config)
-    max_quotas = max_quota_per_step_per_item(env.config)
+    max_q = max_quotas(env.config)
     s0 = stock_ini(env)
     nb_customers = scenario.nb_customers
     utilities = scenario.utilities
@@ -24,8 +24,8 @@ function compute_bigM!(env::Environment, scenario::Scenario)
                         i_2 for i_2 in sorted_indices[(index + 1):end] if i_2 <= N
                     ]
                     ini_stock_sum = sum(s0[i_2] for i_2 in higher_items)
-                    quota_sum = sum(max_quotas[τ, i_2] for τ in 1:t for i_2 in higher_items)
-                    # M = ∑_τ=1^t ∑_{i_2: u_{i_2} > u_{i_1}} max_quotas[τ][i_2] + stock_ini[i_2] + 1
+                    quota_sum = sum(max_q[τ, i_2] for τ in 1:t for i_2 in higher_items)
+                    # M = ∑_τ=1^t ∑_{i_2: u_{i_2} > u_{i_1}} max_q[τ][i_2] + stock_ini[i_2] + 1
                     big_M[t][k][i_1] = quota_sum + ini_stock_sum + 1
                 end
             end
@@ -195,8 +195,8 @@ function solver_variable_to_dataset(
     # initial state, before any replenishment/sales (epoch 0 / pre-action)
     init_state = DRPState(config, s_val[1, :])
     x_init = compute_features(init_state)
-    y_init = y_oracle(env, y_val[1, :], s_val[1, :])
-    init_state.current_cost = compute_cost(init_state, y_val[1, :], sales_full[1, :])
+    y_init = y_val[1, :]
+    init_state.current_cost = compute_cost(init_state, y_init, sales_full[1, :])
     dataset[1] = DataSample(;
         y=y_init,
         x=x_init,
@@ -213,11 +213,12 @@ function solver_variable_to_dataset(
             replenishment_history=y_val[1:(t - 1), :],
             sales_history=sales_full[1:(t - 1), :],
             customer_history=scenario.nb_customers[1:(t - 1)],
+            ub_per_item=s_val[t, :] .+ max_quotas(config)[t, :],
             current_cost=0.0,
         )
-        state_t.current_cost = compute_cost(state_t, y_val[t, :], sales_full[t, :])
+        y_true = y_val[t, :]
+        state_t.current_cost = compute_cost(state_t, y_true, sales_full[t, :])
         x = compute_features(state_t)
-        y_true = y_oracle(env, y_val[t, :], s_val[t, :])
         dataset[t] = DataSample(;
             y=y_true,
             x,

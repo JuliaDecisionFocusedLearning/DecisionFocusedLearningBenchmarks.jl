@@ -8,10 +8,11 @@ Convention: all history matrices are (time, item), i.e. `history[t, i]`.
     config::B
     current_epoch::Int
     stock::Vector{Int}
-    stock_history::Matrix{Int}          # (current_epoch+1, N)
-    replenishment_history::Matrix{Int}  # (current_epoch,   N)
-    sales_history::Matrix{Int}          # (current_epoch,   N)
-    customer_history::Vector{Int}
+    stock_history::Matrix{Int}          # (current_epoch, N)
+    replenishment_history::Matrix{Int}  # (current_epoch-1,   N)
+    sales_history::Matrix{Int}          # (current_epoch-1,   N)
+    customer_history::Vector{Int}       # (current_epoch -1)
+    ub_per_item::Vector{Int}
     current_cost::Float64 = 0.0
 end
 
@@ -27,6 +28,7 @@ function DRPState{B}(
         replenishment_history=zeros(Int, 0, N),
         sales_history=zeros(Int, 0, N),
         customer_history=Int[],
+        ub_per_item=stock_ini .+ max_quotas(config)[1],
         current_cost=0.0,
     )
 end
@@ -50,25 +52,27 @@ sales_history(state::DRPState) = state.sales_history
 customer_history(state::DRPState) = state.customer_history
 stock_ini(state::DRPState) = stock_history(state)[1, :]
 current_cost(state::DRPState) = state.current_cost
+ub_per_item(state::DRPState) = state.ub_per_item
 
 function reset_state!(state::DRPState)
     N = item_count(state.config)
     s0 = stock_ini(state)
     state.current_epoch = 1
+    # TODO: mettre un nouveau stock initial 
     state.stock = copy(s0)
     state.stock_history = reshape(copy(s0), 1, N)
     state.replenishment_history = zeros(Int, 0, N)
     state.sales_history = zeros(Int, 0, N)
     state.customer_history = Int[]
+    state.ub_per_item = s0 .+ max_quotas(state.config)[1]
     state.current_cost = 0.0
     return state
 end
 
-function is_feasible(state::DRPState, replenishment; verbose=false)
+function is_feasible(state::DRPState, replenishment::Vector{Int}; verbose=false)
     config = state.config
     cons_mat = constraints_matrix(config)
     q = quotas(config)
-    replenishment = get_replenishment_from_y(replenishment; state=state)
     for c in 1:nb_constraints(config)
         if sum(cons_mat[c, :] .* replenishment) > q[state.current_epoch, c]
             verbose &&
@@ -140,6 +144,7 @@ function compute_cost(
         replenishment_history=replenishments,
         sales_history=sales,
         customer_history=customer_history(state),
+        ub_per_item=stock_hist[end, :] .+ max_quotas(config)[current_epoch(state), :],
         current_cost=0.0,
     )
     for t in 1:current_epoch(state)

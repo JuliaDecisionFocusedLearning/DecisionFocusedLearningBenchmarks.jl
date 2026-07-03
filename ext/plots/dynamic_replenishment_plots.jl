@@ -16,7 +16,7 @@ function plot_sample(
     N = RB.item_count(state.config)
 
     stock = Float64.(state.stock)
-    repl = Float64.(RB.get_replenishment_from_y(sample.y; state=state))
+    repl = Float64.(sample.y)
 
     sales = if hasproperty(sample.context, :next_sales)
         Float64.(sample.context.next_sales)

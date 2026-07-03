@@ -31,7 +31,8 @@ $TYPEDSIGNATURES
 """
 function (m::statistical_model)(x, N, ub)
     nb_item_features = size(x, 1) - 8              # features are along dim 1
-    x_item = x[1:nb_item_features, 1:ub:(N * ub)]  # feature rows, one col per item
+    starts = [1; cumsum(ub)[1:(end - 1)] .+ 1]
+    x_item = x[1:nb_item_features, starts]  # feature rows, one col per item
     θ = m.θ_model(x_item)
     η = m.η_model(x)
     return vcat(vec(θ), vec(η))

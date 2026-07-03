@@ -46,8 +46,6 @@ struct DynamicReplenishmentBenchmark{exogenous,M} <: AbstractDynamicBenchmark{ex
     ub_same_item::Int
     "delivery delay in days"
     delivery_delay::Int
-    "Upper bound for stock of same item for the CO layer"
-    UB_item::Int
     "prices of the items"
     prices::Vector{Float64}
     "items' features (d x N matrix)"
@@ -60,6 +58,8 @@ struct DynamicReplenishmentBenchmark{exogenous,M} <: AbstractDynamicBenchmark{ex
     over_stock_bound_cost::Float64
     "number of steps per episode"
     max_steps::Int
+    "max quota per time step per item"
+    max_quotas::Matrix{Int}
 end
 
 """
@@ -100,11 +100,9 @@ function DynamicReplenishmentBenchmark(;
     ub_same_item=10,
     delivery_delay=3,
     max_steps=10,
-    UB_item=30,
     customer_choice_model=Chain(Dense([-0.8 -0.4 -0.3 -0.3 -0.3 -0.1]), vec),
     rng=MersenneTwister(0),
 )
-    UB_item = max(UB_item, ub_same_item, maximum(quotas))
     constraints_matrix = vcat(constraints_matrix, Matrix(1I, N, N))
     quotas = hcat([vcat(quotas, fill(ub_same_item, N)) for _ in 1:max_steps]...)'
     prices = vcat(rand(rng, Uniform(1.0, 10.0), N))
@@ -112,6 +110,23 @@ function DynamicReplenishmentBenchmark(;
     virtual_stock_cost = prices ./ (max_steps * 10)
     physical_stock_cost = prices ./ (max_steps * 5)
     over_stock_bound_cost = maximum(prices) * 10
+    nb_constraints = size(constraints_matrix, 1)
+    max_quotas = Matrix{Float64}(undef, max_steps, N)
+    for i in 1:N
+        if sum(constraints_matrix[:, i]) == 0
+            max_quotas[:, i] .= ub_same_item
+        else
+            for t in 1:max_steps
+                max_quotas[t, i] = min(
+                    minimum([
+                        quotas[t, c] for
+                        c in 1:nb_constraints if constraints_matrix[c, i] == 1
+                    ]),
+                    ub_same_item,
+                )
+            end
+        end
+    end
     return DynamicReplenishmentBenchmark{false,typeof(customer_choice_model)}(
         customer_choice_model,
         λ,
@@ -123,13 +138,13 @@ function DynamicReplenishmentBenchmark(;
         stock_sup,
         ub_same_item,
         delivery_delay,
-        UB_item,
         prices,
         features,
         virtual_stock_cost,
         physical_stock_cost,
         over_stock_bound_cost,
         max_steps,
+        max_quotas,
     )
 end
 
@@ -151,28 +166,7 @@ virtual_stock_cost(b::DynamicReplenishmentBenchmark) = b.virtual_stock_cost
 physical_stock_cost(b::DynamicReplenishmentBenchmark) = b.physical_stock_cost
 over_stock_bound_cost(b::DynamicReplenishmentBenchmark) = b.over_stock_bound_cost
 nb_constraints(b::DynamicReplenishmentBenchmark) = size(b.constraints_matrix, 1)
-UB_item(b::DynamicReplenishmentBenchmark) = b.UB_item
-
-function max_quota_per_step_per_item(b::DynamicReplenishmentBenchmark)
-    T = max_steps(b)
-    N = item_count(b)
-    cons_mat = constraints_matrix(b)
-    q = quotas(b)
-    max_quotas = Matrix{Float64}(undef, T, N)
-    for i in 1:N
-        if sum(cons_mat[:, i]) == 0
-            max_quotas[:, i] .= ub_same_item(b)
-        else
-            for t in 1:T
-                max_quotas[t, i] = min(
-                    minimum([q[t, c] for c in 1:nb_constraints(b) if cons_mat[c, i] == 1]),
-                    ub_same_item(b),
-                )
-            end
-        end
-    end
-    return max_quotas
-end
+max_quotas(b::DynamicReplenishmentBenchmark) = b.max_quotas
 
 include("utils.jl")
 
