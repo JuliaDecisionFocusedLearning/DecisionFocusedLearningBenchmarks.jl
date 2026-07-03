@@ -86,6 +86,13 @@ Modules = [DecisionFocusedLearningBenchmarks.StochasticVehicleScheduling]
 Private = false
 ```
 
+### Dynamic Replenishment
+
+```@autodocs
+Modules = [DecisionFocusedLearningBenchmarks.DynamicReplenishment]
+Private = true
+```
+
 ### Warcraft
 
 ```@autodocs
