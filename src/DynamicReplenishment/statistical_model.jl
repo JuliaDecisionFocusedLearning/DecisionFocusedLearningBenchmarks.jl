@@ -29,7 +29,7 @@ end
 $TYPEDSIGNATURES
 
 """
-function (m::statistical_model)(x, N, ub)
+function (m::statistical_model)(x, ub)
     nb_item_features = size(x, 1) - 8              # features are along dim 1
     starts = [1; cumsum(ub)[1:(end - 1)] .+ 1]
     x_item = x[1:nb_item_features, starts]  # feature rows, one col per item

@@ -25,11 +25,10 @@ Sample a scenario given the customer choice model and static utilities.
 function Utils.generate_scenario(
     config::DynamicReplenishmentBenchmark;
     seed=nothing,
-    rng::AbstractRNG=MersenneTwister(seed),
+    rng::AbstractRNG=Xoshiro(seed),
     temp=1.0,
     random_utility_model=Gumbel(0.0, 1.0),
 )
-    Random.seed!(seed)
     N = item_count(config)
     T = max_steps(config)
     λ = poisson_arrival_rate(config)
@@ -42,7 +41,7 @@ function Utils.generate_scenario(
     static_utilities = vcat(static_utilities, 0.0)
     utilities = [
         [
-            static_utilities .+ temp * rand(random_utility_model, N+1) for
+            static_utilities .+ temp * rand(rng, random_utility_model, N+1) for
             _ in 1:nb_customers[t]
         ] for t in 1:T
     ]

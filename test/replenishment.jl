@@ -3,7 +3,7 @@ const DR = DecisionFocusedLearningBenchmarks.DynamicReplenishment
 @testset "DynamicReplenishment - Benchmark Construction" begin
     b = DynamicReplenishmentBenchmark()
     @test b.N == 10
-    @test b.λ == 15.0
+    @test b.λ == 15
     @test b.d == 5
     @test b.stock_inf == 0
     @test b.stock_sup == 50
@@ -22,7 +22,7 @@ const DR = DecisionFocusedLearningBenchmarks.DynamicReplenishment
 
     b_custom = DynamicReplenishmentBenchmark(;
         N=5,
-        λ=10.0,
+        λ=10,
         constraints_matrix=[1 1 1 0 0; 0 0 0 1 1; 0 0 0 0 1],
         quotas=[20, 15, 5],
         d=3,
@@ -33,7 +33,7 @@ const DR = DecisionFocusedLearningBenchmarks.DynamicReplenishment
         max_steps=20,
     )
     @test b_custom.N == 5
-    @test b_custom.λ == 10.0
+    @test b_custom.λ == 10
     @test b_custom.d == 3
     @test b_custom.stock_inf == 2
     @test b_custom.stock_sup == 30
@@ -64,8 +64,8 @@ end
 
 @testset "DynamicReplenishment - Environment Initialization" begin
     b = DynamicReplenishmentBenchmark()
-
-    env1 = DR.Environment(b; seed=42)
+    rng = Xoshiro(42)
+    env1 = DR.Environment(b, rng)
     @test !is_terminated(env1)
     @test DR.item_count(env1) == 10
     @test DR.max_steps(env1) == 10
@@ -86,20 +86,21 @@ end
     @test state_ini.current_cost == 0.0
 
     # custom environment 
-    env2 = DR.Environment(b; stock_ini=fill(5, 10), seed=123)
+    env2 = DR.Environment(b, rng; stock_ini=fill(5, 10))
     @test DR.stock_ini(env2) == fill(5, 10)
     @test DR.stock(env2) == fill(5, 10)
 end
 
 @testset "DynamicReplenishment - Environment Reset" begin
     b = DynamicReplenishmentBenchmark()
-    env = DR.Environment(b; seed=42)
+    rng = Xoshiro(42)
+    env = DR.Environment(b, rng)
 
     s0 = copy(DR.stock_ini(env))
     N = DR.item_count(b)
     repl = zeros(Int, N)
-    step!(env, repl)
-    reset!(env)
+    step!(env, repl, rng)
+    reset!(env, rng)
 
     @test !is_terminated(env)
     @test DR.stock(env) == s0
@@ -108,11 +109,12 @@ end
 
 @testset "DynamicReplenishment - Environment Step" begin
     b = DynamicReplenishmentBenchmark()
-    env = DR.Environment(b; seed=42)
+    rng = Xoshiro(42)
+    env = DR.Environment(b, rng)
     N = DR.item_count(b)
 
     action = zeros(Int, N)
-    reward = step!(env, action)
+    reward = step!(env, action, rng)
     @test reward isa Float64
     @test DR.current_epoch(env) == 2
 
@@ -120,17 +122,18 @@ end
     while !is_terminated(env)
         repl = zeros(Int, N)
         @test DR.is_feasible(env.state, repl)
-        step!(env, repl)
+        step!(env, repl, rng)
     end
     @test is_terminated(env)
-    @test_throws AssertionError step!(env, zeros(Int, N))
+    @test_throws AssertionError step!(env, zeros(Int, N), rng)
 end
 
 @testset "DynamicReplenishment - Feasibility" begin
     b = DynamicReplenishmentBenchmark(N=2, constraints_matrix=[1 1], quotas=[1])
     N = DR.item_count(b)
     stock_ini = [0, 0]
-    env = DR.Environment(b; seed=42, stock_ini=stock_ini)
+    rng = Xoshiro(42)
+    env = DR.Environment(b, rng; stock_ini=stock_ini)
     # zero replenishment is always feasible
     @test DR.is_feasible(env.state, zeros(Int, N))
     @test DR.is_feasible(env.state, [0, 1])
@@ -145,7 +148,8 @@ end
 
 @testset "DynamicReplenishment - State" begin
     b = DynamicReplenishmentBenchmark()
-    env = DR.Environment(b; seed=42)
+    rng = Xoshiro(42)
+    env = DR.Environment(b, rng)
     N = DR.item_count(b)
     state = env.state
 
@@ -159,7 +163,7 @@ end
     @test DR.stock_ini(state) == DR.stock_ini(env)
 
     # after one step
-    reward = step!(env, zeros(Int, N))
+    reward = step!(env, zeros(Int, N), rng)
     @test DR.current_epoch(state) == 2
     @test size(DR.stock_history(state)) == (2, N)
     @test size(DR.replenishment_history(state)) == (1, N)
@@ -170,7 +174,8 @@ end
 
 @testset "DynamicReplenishment - Observe" begin
     b = DynamicReplenishmentBenchmark()
-    env = DR.Environment(b; seed=42)
+    rng = Xoshiro(42)
+    env = DR.Environment(b, rng)
     N = DR.item_count(b)
     ub = DR.ub_per_item(env)
 
@@ -198,11 +203,12 @@ end
     model = generate_statistical_model(b)
     @test model isa DR.statistical_model
 
-    env = DR.Environment(b; seed=42)
+    rng = Xoshiro(42)
+    env = DR.Environment(b, rng)
     x, _ = observe(env)
 
     ub = DR.ub_per_item(env)
-    θη = model(x, N, ub)
+    θη = model(x, ub)
     # θ : N outputs from θ_model, η : N*ub outputs from η_model
     @test length(θη) == N + sum(ub)
     @test all(isfinite.(θη))
@@ -216,34 +222,59 @@ end
     @test policies.greedy.name == "Greedy"
     @test policies.random.name == "Random"
 
-    r_greedy, _ = evaluate_policy!(policies.greedy, environments)
+    r_greedy, _ = evaluate_policy!(policies.greedy, environments, 5)
     @test length(r_greedy) == length(environments)
     env = environments[1]
     reset!(env)
-    action = policies.greedy(env)
-    @test DR.is_feasible(env.state, action)
+    action = policies.greedy(env.env)
+    @test DR.is_feasible(env.env.state, action)
 end
 
 @testset "DynamicReplenishment - Anticipative Solver" begin
     b = DynamicReplenishmentBenchmark(; N=5, max_steps=3)
-    env = DR.Environment(b; seed=42)
-
-    obj, trajectory = DR.anticipative_solver(env)
+    rng = Xoshiro(42)
+    env = generate_environments(b, 1; seed=0)
+    scenario = DR.generate_scenario(b; rng=rng)
+    env[1].env.scenario = scenario
+    ant_obj, ant_traj = DR.anticipative_solver(env[1].env, rng, scenario)
     policies = generate_baseline_policies(b)
-    r_greedy, _ = evaluate_policy!(policies.greedy, [env])
-    @test length(trajectory) == DR.max_steps(b)
-    @test r_greedy[1] <= obj
-    for sample in trajectory
-        @test DR.is_feasible(sample.state, sample.y)
+    r_greedy, greedy_traj = evaluate_policy!(policies.greedy, env)
+    @test length(ant_traj) == DR.max_steps(b) == length(greedy_traj)
+    for g_sample in greedy_traj
+        @test DR.is_feasible(g_sample.instance, g_sample.y)
     end
-    @test trajectory[end].state.current_cost == obj
+    for ant_sample in ant_traj
+        @test DR.is_feasible(ant_sample.state, ant_sample.y)
+    end
+    @test r_greedy[1] <= ant_obj
+    @test ant_traj[end].state.current_cost == ant_obj
+end
+
+@testset "DynamicReplenishment - Θ ̇g(y) = obj(co_layer)" begin
+    b = DynamicReplenishmentBenchmark(; N=5, max_steps=5)
+    rng = Xoshiro(42)
+    env = generate_environments(b, 1)
+    policies = generate_baseline_policies(b)
+    _, traj = evaluate_policy!(policies.greedy, env)
+    maximizer = generate_maximizer(b)
+    model = generate_statistical_model(b)
+    x_1, state_1 = traj[1].x, traj[1].instance
+    N = DR.item_count(b)
+    ub = DR.ub_per_item(state_1)
+
+    Θ = model(x_1, ub)
+    Y_oracle = maximizer(Θ; state=state_1)
+    Z_oracle = DR.get_z_from_y(Y_oracle, state_1)
+    maximizer_obj = DR._obj_function(N, ub, Θ, Y_oracle, Z_oracle)
+    Θ_dot_g_y = DR.dot(Θ, DR.g(Y_oracle; state=state_1))
+    @test isapprox(maximizer_obj, Θ_dot_g_y; rtol=1e-5)
 end
 
 @testset "DynamicReplenishment - Plots" begin
     using Plots
 
     b = DynamicReplenishmentBenchmark()
-    envs = generate_environments(b, 2; seed=0)
+    envs = generate_environments(b, 5)
     policies = generate_baseline_policies(b)
     _, traj = evaluate_policy!(policies.greedy, envs)
 
@@ -253,3 +284,4 @@ end
     fig2 = plot_trajectory(b, traj)
     @test fig2 isa Plots.Plot
 end
+

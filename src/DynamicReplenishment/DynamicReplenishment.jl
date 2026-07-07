@@ -7,7 +7,7 @@ using Combinatorics
 # using Gurobi
 using IterTools
 using JuMP
-using Random: Random, AbstractRNG, MersenneTwister, seed!, randperm
+using Random: Random, AbstractRNG, MersenneTwister, seed!, randperm, Xoshiro
 using Distributions
 using Flux: Chain, Dense, @layer, softplus, relu
 using InferOpt: LinearMaximizer
@@ -25,7 +25,7 @@ Items are chosen according to a agiven customer choice model which is endogenous
 # Fields
 $TYPEDFIELDS
 """
-struct DynamicReplenishmentBenchmark{exogenous,M} <: AbstractDynamicBenchmark{exogenous}
+struct DynamicReplenishmentBenchmark{M} <: AbstractDynamicBenchmark{true}
     "customer choice model (price, mean days one lot features)"
     customer_choice_model::M
     "Poisson arrival rate of customers"
@@ -87,19 +87,19 @@ episode, a simple linear customer choice model (all weights are negative), a poi
 """
 
 function DynamicReplenishmentBenchmark(;
-    N=10,
-    λ=15,
-    d=5,
+    N::Int=10,
+    λ::Int=15,
+    d::Int=5,
     constraints_matrix=vcat(
         [i <= N ÷ 2 ? 1 : 0 for _ in 1:1, i in 1:N],
         [i <= N ÷ 2 ? 0 : 1 for _ in 1:1, i in 1:N],
     ),
     quotas=[30, 30],
-    stock_inf=0,
-    stock_sup=50,
-    ub_same_item=10,
-    delivery_delay=3,
-    max_steps=10,
+    stock_inf::Int=0,
+    stock_sup::Int=50,
+    ub_same_item::Int=10,
+    delivery_delay::Int=3,
+    max_steps::Int=10,
     customer_choice_model=Chain(Dense([-0.8 -0.4 -0.3 -0.3 -0.3 -0.1]), vec),
     rng=MersenneTwister(0),
 )
@@ -127,7 +127,7 @@ function DynamicReplenishmentBenchmark(;
             end
         end
     end
-    return DynamicReplenishmentBenchmark{false,typeof(customer_choice_model)}(
+    return DynamicReplenishmentBenchmark{typeof(customer_choice_model)}(
         customer_choice_model,
         λ,
         N,
@@ -182,14 +182,12 @@ include("features.jl")
 """
 $TYPEDSIGNATURES
 
-Creates an environment for the dynamic replenishment benchmark.
-The seed of the environment is randomly generated using the provided random number generator.
+Creates a random environment for the dynamic replenishment benchmark using the provided random number generator.
 """
-function Utils.generate_environment(
+function Utils.build_environment(
     b::DynamicReplenishmentBenchmark, rng::AbstractRNG; kwargs...
 )
-    seed = rand(rng, 1:typemax(Int))
-    return Environment(b; seed=seed, rng=rng)
+    return Environment(b, rng)
 end
 
 """
@@ -201,8 +199,9 @@ function Utils.generate_maximizer(::DynamicReplenishmentBenchmark)
 end
 
 function Utils.generate_anticipative_solver(::DynamicReplenishmentBenchmark)
-    return (env; reset_env=true, kwargs...) -> begin
-        _, trajectory = anticipative_solver(env; reset_env, kwargs...)
+    return (env::Utils.SeededEnvironment; reset_env=true, kwargs...) -> begin
+        reset_env && Utils.reset_to_initial!(env)
+        _, trajectory = anticipative_solver(env.env, env.rng; reset_env, kwargs...)
         return trajectory
     end
 end

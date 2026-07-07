@@ -69,7 +69,7 @@ function compute_dol_item(state::DRPState, item::Int)
         end
 
         end_date_j = if j <= total_nb_sales
-            findfirst(>=(j), cum_sales)
+            something(findfirst(>=(j), cum_sales), t_now)
         else
             t_now
         end

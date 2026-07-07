@@ -6,9 +6,8 @@ Environment for the Dynamic Replenishment problem.
 # Fields
 $TYPEDFIELDS
 """
-@kwdef mutable struct Environment{
-    B<:DynamicReplenishmentBenchmark,S<:DRPState,R<:AbstractRNG,SS
-} <: Utils.AbstractEnvironment
+@kwdef mutable struct Environment{B<:DynamicReplenishmentBenchmark,S<:DRPState} <:
+                      Utils.AbstractEnvironment
     "associated benchmark"
     config::B
     "current state"
@@ -17,10 +16,6 @@ $TYPEDFIELDS
     scenario::Scenario
     "initial stock"
     stock_ini::Vector{Int}
-    "random number generator"
-    rng::R
-    "seed for the environment"
-    seed::SS
 end
 
 # Accessor functions
@@ -54,33 +49,25 @@ Creates an [`Environment`](@ref) from an instance of the dynamic replenishment b
 Initialize the initial stock to Uniform(0, 10).
 """
 function Environment(
-    config::DynamicReplenishmentBenchmark;
-    seed=0,
-    rng::AbstractRNG=MersenneTwister(seed),
+    config::DynamicReplenishmentBenchmark,
+    rng::AbstractRNG;
     stock_ini=rand(rng, 0:10, item_count(config)),
 )
     N = item_count(config)
-    scenario = Utils.generate_scenario(config; seed=seed, rng=rng)
+    scenario = Utils.generate_scenario(config; rng=rng)
     initial_state = DRPState(config, stock_ini)
-    return Environment(;
-        config, state=initial_state, scenario, stock_ini, rng=rng, seed=seed
-    )
+    return Environment(; config, state=initial_state, scenario, stock_ini)
 end
 
 function Environment(
     config::DynamicReplenishmentBenchmark,
-    scenario::Scenario;
+    scenario::Scenario,
+    rng::AbstractRNG;
     stock_ini=rand(rng, 0:10, item_count(config)),
-    seed=0,
-    rng::AbstractRNG=MersenneTwister(seed),
 )
     initial_state = DRPState(config, stock_ini)
-    return Environment(;
-        config, state=initial_state, scenario, stock_ini, rng=rng, seed=seed
-    )
+    return Environment(; config, state=initial_state, scenario, stock_ini)
 end
-
-Utils.get_seed(env::Environment) = env.seed
 
 """
 $TYPEDSIGNATURES
@@ -105,11 +92,8 @@ $TYPEDSIGNATURES
 Reset the environment to its initial state.
 Also reset the rng to `seed` if `reset_rng` is set to true.
 """
-function Utils.reset!(env::Environment; seed=get_seed(env), reset_rng=false)
-    if reset_rng
-        Random.seed!(env.rng, seed)
-    end
-    env.scenario = Utils.generate_scenario(env.config; seed, rng=env.rng)
+function Utils.reset!(env::Environment, rng::AbstractRNG)
+    env.scenario = Utils.generate_scenario(env.config; rng)
     reset_state!(env.state)
     return nothing
 end
@@ -119,7 +103,7 @@ $TYPEDSIGNATURES
 
 Apply the replenishment to the stock, apply the sales and increase time.
 """
-function Utils.step!(env::Environment, replenishment)
+function Utils.step!(env::Environment, replenishment, rng::AbstractRNG)
     replenishment = replenishment
     @assert !Utils.is_terminated(env) "Environment is terminated, cannot act!"
     apply_replenishment!(env.state, replenishment)

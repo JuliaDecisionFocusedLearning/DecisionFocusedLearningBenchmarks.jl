@@ -241,15 +241,15 @@ Solve the anticipative problem for a given instance and scenario.
 """
 function anticipative_solver(
     env::Environment,
+    rng::AbstractRNG,
     scenario::Scenario=env.scenario;
     model_builder=highs_model,
     reset_env=true,
-    seed=get_seed(env),
     verbose=false,
     big_M=nothing,
 )
     if reset_env
-        reset!(env; reset_rng=true, seed)
+        reset!(env, rng)
         scenario = env.scenario
     end
 
