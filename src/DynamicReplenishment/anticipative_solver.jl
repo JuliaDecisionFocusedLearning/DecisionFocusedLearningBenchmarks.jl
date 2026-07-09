@@ -302,4 +302,3 @@ function anticipative_solver(
         return nothing, nothing
     end
 end
-

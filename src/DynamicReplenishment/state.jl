@@ -100,7 +100,7 @@ function physical_stock(state::DRPState, t::Int)
 end
 
 function current_physical_stock(state::DRPState)
-    physical_stock(state, current_epoch(state) + 1)
+    return physical_stock(state, current_epoch(state) + 1)
 end
 
 function update_cost!(state::DRPState)
@@ -168,7 +168,7 @@ end
 
 function apply_replenishment!(state::DRPState, replenishment::Vector{Int})
     state.stock .+= replenishment
-    state.replenishment_history = vcat(state.replenishment_history, replenishment')
+    return state.replenishment_history = vcat(state.replenishment_history, replenishment')
 end
 
 function apply_sales!(

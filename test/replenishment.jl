@@ -284,4 +284,3 @@ end
     fig2 = plot_trajectory(b, traj)
     @test fig2 isa Plots.Plot
 end
-

@@ -7,7 +7,7 @@ end
 
 mean_sales_history(state::DRPState) = mean_feature_matrix(state, sales_history(state))
 function mean_replenishment_history(state::DRPState)
-    mean_feature_matrix(state, replenishment_history(state))
+    return mean_feature_matrix(state, replenishment_history(state))
 end
 mean_stock_history(state::DRPState) = mean_feature_matrix(state, stock_history(state))
 
