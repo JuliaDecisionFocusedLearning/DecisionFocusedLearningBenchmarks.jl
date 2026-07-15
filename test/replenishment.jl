@@ -298,7 +298,6 @@ end
     model = generate_statistical_model(b)
     x, _ = observe(env[1])
     θ = model(x)
-    # θ = model(env[1].x)
     param_ant_solver = DR.generate_parametric_anticipative_solver(b)
     ant_traj = param_ant_solver(θ, env[1].env.scenario, env[1])
     policies = generate_baseline_policies(b)

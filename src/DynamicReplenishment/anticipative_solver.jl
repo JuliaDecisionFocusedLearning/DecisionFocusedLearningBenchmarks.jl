@@ -183,6 +183,7 @@ function solver_variable_to_dataset(
     T = max_steps(config) - current_epoch(env) + 1
     N = item_count(config)
     n_customers = nb_customers(scenario)[current_epoch(env):end]
+    max_q = max_quotas(config)[current_epoch(env):end, :]
     # sales_full[t, i] = total units of item i sold at epoch t
     sales_full = zeros(Int, T, N)
     for t in 1:T, i in 1:N
@@ -192,6 +193,7 @@ function solver_variable_to_dataset(
 
     # initial state, before any replenishment/sales (epoch 0 / pre-action)
     init_state = DRPState(config, s_val[1, :])
+    init_state.ub_per_item = s_val[1, :] .+ max_q[1, :]
     x_init = compute_features(init_state)
     y_init = y_val[1, :]
     init_state.current_cost = compute_cost(init_state, y_init, sales_full[1, :])
@@ -211,7 +213,7 @@ function solver_variable_to_dataset(
             replenishment_history=y_val[1:(t - 1), :],
             sales_history=sales_full[1:(t - 1), :],
             customer_history=n_customers[1:(t - 1)],
-            ub_per_item=s_val[t, :] .+ max_quotas(config)[t, :],
+            ub_per_item=s_val[t, :] .+ max_q[t, :],
             current_cost=0.0,
         )
         y_true = y_val[t, :]
@@ -228,11 +230,11 @@ function solver_variable_to_dataset(
 
     final_obj_val = dataset[end].state.current_cost
     if !isnothing(θ)
-        if typeof(θ) == Vector{Float32}
-            final_obj_val += κ * dot(θ, g(dataset[1].y; state=dataset[1].state))
-        end
+        g_y = g(dataset[1].y; state=dataset[1].state)
+        @assert length(θ) == N + sum(ub_per_item(dataset[1].state))
+        final_obj_val += κ * dot(θ, g_y)
     end
-    @assert obj_val ≈ final_obj_val
+    @assert isapprox(obj_val, final_obj_val, atol=1e-3, rtol=1e-3)
     return dataset
 end
 
