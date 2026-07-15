@@ -1,18 +1,30 @@
 """
-$TYPEDSIGNATURES
+$TYPEDEF
 
 State data structure for the Dynamic Replenishment Problem.
 Convention: all history matrices are (time, item), i.e. `history[t, i]`.
+
+# Fields
+$TYPEDFIELDS
 """
 @kwdef mutable struct DRPState{B<:DynamicReplenishmentBenchmark}
+    "The benchmark configuration."
     config::B
+    "Current time step (epoch) of the simulation."
     current_epoch::Int
+    "Current stock levels for each item (N)"
     stock::Vector{Int}
-    stock_history::Matrix{Int}          # (current_epoch, N)
-    replenishment_history::Matrix{Int}  # (current_epoch-1,   N)
-    sales_history::Matrix{Int}          # (current_epoch-1,   N)
-    customer_history::Vector{Int}       # (current_epoch -1)
+    "History of stock levels for each item (current_epoch, N)"
+    stock_history::Matrix{Int}
+    "History of replenishments for each item (current_epoch-1, N)"
+    replenishment_history::Matrix{Int}
+    "History of sales for each item (current_epoch-1, N)"
+    sales_history::Matrix{Int}
+    "History of number of customers per time step (current_epoch-1)"
+    customer_history::Vector{Int}
+    "Upper bound of replenishment per item (N)"
     ub_per_item::Vector{Int}
+    "Current cost of the state"
     current_cost::Float64 = 0.0
 end
 
@@ -28,7 +40,7 @@ function DRPState{B}(
         replenishment_history=zeros(Int, 0, N),
         sales_history=zeros(Int, 0, N),
         customer_history=Int[],
-        ub_per_item=stock_ini .+ max_quotas(config)[1],
+        ub_per_item=stock_ini .+ max_quotas(config)[1, :],
         current_cost=0.0,
     )
 end
@@ -37,10 +49,6 @@ function DRPState(
     config::B, stock_ini::Vector{Int}
 ) where {B<:DynamicReplenishmentBenchmark}
     return DRPState{B}(config, stock_ini)
-end
-
-function total_sales_per_epoch(state::DRPState)
-    return vec(sum(state.sales_history; dims=2))
 end
 
 current_epoch(state::DRPState) = state.current_epoch
@@ -54,17 +62,20 @@ stock_ini(state::DRPState) = stock_history(state)[1, :]
 current_cost(state::DRPState) = state.current_cost
 ub_per_item(state::DRPState) = state.ub_per_item
 
-function reset_state!(state::DRPState)
+function reset_state!(state::DRPState, rng::AbstractRNG; reset_stock_ini=false)
     N = item_count(state.config)
-    s0 = stock_ini(state)
+    if reset_stock_ini
+        s0 = rand(rng, 0:10, N)
+    else
+        s0 = stock_ini(state)
+    end
     state.current_epoch = 1
-    # TODO: mettre un nouveau stock initial 
     state.stock = copy(s0)
     state.stock_history = reshape(copy(s0), 1, N)
     state.replenishment_history = zeros(Int, 0, N)
     state.sales_history = zeros(Int, 0, N)
     state.customer_history = Int[]
-    state.ub_per_item = s0 .+ max_quotas(state.config)[1]
+    state.ub_per_item = s0 .+ max_quotas(state.config)[1, :]
     state.current_cost = 0.0
     return state
 end
@@ -168,14 +179,14 @@ end
 
 function apply_replenishment!(state::DRPState, replenishment::Vector{Int})
     state.stock .+= replenishment
-    return state.replenishment_history = vcat(state.replenishment_history, replenishment')
+    state.replenishment_history = vcat(state.replenishment_history, replenishment')
+    return nothing
 end
 
-function apply_sales!(
-    state::DRPState; nb_customers::Int, utilities::Vector{Vector{Float64}}
-)
+function apply_sales!(state::DRPState; utilities::Vector{Vector{Float64}})
     N = length(state.stock)
     sales = zeros(Int, N)
+    nb_customers = length(utilities)
     for k in 1:nb_customers
         order_of_sales = sortperm(utilities[k]; rev=true)
         for item_index in order_of_sales
@@ -195,9 +206,8 @@ function apply_sales!(
     return delta_cost
 end
 
-function add_customers!(
-    state::DRPState; nb_customers::Int, utilities::Vector{Vector{Float64}}
-)
+function add_customers!(state::DRPState; utilities::Vector{Vector{Float64}})
+    nb_customers = length(utilities)
     state.customer_history = push!(state.customer_history, nb_customers)
     return state
 end

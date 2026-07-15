@@ -82,7 +82,6 @@ end
 $TYPEDSIGNATURES
 
 Check if the episode is terminated, i.e. if the current epoch is the last one.
-The +1 comes from the initial state which is considered as epoch 0 (but labeled 1).
 """
 Utils.is_terminated(env::Environment) = current_epoch(env) > max_steps(env)
 
@@ -94,7 +93,7 @@ Also reset the rng to `seed` if `reset_rng` is set to true.
 """
 function Utils.reset!(env::Environment, rng::AbstractRNG)
     env.scenario = Utils.generate_scenario(env.config; rng)
-    reset_state!(env.state)
+    reset_state!(env.state, rng; reset_stock_ini=false)
     return nothing
 end
 
@@ -104,15 +103,14 @@ $TYPEDSIGNATURES
 Apply the replenishment to the stock, apply the sales and increase time.
 """
 function Utils.step!(env::Environment, replenishment, rng::AbstractRNG)
-    replenishment = replenishment
     @assert !Utils.is_terminated(env) "Environment is terminated, cannot act!"
     apply_replenishment!(env.state, replenishment)
     delta_cost = apply_sales!(env.state; env.scenario[current_epoch(env)]...)
     add_customers!(env.state; env.scenario[current_epoch(env)]...)
-    if current_epoch(env) < max_steps(env)
-        env.state.ub_per_item =
-            env.state.stock .+ max_quotas(env.config)[current_epoch(env) + 1]
-    end
     env.state.current_epoch += 1
+    if !is_terminated(env)
+        env.state.ub_per_item =
+            env.state.stock .+ max_quotas(env.config)[current_epoch(env), :]
+    end
     return delta_cost
 end

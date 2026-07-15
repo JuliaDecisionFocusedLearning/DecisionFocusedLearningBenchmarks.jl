@@ -30,13 +30,11 @@ function replenishment_problem(
     m = model_builder()
     set_silent(m)
     # Variables
-    @variable(m, y[1:N], Bin)
+    @variable(m, 0 <= y[i in 1:N] <= ub[i], Int)
     # penalization
     @variable(m, z[i in 1:N, j in 1:ub[i]], Bin)
 
     # Objective function
-    ## TODO : review the definition of the objective function 
-    ## We do not have a piecewise concave function exactly like we would like I think (maybe don't have a theta ? )
     @objective(m, Max, _obj_function(N, ub, Θ, y, z))
     # Constraints
     ## penalization constraints
@@ -50,7 +48,7 @@ function replenishment_problem(
     ## structural constraints
     @constraint(m, [i in 1:N, j in 1:(ub[i] - 1)], z[i, j] >= z[i, j + 1])
 
-    if y_true !== nothing
+    if !isnothing(y_true)
         z_true = get_z_from_y(y_true, state)
         for i in 1:N
             fix(y[i], y_true[i]; force=true)
@@ -62,17 +60,7 @@ function replenishment_problem(
 
     optimize!(m)
 
-    if primal_status(m) == MOI.FEASIBLE_POINT
-        if termination_status(m) != MOI.OPTIMAL
-            @warn("Optimal not found")
-        end
-        return Int.(round.(value.(y)))
-    else
-        write_to_file(m, "replenishment_problem_infeasible.lp")
-        error("The model did not find an optimal or feasible solution.")
-
-        return nothing, nothing
-    end
+    return Int.(round.(value.(y)))
 end
 
 function g(y; state::DRPState, kwargs...)

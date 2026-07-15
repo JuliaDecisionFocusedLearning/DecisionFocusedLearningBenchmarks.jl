@@ -41,7 +41,7 @@ function plot_sample(
         stock .+ repl;
         bar_width=w,
         label="Replenishment",
-        color="#1baf7a",   # vert pour la barre totale (repl visible en haut)
+        color="#1baf7a", # green
         xlabel="Item",
         ylabel="Count",
         title=title,

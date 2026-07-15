@@ -9,15 +9,15 @@ end
 
 function lazy_policy(env::Environment)
     N = item_count(env)
-    return zeros(N)
+    return zeros(Int, N)
 end
 
-function random_policy(env::Environment)
+function random_policy(env::Environment, rng::AbstractRNG=Xoshiro(0))
     N = item_count(env)
     cons_mat = constraints_matrix(env)
     q = quotas(env)
     replenishment = zeros(Int, N)
-    order_item = randperm(N)
+    order_item = randperm(rng, N)
     t = current_epoch(env)
     for item in order_item
         max_quota_item = max(

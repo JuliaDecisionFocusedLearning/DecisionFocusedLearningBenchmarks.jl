@@ -145,7 +145,7 @@ function create_stock_features(state::DRPState, item_features::Matrix{Float64})
     ub = ub_per_item(state)
     nb_fi = size(item_features, 2)
     total_rows = sum(ub)
-    stock_features = zeros(total_rows, nb_fi + 8)
+    stock_features = zeros(total_rows, nb_fi + 8 + 1) # +1 for unique index
     t = current_epoch(state)
 
     pos_items = items_with_positive_stock(state)
@@ -176,6 +176,7 @@ function create_stock_features(state::DRPState, item_features::Matrix{Float64})
         stock_features[rows, nb_fi + 6] = stock_mean_dev .* p
         stock_features[rows, nb_fi + 7] = max_quotas_dev
         stock_features[rows, nb_fi + 8] = max_quotas_dev .* p
+        stock_features[rows, nb_fi + 9] .= i # identifier for the item for the statistical model
     end
     return stock_features
 end
@@ -190,7 +191,5 @@ function compute_features(state::DRPState)
     item_features = create_items_features(state)
     # stock features
     stock_features = create_stock_features(state, item_features)
-    normalize_features!(stock_features)
-    # normalize_features!(item_features)
     return stock_features'
 end

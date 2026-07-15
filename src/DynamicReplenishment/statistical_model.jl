@@ -25,15 +25,14 @@ function Utils.generate_statistical_model(b::DynamicReplenishmentBenchmark)
     return statistical_model(; θ_model, η_model)
 end
 
-"""
-$TYPEDSIGNATURES
+function (m::statistical_model)(x)
+    item_ids = @view x[end, :]
+    starts = [findfirst(==(i), item_ids) for i in 1:maximum(Int, item_ids)]
 
-"""
-function (m::statistical_model)(x, ub)
-    nb_item_features = size(x, 1) - 8              # features are along dim 1
-    starts = [1; cumsum(ub)[1:(end - 1)] .+ 1]
-    x_item = x[1:nb_item_features, starts]  # feature rows, one col per item
+    nb_item_features = size(x, 1) - 9
+    x_features = @view x[1:(end - 1), :]
+    x_item = x_features[1:(nb_item_features), starts]
     θ = m.θ_model(x_item)
-    η = m.η_model(x)
+    η = m.η_model(x_features)
     return vcat(vec(θ), vec(η))
 end
