@@ -10,7 +10,7 @@ $TYPEDFIELDS
 end
 
 function nb_customers(scenario::Scenario)
-    [length(scenario.utilities[t]) for t in 1:length(scenario.utilities)]
+    return [length(scenario.utilities[t]) for t in 1:length(scenario.utilities)]
 end
 
 function Base.getindex(scenario::Scenario, idx::Integer)
