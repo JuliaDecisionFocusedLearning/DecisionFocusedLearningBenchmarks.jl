@@ -79,7 +79,7 @@ end
         d=5,
         nb_constraints=2,
         stock_inf=0,
-        stock_sup=50,
+        stock_sup=30,
         ub_same_item=30,
         delivery_delay=3,
         max_steps=10
@@ -104,7 +104,7 @@ function DynamicReplenishmentBenchmark(;
     constraints_matrix=nothing,
     quotas=nothing,
     stock_inf::Int=0,
-    stock_sup::Int=50,
+    stock_sup::Int=30,
     ub_same_item::Int=30,
     delivery_delay::Int=3,
     max_steps::Int=10,
@@ -154,7 +154,7 @@ function DynamicReplenishmentBenchmark(;
 
     virtual_stock_cost = prices ./ (max_steps * 10)
     physical_stock_cost = prices ./ (max_steps * 5)
-    over_stock_bound_cost = maximum(prices) * 10
+    over_stock_bound_cost = maximum(prices)
     max_quotas = Matrix{Float64}(undef, max_steps, N)
     for i in 1:N, t in 1:max_steps
         max_quotas[t, i] = minimum(
@@ -271,7 +271,10 @@ function Utils.generate_baseline_policies(::DynamicReplenishmentBenchmark)
         random_policy,
     )
     lazy = Policy("Lazy", "Policy that replenishes nothing", lazy_policy)
-    return (; greedy, random, lazy)
+    saa = Policy(
+        "SAA", "Policy that solves a sample average approximation problem.", saa_policy
+    )
+    return (; greedy, random, lazy, saa)
 end
 
 export DynamicReplenishmentBenchmark

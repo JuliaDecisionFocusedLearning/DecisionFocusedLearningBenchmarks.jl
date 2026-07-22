@@ -7,13 +7,15 @@ Convention: all history matrices are (time, item), i.e. `history[t, i]`.
 # Fields
 $TYPEDFIELDS
 """
-@kwdef mutable struct DRPState{B<:DynamicReplenishmentBenchmark}
+mutable struct DRPState{B<:DynamicReplenishmentBenchmark}
     "The benchmark configuration."
     config::B
     "Current time step (epoch) of the simulation."
     current_epoch::Int
     "Current stock levels for each item (N)"
     stock::Vector{Int}
+    "Current physical stock levels for each item (N)"
+    physical_stock::Vector{Int}
     "History of stock levels for each item (current_epoch, N)"
     stock_history::Matrix{Int}
     "History of replenishments for each item (current_epoch-1, N)"
@@ -25,14 +27,118 @@ $TYPEDFIELDS
     "Upper bound of replenishment per item (N)"
     ub_per_item::Vector{Int}
     "Current cost of the state"
-    current_cost::Float64 = 0.0
+    current_cost::Float64
 end
 
-function DRPState{B}(
+"""
+$TYPEDSIGNATURES
+
+Compute physical stock at time `t` from raw historical data.
+"""
+function compute_physical_stock(
+    config,
+    t::Int,
+    s0::Vector{Int},
+    replenishment_history::AbstractMatrix{Int},
+    sales_history::AbstractMatrix{Int},
+)
+    N = item_count(config)
+    t_repl = t - delivery_delay(config)
+    t_sales = t - 1
+    sales_sum = if t_sales <= 0
+        zeros(Int, N)
+    else
+        vec(sum(view(sales_history, 1:t_sales, :); dims=1))
+    end
+    if t <= delivery_delay(config)
+        return max.(0, s0 .- sales_sum)
+    else
+        repl_sum = if t_repl <= 0
+            zeros(Int, N)
+        else
+            vec(sum(view(replenishment_history, 1:t_repl, :); dims=1))
+        end
+        return max.(0, s0 .+ repl_sum .- sales_sum)
+    end
+end
+
+"""
+$TYPEDSIGNATURES
+
+Compute the cumulative cost of a complete history (epochs 1:T where T = size(sales_history,1)),
+from raw data.
+"""
+function compute_total_cost(
+    config,
+    s0::Vector{Int},
+    stock_history::AbstractMatrix{Int},
+    replenishment_history::AbstractMatrix{Int},
+    sales_history::AbstractMatrix{Int},
+)
+    T = size(sales_history, 1)
+    T == 0 && return 0.0
+
+    margin_sales = sum(sum(prices(config) .* sales_history[t, :]) for t in 1:T)
+    v_stock_cost = sum(
+        sum(virtual_stock_cost(config) .* stock_history[t + 1, :] for t in 1:T)
+    )
+    phys_stocks = [
+        compute_physical_stock(config, t + 1, s0, replenishment_history, sales_history) for
+        t in 1:T
+    ]
+    p_stock_cost = sum(sum(physical_stock_cost(config) .* phys_stocks[t]) for t in 1:T)
+    stock_bound_cost = sum(
+        over_stock_bound_cost(config) * (
+            max(0, stock_inf(config) - sum(phys_stocks[t])) +
+            max(0, sum(phys_stocks[t]) - stock_sup(config))
+        ) for t in 1:T
+    )
+    return margin_sales - v_stock_cost - p_stock_cost - stock_bound_cost
+end
+
+"""
+$TYPEDSIGNATURES
+
+Construct a `DRPState`. 
+By convention, the initial physical stock is equal to the initial stock.
+"""
+
+function DRPState(;
+    config::B,
+    current_epoch::Int,
+    stock::Vector{Int},
+    stock_history::Matrix{Int},
+    replenishment_history::Matrix{Int},
+    sales_history::Matrix{Int},
+    customer_history::Vector{Int},
+    ub_per_item::Vector{Int},
+) where {B<:DynamicReplenishmentBenchmark}
+    s0 = stock_history[1, :]
+    physical_stock = compute_physical_stock(
+        config, current_epoch, s0, replenishment_history, sales_history
+    )
+    current_cost = compute_total_cost(
+        config, s0, stock_history, replenishment_history, sales_history
+    )
+    return DRPState{B}(
+        config,
+        current_epoch,
+        stock,
+        physical_stock,
+        stock_history,
+        replenishment_history,
+        sales_history,
+        customer_history,
+        ub_per_item,
+        current_cost,
+    )
+end
+
+function DRPState(
     config::B, stock_ini::Vector{Int}
 ) where {B<:DynamicReplenishmentBenchmark}
     N = length(stock_ini)
-    return DRPState{B}(;
+    return DRPState(;
         config,
         current_epoch=1,
         stock=copy(stock_ini),
@@ -41,18 +147,12 @@ function DRPState{B}(
         sales_history=zeros(Int, 0, N),
         customer_history=Int[],
         ub_per_item=stock_ini .+ max_quotas(config)[1, :],
-        current_cost=0.0,
     )
-end
-
-function DRPState(
-    config::B, stock_ini::Vector{Int}
-) where {B<:DynamicReplenishmentBenchmark}
-    return DRPState{B}(config, stock_ini)
 end
 
 current_epoch(state::DRPState) = state.current_epoch
 stock(state::DRPState) = state.stock
+physical_stock(state::DRPState) = state.physical_stock
 total_stock(state::DRPState) = sum(state.stock)
 stock_history(state::DRPState) = state.stock_history
 replenishment_history(state::DRPState) = state.replenishment_history
@@ -71,6 +171,7 @@ function reset_state!(state::DRPState, rng::AbstractRNG; reset_stock_ini=false)
     end
     state.current_epoch = 1
     state.stock = copy(s0)
+    state.physical_stock = copy(s0)
     state.stock_history = reshape(copy(s0), 1, N)
     state.replenishment_history = zeros(Int, 0, N)
     state.sales_history = zeros(Int, 0, N)
@@ -94,26 +195,6 @@ function is_feasible(state::DRPState, replenishment::Vector{Int}; verbose=false)
     return true
 end
 
-function physical_stock(state::DRPState, t::Int)
-    config = state.config
-    s0 = stock_ini(state)
-    N = item_count(config)
-    t ≤ delivery_delay(config) && return zeros(Int, N)
-    t_repl = t - delivery_delay(config)      # replenishments received by time t
-    t_sales = t - 1                          # sales completed by time t
-    repl_sum = vec(sum(view(replenishment_history(state), 1:t_repl, :); dims=1))
-    sales_sum = if t_sales == 0
-        zeros(Int, N)
-    else
-        vec(sum(view(sales_history(state), 1:t_sales, :); dims=1))
-    end
-    return max.(0, s0 .+ repl_sum .- sales_sum)
-end
-
-function current_physical_stock(state::DRPState)
-    return physical_stock(state, current_epoch(state) + 1)
-end
-
 function update_cost!(state::DRPState)
     config = state.config
     t = current_epoch(state)
@@ -121,8 +202,7 @@ function update_cost!(state::DRPState)
     sales_t = view(state.sales_history, t, :)
     margin = sum(prices(config) .* sales_t)
     # physical stock cost
-    phys_stock = current_physical_stock(state)
-    physical_cost = sum(physical_stock_cost(config) .* phys_stock)
+    physical_cost = sum(physical_stock_cost(config) .* state.physical_stock)
     # virtual stock cost
     virtual_stock = view(state.stock_history, t + 1, :)
     virtual_cost = sum(virtual_stock_cost(config) .* virtual_stock)
@@ -135,46 +215,6 @@ function update_cost!(state::DRPState)
     delta = margin - virtual_cost - physical_cost - penalty
     state.current_cost += delta
     return delta
-end
-
-function compute_cost(
-    state::DRPState, next_replenishment::Vector{Int}, next_sales::Vector{Int}
-)
-    total = 0.0
-    config = state.config
-    replenishments = vcat(replenishment_history(state), next_replenishment')
-    sales = vcat(sales_history(state), next_sales')
-    stock_hist = vcat(
-        state.stock_history, (stock(state) .+ next_replenishment .- next_sales)'
-    )
-    state_ = DRPState(;
-        config=config,
-        current_epoch=current_epoch(state) + 1,
-        stock=stock_hist[end, :],
-        stock_history=stock_hist,
-        replenishment_history=replenishments,
-        sales_history=sales,
-        customer_history=customer_history(state),
-        ub_per_item=stock_hist[end, :] .+ max_quotas(config)[current_epoch(state), :],
-        current_cost=0.0,
-    )
-    for t in 1:current_epoch(state)
-        # margin
-        sales_t = view(sales, t, :)
-        total += sum(prices(config) .* sales_t)
-        # virtual stock cost
-        virtual_stock = stock_hist[t + 1, :]
-        total -= sum(virtual_stock_cost(config) .* virtual_stock)
-        # physical stock cost
-        phys_stock = physical_stock(state_, t + 1)
-        total -= sum(physical_stock_cost(config) .* phys_stock)
-        # over / under stock costs
-        s = sum(virtual_stock)
-        total -=
-            over_stock_bound_cost(config) *
-            (max(0, stock_inf(config) - s) + max(0, s - stock_sup(config)))
-    end
-    return total
 end
 
 function apply_replenishment!(state::DRPState, replenishment::Vector{Int})
@@ -203,6 +243,13 @@ function apply_sales!(state::DRPState; utilities::Vector{Vector{Float64}})
     state.sales_history = vcat(state.sales_history, sales')
     state.stock_history = vcat(state.stock_history, state.stock')
     delta_cost = update_cost!(state)
+    state.physical_stock = compute_physical_stock(
+        state.config,
+        current_epoch(state),
+        stock_ini(state),
+        state.replenishment_history,
+        state.sales_history,
+    )
     return delta_cost
 end
 

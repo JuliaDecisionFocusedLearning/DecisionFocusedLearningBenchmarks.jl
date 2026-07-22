@@ -4,7 +4,7 @@ $TYPEDSIGNATURES
 
 Compute big M values for a scenario of a specific environment.
 """
-function compute_bigM!(env::Environment, scenario::Scenario)
+function compute_bigM_sales!(env::Environment, scenario::Scenario)
     T = max_steps(env.config)
     N = item_count(env.config)
     max_q = max_quotas(env.config)
@@ -34,6 +34,24 @@ function compute_bigM!(env::Environment, scenario::Scenario)
     return big_M
 end
 
+function compute_bigM_physical_stock!(env::Environment)
+    T = max_steps(env.config) - current_epoch(env) + 1
+    N = item_count(env.config)
+    delay = delivery_delay(env.config)
+    max_q = max_quotas(env.config)[current_epoch(env):end, :]
+    s0 = stock(env)
+    n_customer = nb_customers(env.scenario)[current_epoch(env):end]  # borne des ventes
+
+    big_M = zeros(Int, N, T + 1)
+    for i in 1:N, t in 2:(T + 1)
+        t_arrived = max(0, t - delay)
+        pos = s0[i] + sum(max_q[τ, i] for τ in 1:t_arrived; init=0)   # borne x_hi
+        neg = sum(n_customer[1:(t - 1)])                                    # borne -x_lo (≤ ventes cumulées)
+        big_M[i, t] = max(pos, neg)
+    end
+    return big_M
+end
+
 function stock_constraints!(m, y, s, α, T, N, nb_customers, stock_ini)
     # Initial stock
     @constraint(m, [i in 1:N], s[1, i] == stock_ini[i])
@@ -54,7 +72,7 @@ function customer_constraints!(m, α, T, N, nb_customers)
     return nothing
 end
 
-function sales_order_constraints!(m, y, s, α, T, N, nb_customers, utilities, big_M)
+function sales_order_constraints!(m, y, s, α, T, N, nb_customers, utilities, bigM_s)
     for t in 1:T
         for k in 1:nb_customers[t]
             sorted_indices = sortperm(utilities[t][k])  # ascending order
@@ -74,7 +92,7 @@ function sales_order_constraints!(m, y, s, α, T, N, nb_customers, utilities, bi
                                 sum(
                                     s[t, i_2] + y[t, i_2] for
                                     i_2 in sorted_indices[(index + 1):end] if i_2 <= N
-                                ) / big_M[t][k][i_1]
+                                ) / bigM_s[t][k][i_1]
                             ),
                         )
                     else
@@ -86,7 +104,7 @@ function sales_order_constraints!(m, y, s, α, T, N, nb_customers, utilities, bi
                                     s[t, i_2] + y[t, i_2] -
                                     sum(α[i_2, t, j] for j in 1:(k - 1)) for
                                     i_2 in sorted_indices[(index + 1):end] if i_2 <= N
-                                ) / big_M[t][k][i_1]
+                                ) / bigM_s[t][k][i_1]
                             ),
                         )
                     end
@@ -111,22 +129,33 @@ function quota_constraints!(m, y, T, N, constraints_matrix, quotas)
     )
     return nothing
 end
-
 """
 $TYPEDSIGNATURES
 
-Add physical stock constraints (linearization of (x)₊).
+Add physical stock constraints (exact linearization of v = max(0, x) via indicator binaries).
 """
 function physical_stock_constraints!(
-    m, y, α, v, T, N, delivery_delay, stock_ini, nb_customers
+    m, y, α, v, z, T, N, delivery_delay, stock_ini, nb_customers, bigM_ps
 )
+    @constraint(m, [i in 1:N], v[1, i] == stock_ini[i])
+
+    # v = max(0, x_phys) via indicatrice z (z=1 ⟺ x_phys ≥ 0)
     @constraint(
         m,
-        [i in 1:N, t in (delivery_delay + 1):(T + 1)],
+        [i in 1:N, t in 2:(T + 1)],
         v[t, i] >=
-            stock_ini[i] + sum(y[τ, i] for τ in 1:(t - delivery_delay)) -
-        sum(α[i, τ, k] for τ in 1:(t - 1) for k in 1:nb_customers[τ])
+            stock_ini[i] + sum(y[τ, i] for τ in 1:(t - delivery_delay); init=zero(AffExpr)) -
+        sum(α[i, τ, k] for τ in 1:(t - 1) for k in 1:nb_customers[τ]; init=zero(AffExpr))
     )
+    @constraint(
+        m,
+        [i in 1:N, t in 2:(T + 1)],
+        v[t, i] <=
+            stock_ini[i] + sum(y[τ, i] for τ in 1:(t - delivery_delay); init=zero(AffExpr)) -
+        sum(α[i, τ, k] for τ in 1:(t - 1) for k in 1:nb_customers[τ]; init=zero(AffExpr)) +
+        bigM_ps[i, t] * (1 - z[i, t])
+    )
+    @constraint(m, [i in 1:N, t in 2:(T + 1)], v[t, i] <= bigM_ps[i, t] * z[i, t])
     return nothing
 end
 
@@ -135,11 +164,9 @@ $TYPEDSIGNATURES
 
 Add stock bounds constraints.
 """
-function stock_bounds_constraints!(m, s, T, N, s_min, s_sup, stock_inf, stock_sup)
-    # stock Inf
-    @constraint(m, [t in 1:T], s_min[t] >= stock_inf - sum(s[t + 1, i] for i in 1:N))
-    # stock Sup
-    @constraint(m, [t in 1:T], s_sup[t] >= sum(s[t + 1, i] for i in 1:N) - stock_sup)
+function stock_bounds_constraints!(m, v, T, N, s_min, s_sup, stock_inf, stock_sup)
+    @constraint(m, [t in 1:T], s_min[t] >= stock_inf - sum(v[t + 1, i] for i in 1:N))
+    @constraint(m, [t in 1:T], s_sup[t] >= sum(v[t + 1, i] for i in 1:N) - stock_sup)
     return nothing
 end
 
@@ -159,9 +186,9 @@ function compute_objective(y, s, α, v, T, s_min, s_sup, env, nb_customers)
     virtual_stock = sum(virtual_stock_cost(env)[i] * s[t + 1, i] for t in 1:T for i in 1:N)
     # physical stock cost
     physical_stock = sum(
-        physical_stock_cost(env)[i] * v[t, i] for t in 1:(T + 1) for i in 1:N
+        physical_stock_cost(env)[i] * v[t + 1, i] for t in 1:T for i in 1:N
     )
-    # cost under stock min
+    # over bound stock
     under_stock_min = sum(s_min)
     over_stock_sup = sum(s_sup)
 
@@ -173,11 +200,20 @@ function compute_objective(y, s, α, v, T, s_min, s_sup, env, nb_customers)
 end
 
 function solver_variable_to_dataset(
-    env::Environment, scenario::Scenario, s_val, y_val, α_val, obj_val; θ=nothing, κ=1.0
+    env::Environment,
+    scenario::Scenario,
+    s_val,
+    y_val,
+    α_val,
+    v_val,
+    obj_val;
+    θ=nothing,
+    κ=1.0,
 )
     s_val = Int.(round.(s_val))      # (T+1, N)
     y_val = Int.(round.(y_val))      # (T, N)
     α_val = Int.(round.(α_val))      # (N+1, T, k)
+    v_val = Int.(round.(v_val))      # (T+1, N)
 
     config = env.config
     T = max_steps(config) - current_epoch(env) + 1
@@ -196,7 +232,6 @@ function solver_variable_to_dataset(
     init_state.ub_per_item = s_val[1, :] .+ max_q[1, :]
     x_init = compute_features(init_state)
     y_init = y_val[1, :]
-    init_state.current_cost = compute_cost(init_state, y_init, sales_full[1, :])
     dataset[1] = DataSample(;
         y=y_init,
         x=x_init,
@@ -214,10 +249,8 @@ function solver_variable_to_dataset(
             sales_history=sales_full[1:(t - 1), :],
             customer_history=n_customers[1:(t - 1)],
             ub_per_item=s_val[t, :] .+ max_q[t, :],
-            current_cost=0.0,
         )
         y_true = y_val[t, :]
-        state_t.current_cost = compute_cost(state_t, y_true, sales_full[t, :])
         x = compute_features(state_t)
         dataset[t] = DataSample(;
             y=y_true,
@@ -227,8 +260,18 @@ function solver_variable_to_dataset(
             customers=n_customers[t],
         )
     end
+    final_state = DRPState(;
+        config=config,
+        current_epoch=T + 1,
+        stock=s_val[T + 1, :],
+        stock_history=s_val[1:(T + 1), :],
+        replenishment_history=y_val[1:T, :],
+        sales_history=sales_full[1:T, :],
+        customer_history=n_customers[1:T],
+        ub_per_item=s_val[T + 1, :] .+ max_q[end, :],
+    )
+    final_obj_val = final_state.current_cost
 
-    final_obj_val = dataset[end].state.current_cost
     if !isnothing(θ)
         g_y = g(dataset[1].y; state=dataset[1].state)
         @assert length(θ) == N + sum(ub_per_item(dataset[1].state))
@@ -276,7 +319,8 @@ function anticipative_solver(
     model_builder=highs_model,
     reset_env::Bool=true,
     verbose::Bool=false,
-    big_M=nothing,
+    bigM_s=nothing,
+    bigM_ps=nothing,
     θ=nothing,
     state::DRPState=env.state,
     κ::Float64=1.0,
@@ -288,8 +332,11 @@ function anticipative_solver(
         state = env.state
     end
 
-    if big_M === nothing
-        big_M = compute_bigM!(env, scenario)
+    if bigM_s === nothing
+        bigM_s = compute_bigM_sales!(env, scenario)
+    end
+    if bigM_ps === nothing
+        bigM_ps = compute_bigM_physical_stock!(env)
     end
 
     @assert !is_terminated(env)
@@ -306,6 +353,7 @@ function anticipative_solver(
     @variable(m, s[1:(T + 1), 1:N] >= 0, Int) # stock
     @variable(m, α[i in 1:(N + 1), t in 1:T, k in 1:n_customers[t]], Bin) # sales
     @variable(m, v[1:(T + 1), 1:N] >= 0, Int) # physical stock
+    @variable(m, z[i in 1:N, t in 2:(T + 1)], Bin) # auxiliary binary for physical stock linearization
     @variable(m, s_min[1:T] >= 0, Int) # stock under min
     @variable(m, s_sup[1:T] >= 0, Int) # stock over max
 
@@ -313,11 +361,13 @@ function anticipative_solver(
     stock_constraints!(m, y, s, α, T, N, n_customers, s0)
     customer_constraints!(m, α, T, N, n_customers)
     sales_order_constraints!(
-        m, y, s, α, T, N, n_customers, scenario.utilities[current_epoch(env):end], big_M
+        m, y, s, α, T, N, n_customers, scenario.utilities[current_epoch(env):end], bigM_s
     )
     quota_constraints!(m, y, T, N, constraints_matrix(env), quotas(env))
-    physical_stock_constraints!(m, y, α, v, T, N, delivery_delay(env), s0, n_customers)
-    stock_bounds_constraints!(m, s, T, N, s_min, s_sup, stock_inf(env), stock_sup(env))
+    physical_stock_constraints!(
+        m, y, α, v, z, T, N, delivery_delay(env), s0, n_customers, bigM_ps
+    )
+    stock_bounds_constraints!(m, v, T, N, s_min, s_sup, stock_inf(env), stock_sup(env))
 
     ## Objective
     objective = compute_objective(y, s, α, v, T, s_min, s_sup, env, n_customers)
@@ -332,7 +382,7 @@ function anticipative_solver(
     if primal_status(m) == MOI.FEASIBLE_POINT
         obj_val = objective_value(m)
         dataset = solver_variable_to_dataset(
-            env, scenario, value.(s), value.(y), value.(α), obj_val; θ=θ, κ=κ
+            env, scenario, value.(s), value.(y), value.(α), value.(v), obj_val; θ=θ, κ=κ
         )
         return obj_val, dataset
     else

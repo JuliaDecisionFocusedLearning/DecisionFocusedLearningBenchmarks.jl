@@ -46,12 +46,12 @@ ub_per_item(env::Environment) = ub_per_item(env.state)
 $TYPEDSIGNATURES
 
 Creates an [`Environment`](@ref) from an instance of the dynamic replenishment benchmark.
-Initialize the initial stock to Uniform(0, 10).
+Initialize the initial stock to Uniform(0, 5).
 """
 function Environment(
     config::DynamicReplenishmentBenchmark,
     rng::AbstractRNG;
-    stock_ini=rand(rng, 0:10, item_count(config)),
+    stock_ini=rand(rng, 0:5, item_count(config)),
 )
     N = item_count(config)
     scenario = Utils.generate_scenario(config; rng=rng)
@@ -63,7 +63,7 @@ function Environment(
     config::DynamicReplenishmentBenchmark,
     scenario::Scenario,
     rng::AbstractRNG;
-    stock_ini=rand(rng, 0:10, item_count(config)),
+    stock_ini=rand(rng, 0:5, item_count(config)),
 )
     initial_state = DRPState(config, stock_ini)
     return Environment(; config, state=initial_state, scenario, stock_ini)
@@ -91,8 +91,10 @@ $TYPEDSIGNATURES
 Reset the environment to its initial state.
 Also reset the rng to `seed` if `reset_rng` is set to true.
 """
-function Utils.reset!(env::Environment, rng::AbstractRNG)
-    env.scenario = Utils.generate_scenario(env.config; rng)
+function Utils.reset!(env::Environment, rng::AbstractRNG; reset_scenario::Bool=true)
+    if reset_scenario
+        env.scenario = Utils.generate_scenario(env.config; rng)
+    end
     reset_state!(env.state, rng; reset_stock_ini=false)
     return nothing
 end
