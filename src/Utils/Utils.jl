@@ -29,7 +29,9 @@ export DataSample, Policy
 export evaluate_policy!
 export TopKMaximizer, one_hot_argmax
 
-export AbstractMetric, Metric, RewardMetric, RelativeGapMetric
+export AbstractMetric, AbstractStaticMetric, AbstractDynamicMetric
+export Metric, StaticMetric, DynamicMetric
+export ObjectiveMetric, RewardMetric, RelativeGapMetric, DynamicGapMetric
 export MetricStats,
     evaluate_metric, metric_name, metric_description, metric_benchmark, plot_metric
 export mean_metric, std_metric, quantile_metric

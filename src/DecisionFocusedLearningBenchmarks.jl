@@ -94,7 +94,9 @@ export objective_value
 export has_visualization, plot_context, plot_sample, plot_trajectory, animate_trajectory
 export compute_gap
 
-export AbstractMetric, Metric, RewardMetric, RelativeGapMetric
+export AbstractMetric, AbstractStaticMetric, AbstractDynamicMetric
+export Metric, StaticMetric, DynamicMetric
+export ObjectiveMetric, RewardMetric, RelativeGapMetric, DynamicGapMetric
 export MetricStats,
     evaluate_metric, metric_name, metric_description, metric_benchmark, plot_metric
 export mean_metric, std_metric, quantile_metric
