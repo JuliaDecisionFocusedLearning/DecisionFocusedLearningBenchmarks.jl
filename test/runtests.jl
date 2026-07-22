@@ -10,6 +10,8 @@ using Random
     include("utils.jl")
     include("interface.jl")
     include("environment.jl")
+    include("metric.jl")
+    include("metric_plots.jl")
 
     include("argmax.jl")
     include("argmax_2d.jl")

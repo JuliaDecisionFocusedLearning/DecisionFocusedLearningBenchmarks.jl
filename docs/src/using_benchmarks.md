@@ -166,6 +166,78 @@ Objective value for a single decision:
 obj = objective_value(bench, sample, y)
 ```
 
+### Metrics
+
+An [`AbstractMetric`](@ref) is bound to one specific benchmark (see [`metric_benchmark`](@ref))
+and evaluates a resolved dataset (one whose `y` field holds the decision made by the policy
+under evaluation), returning a value. [`RewardMetric`](@ref) and [`RelativeGapMetric`](@ref)
+are predefined metrics: both are functions that take `bench` and build/return a [`Metric`](@ref)
+(bench + name + description + evaluation function), available for every benchmark for free.
+Define your own `AbstractMetric{B}` subtype instead if you need custom dispatch (e.g. a
+specialised [`plot_metric`](@ref) rendering):
+
+```julia
+# Static / stochastic (via SampleAverageApproximation): resolve a policy against instances
+policy(sample) = DataSample(sample; y=maximizer(model(sample.x); sample.context...))
+dataset = generate_dataset(bench, 100; target_policy=policy)
+
+rm = RewardMetric(bench)  # op=mean by default
+evaluate_metric(rm, dataset)  # -> Real
+```
+
+```julia
+# Dynamic: reuse evaluate_policy!'s own trajectories directly
+rewards, datasets = evaluate_policy!(pol, env, n_episodes)
+
+rm = RewardMetric(bench; op=sum)  # per-episode total reward
+evaluate_metric(rm, datasets)  # -> MetricStats (one value per episode)
+```
+
+`evaluate_metric`'s multi-dataset method takes one value per dataset (e.g. one per episode
+or per instance-batch) and collects them into a [`MetricStats`](@ref), which supports
+`mean_metric`, `std_metric`, and `quantile_metric` for summary statistics:
+
+```julia
+stats = evaluate_metric(rm, datasets)
+mean_metric(stats), std_metric(stats)
+```
+
+### Comparing policies
+
+Pass a `label` (e.g. a [`Policy`](@ref)'s `name`, or any string) to `evaluate_metric` to tag
+the resulting `MetricStats` with the policy that produced it. Reuse the *same* explicit seeds
+across policies (`evaluate_policy!(pol, env; seed=s)` reseeds the environment deterministically,
+see [`SeededEnvironment`](@ref)) so every policy is compared on identical scenarios:
+
+```julia
+seeds = 1:20
+datasets_greedy = [evaluate_policy!(policies.greedy, env; seed=s)[2] for s in seeds]
+datasets_lazy   = [evaluate_policy!(policies.lazy, env; seed=s)[2] for s in seeds]
+
+rm = RewardMetric(bench; op=sum)
+comparison = evaluate_metric(
+    rm, policies.greedy.name => datasets_greedy, policies.lazy.name => datasets_lazy
+)
+
+plot_metric(comparison)  # grouped boxplot, one box per policy
+```
+
+`comparison` above is a plain `Vector{MetricStats}` — no dedicated "comparison" type is needed, since
+`plot_metric` groups by each `MetricStats`'s `label`.
+
+[`compute_gap`](@ref) is also available as a metric, [`RelativeGapMetric`](@ref), for use
+alongside other metrics in the same interface (it still expects the original *labeled*
+dataset, target `y` present — not a policy-resolved one):
+
+```julia
+gm = RelativeGapMetric(bench, model, maximizer)
+evaluate_metric(gm, dataset)  # == compute_gap(bench, dataset, model, maximizer)
+```
+
+Custom metrics can be defined either as an ad hoc [`Metric`](@ref) wrapping a function, or
+as a dedicated `AbstractMetric{B}` subtype implementing `evaluate_metric(metric, dataset)`
+and [`metric_benchmark`](@ref).
+
 ---
 
 ## Baseline policies
@@ -217,3 +289,23 @@ gif(anim, "episode.gif")
 - `plot_sample(bench, sample, y; kwargs...)`: 3-arg convenience form that overrides `y` before plotting.
 - `plot_trajectory(bench, traj; kwargs...)`: dynamic benchmarks only; produces a grid of per-epoch subplots.
 - `animate_trajectory(bench, traj; kwargs...)`: dynamic benchmarks only, returns a `Plots.Animation` that can be saved with `gif(anim, "file.gif")`.
+
+### Plotting metrics
+
+`plot_metric` additionally requires `StatsPlots` (load with `using StatsPlots`, on top of
+`using Plots`) since the generic default renders a boxplot:
+
+```julia
+using Plots, StatsPlots
+
+stats = evaluate_metric(RewardMetric(bench), datasets)
+plot_metric(stats)  # boxplot of the per-dataset values
+```
+
+Custom metrics can override the rendering via dispatch on the metric's concrete type:
+
+```julia
+function DecisionFocusedLearningBenchmarks.plot_metric(stats::MetricStats{<:MyMetricType}; kwargs...)
+    # custom rendering
+end
+```

@@ -144,6 +144,46 @@ function generate_dataset(
 end
 
 """
+$TYPEDSIGNATURES
+
+Callable wrapped by [`RewardMetric`](@ref)'s [`Metric`](@ref) for dynamic benchmarks — not
+exported, an implementation detail.
+"""
+struct DynamicRewardEvaluator{F}
+    op::F
+end
+
+function (r::DynamicRewardEvaluator)(bench, trajectory::AbstractVector{<:DataSample})
+    if !isempty(trajectory) && !haskey(first(trajectory).extra, :reward)
+        return error(
+            "RewardMetric expects each DataSample in the trajectory to carry a `reward` " *
+            "field in `.extra` (as `rollout!` produces by default), but $(typeof(bench)) " *
+            "trajectories do not. Define a custom `AbstractMetric` for this benchmark instead.",
+        )
+    end
+    return r.op(sample.extra.reward for sample in trajectory)
+end
+
+"""
+$TYPEDSIGNATURES
+
+[`RewardMetric`](@ref) for dynamic benchmarks: `op` (default `mean`) of `sample.extra.reward`
+over one trajectory, as produced by [`rollout!`](@ref)/[`evaluate_policy!`](@ref). No sign
+flip is applied — this mirrors the `total_reward` already accumulated by `rollout!` exactly.
+Construct with `RewardMetric(bench; op=sum)` to match `evaluate_policy!`'s per-episode total
+reward. Benchmarks that override `rollout!`/`step!` without storing a reward in `.extra` are
+not supported by this default — define a custom [`AbstractMetric`](@ref) instead.
+"""
+function RewardMetric(
+    bench::AbstractDynamicBenchmark;
+    op=mean,
+    name="reward",
+    description="Objective value of the evaluated policy's decision.",
+)
+    return Metric(bench, name, description, DynamicRewardEvaluator(op))
+end
+
+"""
     plot_trajectory(bench::AbstractDynamicBenchmark, trajectory::Vector{<:DataSample}; kwargs...)
 
 Plot a full dynamic episode as a grid of state/decision subplots.

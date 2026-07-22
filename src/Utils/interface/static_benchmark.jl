@@ -77,3 +77,35 @@ function generate_dataset(
         end for _ in 1:dataset_size
     ]
 end
+
+"""
+$TYPEDSIGNATURES
+
+Callable wrapped by [`RewardMetric`](@ref)'s [`Metric`](@ref) for static (and
+[`SampleAverageApproximation`](@ref)-wrapped stochastic) benchmarks — not exported, an
+implementation detail.
+"""
+struct StaticRewardEvaluator{F}
+    op::F
+end
+
+function (r::StaticRewardEvaluator)(bench, dataset::AbstractVector{<:DataSample})
+    return r.op(objective_value(bench, sample, sample.y) for sample in dataset)
+end
+
+"""
+$TYPEDSIGNATURES
+
+[`RewardMetric`](@ref) for static (and [`SampleAverageApproximation`](@ref)-wrapped
+stochastic) benchmarks: `op` (default `mean`) of `objective_value(bench, sample, sample.y)`
+over a resolved dataset, i.e. one whose `y` field holds the decision made by the policy
+under evaluation (e.g. produced via [`generate_dataset`](@ref)`(bench, N; target_policy)`).
+"""
+function RewardMetric(
+    bench::AbstractStaticBenchmark;
+    op=mean,
+    name="reward",
+    description="Objective value of the evaluated policy's decision.",
+)
+    return Metric(bench, name, description, StaticRewardEvaluator(op))
+end
