@@ -15,8 +15,8 @@ include("data_sample.jl")
 include("maximizers.jl")
 include("environment/abstract_environment.jl")
 include("environment/seeded_environment.jl")
-include("policy.jl")
 include("interface/abstract_benchmark.jl")
+include("policy.jl")
 include("interface/static_benchmark.jl")
 include("interface/stochastic_benchmark.jl")
 include("interface/dynamic_benchmark.jl")
@@ -25,7 +25,8 @@ include("misc.jl")
 include("model_builders.jl")
 
 export DataSample, Policy
-export evaluate_policy!
+export AbstractPolicy, AbstractRolloutPolicy, AbstractFullHorizonPolicy
+export evaluate_policy!, rollout!, single_rollout!
 export TopKMaximizer, one_hot_argmax
 
 export AbstractEnvironment, SeededEnvironment

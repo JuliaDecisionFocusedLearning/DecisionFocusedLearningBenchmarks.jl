@@ -124,12 +124,12 @@ Returns a tuple containing:
 - `greedy`: A policy that dispatches vehicles to the nearest customer
 """
 function Utils.generate_baseline_policies(::DynamicVehicleSchedulingBenchmark)
-    lazy = Policy(
+    lazy = Policy{DynamicVehicleSchedulingBenchmark}(
         "Lazy",
         "Lazy policy that dispatches vehicles only when they are ready.",
         lazy_policy,
     )
-    greedy = Policy(
+    greedy = Policy{DynamicVehicleSchedulingBenchmark}(
         "Greedy",
         "Greedy policy that dispatches vehicles to the nearest customer.",
         greedy_policy,
