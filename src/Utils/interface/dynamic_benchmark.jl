@@ -143,26 +143,21 @@ function generate_dataset(
     return generate_dataset(bench, environments; target_policy, kwargs...)
 end
 
-# =========================================================================================
-# Dynamic metrics
-# =========================================================================================
-
 """
 $TYPEDEF
 
-Abstract supertype for evaluation metrics on **dynamic** benchmarks. A dynamic metric is a
-function of a single episode: implement `(m::MyDynamicMetric)(episode::Vector{DataSample}) ->
-Real` and [`metric_benchmark`](@ref). [`evaluate_metric`](@ref) maps it over a vector of
-episodes, one value per episode. How the episode value is computed (a sum of per-step
-rewards, a quantity read from the final state, …) is entirely up to the metric.
+Abstract type for evaluation metrics on **dynamic** benchmarks. 
+A dynamic metric is a function of a single episode: implement 
+`(m::MyDynamicMetric)(episode::Vector{DataSample}) -> Real` and [`metric_benchmark`](@ref). 
+[`evaluate_metric`](@ref) maps it over a vector of episodes, one value per episode. 
 """
 abstract type AbstractDynamicMetric{B<:AbstractDynamicBenchmark} <: AbstractMetric{B} end
 
 """
 $TYPEDSIGNATURES
 
-Evaluate a dynamic metric over a vector of `episodes` (e.g. the `datasets` returned by
-[`evaluate_policy!`](@ref)), returning a [`MetricStats`](@ref) with one value per episode.
+Evaluate a dynamic metric over a vector of `episodes` (e.g. a vector of `datasets` returned by
+[`evaluate_policy!`](@ref)). Returns a [`MetricStats`](@ref) with one value per episode.
 `label` tags the result with the evaluated policy (see [`evaluate_metric`](@ref)).
 """
 function evaluate_metric(
@@ -202,7 +197,7 @@ function Metric(bench::AbstractDynamicBenchmark, name, description, f)
     return DynamicMetric(bench, name, description, f)
 end
 
-"Per-episode evaluator for [`RewardMetric`](@ref) — internal."
+"Per-episode evaluator for [`RewardMetric`](@ref)."
 struct RewardEvaluator{O}
     op::O
 end
@@ -221,11 +216,8 @@ end
 """
 $TYPEDSIGNATURES
 
-Predefined dynamic metric (a [`DynamicMetric`](@ref)): per-episode `op` (default `sum`, i.e.
-the episode return) of `sample.extra.reward`, as produced by [`rollout!`](@ref)/
-[`evaluate_policy!`](@ref). No sign flip is applied, so its interpretation follows whatever
-convention the benchmark's `step!` uses. Requires each sample's `.extra` to carry a `reward`
-field.
+Predefined reward metric per-episode. Operator `op` (default `sum`) aggregates the rewards 
+of `sample.extra.reward`. Requires each sample's `.extra` to carry a `reward` field.
 """
 function RewardMetric(bench::AbstractDynamicBenchmark; op=sum)
     return DynamicMetric(
@@ -239,11 +231,8 @@ end
 """
 $TYPEDEF
 
-Dynamic [`RelativeGapMetric`](@ref): per-episode relative gap of a test run against a stored
-`target_datasets` (reference, e.g. anticipative) run, comparing episode returns
-`sum(sample.extra.reward)`. Unlike a plain [`DynamicMetric`](@ref) it needs the paired target
-episode, so it overrides [`evaluate_metric`](@ref) instead of being a per-episode callable.
-The `target` and test datasets must be aligned (same seeds/scenarios, same length).
+Predefined relative gap metric: computes the per-episode relative gap of a test run against a stored
+`target_datasets` (e.g. anticipative) run, comparing episode returns `sum(sample.extra.reward)`. 
 
 # Fields
 $TYPEDFIELDS
@@ -253,12 +242,14 @@ struct DynamicGapMetric{B<:AbstractDynamicBenchmark,T} <: AbstractDynamicMetric{
     bench::B
     "reference (target) episodes, one per evaluation scenario"
     target_datasets::T
+    "name of the metric"
+    name::String
+    "description of the metric"
+    description::String
 end
 
-metric_name(::DynamicGapMetric) = "relative_gap"
-function metric_description(::DynamicGapMetric)
-    return "Relative gap of the test policy's episode return vs. the target policy's."
-end
+metric_name(m::DynamicGapMetric) = m.name
+metric_description(m::DynamicGapMetric) = m.description
 metric_benchmark(m::DynamicGapMetric) = m.bench
 
 """
@@ -268,8 +259,13 @@ Dynamic [`RelativeGapMetric`](@ref): build a [`DynamicGapMetric`](@ref) from the
 `target_datasets` (e.g. episodes of the anticipative policy from [`evaluate_policy!`](@ref)).
 Evaluate it on the test policy's episodes with [`evaluate_metric`](@ref).
 """
-function RelativeGapMetric(bench::AbstractDynamicBenchmark, target_datasets)
-    return DynamicGapMetric(bench, target_datasets)
+function RelativeGapMetric(
+    bench::AbstractDynamicBenchmark,
+    target_datasets;
+    name="relative_gap",
+    description="Relative gap of the test policy against the target policy",
+)
+    return DynamicGapMetric(bench, target_datasets, name, description)
 end
 
 function evaluate_metric(
@@ -277,16 +273,16 @@ function evaluate_metric(
     test_datasets::AbstractVector{<:AbstractVector{<:DataSample}},
     label::AbstractString="",
 )
-    check = is_minimization_problem(m.bench)
     n = length(test_datasets)
     @assert length(m.target_datasets) == n "target and test datasets must be aligned (got \
         $(length(m.target_datasets)) target vs $n test episodes)"
     values = Vector{Float64}(undef, n)
+    sign = is_minimization_problem(m.bench) ? 1 : -1
     for i in 1:n
-        target_return = sum(sample.extra.reward for sample in m.target_datasets[i])
-        test_return = sum(sample.extra.reward for sample in test_datasets[i])
-        Δ = check ? test_return - target_return : target_return - test_return
-        values[i] = Δ / abs(target_return)
+        target_return = sum(s.extra.reward for s in m.target_datasets[i])
+        test_return = sum(s.extra.reward for s in test_datasets[i])
+        # gap is positive : minimization => target_return < test_return, maximization => target_return > test_return
+        values[i] = sign * (test_return - target_return) / abs(target_return)
     end
     return MetricStats(m, label, values)
 end

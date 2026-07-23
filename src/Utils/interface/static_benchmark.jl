@@ -78,17 +78,13 @@ function generate_dataset(
     ]
 end
 
-# =========================================================================================
-# Static metrics
-# =========================================================================================
-
 """
 $TYPEDEF
 
-Abstract supertype for evaluation metrics on **static** (and
-[`SampleAverageApproximation`](@ref)-wrapped stochastic) benchmarks. A static metric is a
-function of a single sample: implement `(m::MyStaticMetric)(sample::DataSample) -> Real` and
-[`metric_benchmark`](@ref). [`evaluate_metric`](@ref) maps it over the samples of a dataset,
+Abstract type for evaluation metrics on **static** and
+[`SampleAverageApproximation`](@ref)-wrapped stochastic benchmarks.
+A static metric is a function of a single sample: implement `(m::MyStaticMetric)(sample::DataSample) -> Real`
+and [`metric_benchmark`](@ref). [`evaluate_metric`](@ref) maps it over the samples of a dataset,
 one value per instance.
 """
 abstract type AbstractStaticMetric{B<:AbstractStaticBenchmark} <: AbstractMetric{B} end
@@ -142,8 +138,8 @@ struct ObjectiveEvaluator end
 $TYPEDSIGNATURES
 
 Predefined static metric (a [`StaticMetric`](@ref)): per-sample
-`objective_value(bench, sample, sample.y)` over a resolved dataset (one whose `y` holds the
-evaluated policy's decision). `mean_metric` then gives the mean objective across instances.
+`objective_value(bench, sample, sample.y)` over a resolved dataset (with decisions `y`).
+`mean_metric` then gives the mean objective across instances.
 """
 function ObjectiveMetric(bench::AbstractStaticBenchmark)
     return StaticMetric(
@@ -154,7 +150,7 @@ function ObjectiveMetric(bench::AbstractStaticBenchmark)
     )
 end
 
-"Per-sample evaluator for the static [`RelativeGapMetric`](@ref) — internal."
+"Per-sample evaluator for the static [`RelativeGapMetric`](@ref)."
 struct StaticGapEvaluator{S,MX}
     statistical_model::S
     maximizer::MX
@@ -175,7 +171,8 @@ $TYPEDSIGNATURES
 Static [`RelativeGapMetric`](@ref) (a [`StaticMetric`](@ref)): per-sample relative optimality
 gap of `statistical_model`+`maximizer` against the sample's target `y`, `Δ / abs(target_obj)`
 with `Δ = obj - target_obj` for minimization (reversed otherwise, per
-[`is_minimization_problem`](@ref)). `mean_metric` reproduces [`compute_gap`](@ref).
+[`is_minimization_problem`](@ref)). 
+notes: `mean_metric` for this metric mirrors [`compute_gap`](@ref).
 """
 function RelativeGapMetric(bench::AbstractStaticBenchmark, statistical_model, maximizer)
     return StaticMetric(

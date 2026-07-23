@@ -1,5 +1,5 @@
 # Observation-unit word for plot titles: "episodes" for dynamic benchmarks, "instances" otherwise.
-function _metric_unit_word(m::AbstractMetric)
+function _metric_unit(m::AbstractMetric)
     return metric_benchmark(m) isa AbstractDynamicBenchmark ? "episodes" : "instances"
 end
 
@@ -17,7 +17,7 @@ function plot_metric(stats::MetricStats; kwargs...)
         [x_label],
         stats.values;
         legend=false,
-        title="$name across $n $(_metric_unit_word(stats.metric))",
+        title="$name across $n $(_metric_unit(stats.metric))",
         ylabel=name,
         kwargs...,
     )
@@ -40,7 +40,7 @@ function plot_metric(stats::AbstractVector{<:MetricStats}; kwargs...)
         values;
         group=labels,
         legend=false,
-        title="$name across $n $(_metric_unit_word(metric))",
+        title="$name across $n $(_metric_unit(metric))",
         ylabel=name,
         kwargs...,
     )

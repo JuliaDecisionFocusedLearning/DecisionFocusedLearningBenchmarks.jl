@@ -1,19 +1,17 @@
 """
 $TYPEDEF
 
-Abstract root type for evaluation metrics, used to evaluate and compare [`Policy`](@ref)s
-on a benchmark. Parametrized by the benchmark type `B` the metric is bound to — a metric is
-always tied to one specific benchmark instance (see [`metric_benchmark`](@ref)), since a
-dataset only ever makes sense with respect to the benchmark that produced it.
+Abstract type for evaluation metrics, used to evaluate and compare [`Policy`](@ref)s
+on a benchmark. Parametrized by the benchmark type `B` the metric is bound to, 
+this makes sense since an evaluation process is always benchmark-specific.
 
-Metrics are split by benchmark category, with a clearly different observation unit:
+The metrics logic is splitted between static and dynamic benchmark:
 - [`AbstractStaticMetric`](@ref): a metric is a function of **one sample**, `f(bench, sample)
   -> Real`. [`evaluate_metric`](@ref) maps it over the samples of a dataset — one value per
   instance.
 - [`AbstractDynamicMetric`](@ref): a metric is a function of **one episode**, `f(bench,
   episode) -> Real` (`episode::Vector{DataSample}`, a trajectory). [`evaluate_metric`](@ref)
-  maps it over episodes — one value per episode. How the episode value is computed (e.g. a
-  sum of per-step rewards, or a quantity read from the final state) is entirely up to `f`.
+  maps it over episodes — one value per episode.
 
 In both cases [`evaluate_metric`](@ref) returns a [`MetricStats`](@ref) — the distribution of
 per-unit values — over which `mean_metric`/`std_metric`/`quantile_metric` give summary stats
@@ -73,28 +71,22 @@ function RewardMetric end
     RelativeGapMetric(bench::AbstractStaticBenchmark, statistical_model, maximizer) -> StaticGapMetric
     RelativeGapMetric(bench::AbstractDynamicBenchmark, target_datasets) -> DynamicGapMetric
 
-Predefined relative optimality gap metric.
+Predefined relative optimality/target gap metric.
 
-- **static**: per-sample gap of `statistical_model`+`maximizer` against the sample's target
-  `y`. `mean_metric` reproduces [`compute_gap`](@ref). See `static_benchmark.jl`.
-- **dynamic**: per-episode gap of a test run against a reference (e.g. anticipative) run,
-  comparing episode returns `sum(sample.extra.reward)`, respecting
-  [`is_minimization_problem`](@ref). Built from the `target_datasets` (reference episodes),
-  then evaluated on the test datasets. See `dynamic_benchmark.jl`.
+- **static**: per-sample gap of `statistical_model`+`maximizer` against the sample's target `y`. 
+- **dynamic**: per-episode gap of a test run against a reference (e.g. anticipative) run
 """
 function RelativeGapMetric end
 
 """
 $TYPEDEF
 
-Per-unit values of an [`AbstractMetric`](@ref) — the distribution of observations (one per
-sample for static benchmarks, one per episode for dynamic ones) — together with the metric
-that produced them. Used for summary statistics (`mean_metric`, `std_metric`,
-`quantile_metric`) and for plotting (see [`plot_metric`](@ref)).
+Per-unit (sample or episode) values of an [`AbstractMetric`](@ref). Bound to the metric (field metric) and 
+the policy (field label) that produced them.
+This is used for summary statistics (`mean_metric`, `std_metric`,..) and for plotting.
+Plotting a `Vector{<:MetricStats}` (one per policy, same metric) groups them by `label` for comparison.
 
-`label` identifies the policy that was evaluated (e.g. a [`Policy`](@ref)'s `name`, or any
-other string of your choosing). Plotting a `Vector{<:MetricStats}` (one per policy, same
-metric) groups them by `label` for comparison — no dedicated "comparison" type is needed.
+Note: after the mergin the PR of policies, we could consider storing the actual policy object.
 
 # Fields
 $TYPEDFIELDS
@@ -142,20 +134,13 @@ end
     evaluate_metric(metric, collection, label="") -> MetricStats
 
 Evaluate `metric` over a `collection` of observation units, returning a [`MetricStats`](@ref)
-holding one value per unit. `metric` already knows which benchmark it targets (see
-[`metric_benchmark`](@ref)), so `bench` is never passed here.
-
+holding one value per unit. 
 - **static** metric: `collection` is a dataset (`Vector{DataSample}`); one value per sample.
   E.g. `collection = generate_dataset(bench, N; target_policy=policy)`.
 - **dynamic** metric: `collection` is a vector of episodes (`Vector{Vector{DataSample}}`);
-  one value per episode. E.g. `collection = datasets` from
-  `rewards, datasets = evaluate_policy!(policy, env, episodes)`.
+  one value per episode. 
+  E.g. `_, collection = evaluate_policy!(policy, env, episodes)`.
 
-`label` tags the resulting `MetricStats` with the policy that produced `collection` (e.g. a
-[`Policy`](@ref)'s `name`) — pass it to compare several policies later by plotting a
-`Vector{<:MetricStats}` (see [`plot_metric`](@ref)).
-
-The per-category methods are defined in `static_benchmark.jl` / `dynamic_benchmark.jl`.
 """
 function evaluate_metric end
 
@@ -178,10 +163,8 @@ end
     plot_metric(stats::MetricStats; kwargs...)
     plot_metric(stats::AbstractVector{<:MetricStats}; kwargs...)
 
-Plot a [`MetricStats`](@ref) (boxplot of its per-unit values), or compare several policies
-by plotting a `Vector{<:MetricStats}` (one per policy, grouped by `label` — a boxplot with one
-box per policy). A generic default is provided when `StatsPlots` is loaded (`using Plots,
-StatsPlots`). Custom metrics can override this via dispatch on `MetricStats{<:MyMetricType}`
-for a specialised rendering.
+Plot one distribution [`MetricStats`](@ref) or a `Vector{<:MetricStats}` for comparing policies.
+It produces a boxplot of per-unit values for each `label`.
+A default is provided which can be customed via dispatch on `MetricStats{<:MyMetricType}`.
 """
 function plot_metric end

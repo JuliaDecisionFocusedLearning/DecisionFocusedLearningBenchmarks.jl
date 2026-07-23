@@ -13,6 +13,7 @@
         @test m isa AbstractStaticMetric
         @test metric_name(m) == "dummy"
         @test metric_benchmark(m) === b
+        @test metric_description(m) == "x[1] of the sample"
 
         stats = evaluate_metric(m, dataset)
         @test stats isa MetricStats
@@ -32,6 +33,9 @@
         om = ObjectiveMetric(b)
         @test om isa StaticMetric
         @test metric_name(om) == "objective"
+        @test metric_description(om) ==
+            "Objective value of the evaluated policy's decision."
+        @test metric_benchmark(om) === b
 
         stats = evaluate_metric(om, resolved)
         @test length(stats.values) == length(resolved)
@@ -48,7 +52,8 @@
         gm = RelativeGapMetric(b, model, maximizer)
         @test gm isa StaticMetric
         @test metric_name(gm) == "relative_gap"
-
+        @test metric_description(gm) ==
+            "Relative optimality gap of statistical_model+maximizer vs. the sample's target."
         stats = evaluate_metric(gm, dataset)
         @test length(stats.values) == length(dataset)
         @test mean_metric(stats) ≈ compute_gap(b, dataset, model, maximizer)
@@ -92,6 +97,13 @@
         @test len isa DynamicMetric
         @test evaluate_metric(len, datasets).values ==
             Float64[length(ep) for ep in datasets]
+    end
+
+    @testset "RewardMetric errors when episode samples lack extra.reward" begin
+        b = DynamicVehicleSchedulingBenchmark()
+        rm = RewardMetric(b)
+        episode = [DataSample(; x=[1.0]), DataSample(; x=[2.0])]  # no extra.reward
+        @test_throws ErrorException evaluate_metric(rm, [episode])
     end
 
     @testset "Dynamic RelativeGapMetric: test return vs target return" begin
