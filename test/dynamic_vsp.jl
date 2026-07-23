@@ -52,14 +52,14 @@
     @test isapprox(cost, cost2; atol=1e-5)
 end
 
-@testset "DVSP - AnticipativeSolverPolicy (full-horizon policy)" begin
+@testset "DVSP - AnticipativePolicy (full-horizon policy)" begin
     using DecisionFocusedLearningBenchmarks.DynamicVehicleScheduling
 
     b = DynamicVehicleSchedulingBenchmark(; two_dimensional_features=true)
     env = generate_environment(b; seed=0)
 
-    policy = DynamicVehicleScheduling.AnticipativeSolverPolicy()
-    @test policy isa AbstractFullHorizonPolicy{DynamicVehicleSchedulingBenchmark}
+    policy = DynamicVehicleScheduling.AnticipativePolicy()
+    @test policy isa AbstractTrajectoryPolicy{DynamicVehicleSchedulingBenchmark}
 
     r, dataset = evaluate_policy!(policy, env; nb_epochs=3)
 

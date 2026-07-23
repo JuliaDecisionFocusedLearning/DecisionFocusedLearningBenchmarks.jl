@@ -3,11 +3,11 @@ $TYPEDEF
 
 Abstract supertype for all policies acting on benchmark `B`. A policy is anything
 callable that produces decisions; the `B` type parameter ties it to the benchmark it was
-built for, which lets [`single_rollout!`](@ref) and [`rollout!`](@ref) be specialized per
+built for, which lets [`rollout_step!`](@ref) and [`rollout!`](@ref) be specialized per
 benchmark by dispatching on the policy's type rather than on a separate benchmark
 argument.
 
-See [`AbstractRolloutPolicy`](@ref) and [`AbstractFullHorizonPolicy`](@ref) for the two
+See [`AbstractStepPolicy`](@ref) and [`AbstractTrajectoryPolicy`](@ref) for the two
 concrete flavors.
 """
 abstract type AbstractPolicy{B<:AbstractBenchmark} end
@@ -15,16 +15,40 @@ abstract type AbstractPolicy{B<:AbstractBenchmark} end
 """
 $TYPEDEF
 
+Abstract type for policies associated to dynamic benchmarks.
+Pre-implemented subtypes are [`AbstractStepPolicy`](@ref) and [`AbstractTrajectoryPolicy`](@ref).
+"""
+abstract type AbstractDynamicPolicy{B<:AbstractDynamicBenchmark} <: AbstractPolicy{B} end
+
+"""
+$TYPEDEF
+
+Abstract type for policies associated to static benchmarks.
+"""
+abstract type AbstractStaticPolicy{B<:AbstractStaticBenchmark} <: AbstractPolicy{B} end
+
+"""
+$TYPEDEF
+
+Abstract type for stochastic policies that take scenarios as input, e.g. a callable with
+signature `(ctx_sample, scenarios) -> Vector{DataSample}`. See [`ScenarioPolicy`](@ref)
+for the wrapper type.
+"""
+abstract type AbstractScenarioPolicy{B<:AbstractStochasticBenchmark} <: AbstractPolicy{B} end
+
+"""
+$TYPEDEF
+
 Abstract supertype for policies that decide one step at a time. Such a policy is called
 once per environment step (as `policy(env; kwargs...) -> y`), via
-[`single_rollout!`](@ref), which [`rollout!`](@ref) loops until the environment
+[`rollout_step!`](@ref), which [`rollout!`](@ref) loops until the environment
 terminates.
 
-Specialize [`single_rollout!`](@ref) on `AbstractRolloutPolicy{B}` for a given benchmark
+Specialize [`rollout_step!`](@ref) on `AbstractStepPolicy{B}` for a given benchmark
 `B` to customize what gets recorded in each step's [`DataSample`](@ref) (e.g. extra
 `context` or `extra` fields), without reimplementing the rollout loop.
 """
-abstract type AbstractRolloutPolicy{B} <: AbstractPolicy{B} end
+abstract type AbstractStepPolicy{B} <: AbstractDynamicPolicy{B} end
 
 """
 $TYPEDEF
@@ -32,22 +56,22 @@ $TYPEDEF
 Abstract supertype for policies that decide the entire episode at once instead of one
 step at a time (e.g. an anticipative/offline solver that plans over the full horizon).
 
-A subtype `P <: AbstractFullHorizonPolicy` must be callable as
+A subtype `P <: AbstractTrajectoryPolicy` must be callable as
 `(policy::P)(env::AbstractEnvironment, rng::AbstractRNG; kwargs...) -> (total_reward, dataset)`,
 where `dataset` is a `Vector{<:DataSample}`. [`rollout!`](@ref) dispatches straight to
-this call instead of stepping through [`single_rollout!`](@ref).
+this call instead of stepping through [`rollout_step!`](@ref).
 """
-abstract type AbstractFullHorizonPolicy{B} <: AbstractPolicy{B} end
+abstract type AbstractTrajectoryPolicy{B} <: AbstractDynamicPolicy{B} end
 
 """
 $TYPEDEF
 
 Policy type for decision-focused learning benchmarks, tagged with the benchmark type `B`
 it was built for (e.g. `Policy{MyBenchmark}("name", "description", f)`). Wrapping a
-callable in `Policy{B}` makes it an [`AbstractRolloutPolicy`](@ref)`{B}`, which enables
-per-benchmark specialization of [`single_rollout!`](@ref).
+callable in `Policy{B}` makes it an [`AbstractStepPolicy`](@ref)`{B}`, which enables
+per-benchmark specialization of [`rollout_step!`](@ref).
 """
-struct Policy{B,P} <: AbstractRolloutPolicy{B}
+struct Policy{B,P} <: AbstractStepPolicy{B}
     "policy name"
     name::String
     "policy description"
@@ -65,6 +89,12 @@ function Policy{B}(name::String, description::String, policy::P) where {B,P}
     return Policy{B,P}(name, description, policy)
 end
 
+function Policy(
+    b::B, name::String, description::String, policy::P
+) where {B<:AbstractDynamicBenchmark,P}
+    return Policy{B,P}(name, description, policy)
+end
+
 function Base.show(io::IO, p::Policy)
     println(io, "$(p.name): $(p.description)")
     return nothing
@@ -79,6 +109,50 @@ function (p::Policy)(args...; kwargs...)
 end
 
 """
+$TYPEDEF
+
+Policy wrapper for stochastic (scenario-based) benchmarks, tagged with the benchmark type
+`B` it was built for (e.g. `ScenarioPolicy{MyBenchmark}("name", "description", f)`). The
+wrapped callable typically has signature `(ctx_sample, scenarios) -> Vector{DataSample}`.
+
+Use [`Policy`](@ref) instead for dynamic (environment-stepping) policies: the two are
+kept separate because they wrap fundamentally different calling conventions and neither
+plugs into the other's rollout machinery.
+"""
+struct ScenarioPolicy{B,P} <: AbstractScenarioPolicy{B}
+    "policy name"
+    name::String
+    "policy description"
+    description::String
+    "policy run function"
+    policy::P
+end
+
+"""
+$TYPEDSIGNATURES
+
+Construct a `ScenarioPolicy{B}` tagged for benchmark type `B`, e.g.
+`ScenarioPolicy{MyBenchmark}("SAA", "...", saa_policy)`.
+"""
+function ScenarioPolicy{B}(name::String, description::String, policy::P) where {B,P}
+    return ScenarioPolicy{B,P}(name, description, policy)
+end
+
+function Base.show(io::IO, p::ScenarioPolicy)
+    println(io, "$(p.name): $(p.description)")
+    return nothing
+end
+
+"""
+$TYPEDSIGNATURES
+
+Run the policy on the given context sample and scenarios.
+"""
+function (p::ScenarioPolicy)(args...; kwargs...)
+    return p.policy(args...; kwargs...)
+end
+
+"""
 $TYPEDSIGNATURES
 
 Perform a single step of a rollout: query `policy` for a decision on the current state of
@@ -86,11 +160,11 @@ Perform a single step of a rollout: query `policy` for a decision on the current
 the result into a [`DataSample`](@ref) with `extra=(; reward)`.
 
 This is the extension point for customizing what a rollout records: add a method
-specialized on `policy::AbstractRolloutPolicy{B}` for a given benchmark `B` to add extra
+specialized on `policy::AbstractStepPolicy{B}` for a given benchmark `B` to add extra
 `context` or `extra` fields, without having to reimplement [`rollout!`](@ref) itself.
 """
-function single_rollout!(
-    policy::AbstractRolloutPolicy, env::AbstractEnvironment, rng::AbstractRNG; kwargs...
+function rollout_step!(
+    policy::AbstractStepPolicy, env::AbstractEnvironment, rng::AbstractRNG; kwargs...
 )
     y = policy(env; kwargs...)
     features, state = observe(env)
@@ -105,16 +179,16 @@ $TYPEDSIGNATURES
 Run the policy from the environment's current state (without resetting), using `rng`
 for per-step randomness. Returns the total reward and a dataset of observations.
 
-Each step delegates to [`single_rollout!`](@ref); specialize that function instead of
+Each step delegates to [`rollout_step!`](@ref); specialize that function instead of
 this one to customize what gets recorded per step.
 """
 function rollout!(
-    policy::AbstractRolloutPolicy, env::AbstractEnvironment, rng::AbstractRNG; kwargs...
+    policy::AbstractStepPolicy, env::AbstractEnvironment, rng::AbstractRNG; kwargs...
 )
     total_reward = 0.0
     labeled_dataset = DataSample[]
     while !is_terminated(env)
-        sample = single_rollout!(policy, env, rng; kwargs...)
+        sample = rollout_step!(policy, env, rng; kwargs...)
         if isempty(labeled_dataset)
             labeled_dataset = typeof(sample)[sample]
         else
@@ -130,10 +204,10 @@ $TYPEDSIGNATURES
 
 Run a full-horizon policy: delegate directly to `policy(env, rng; kwargs...)`, which must
 return `(total_reward, dataset)` for the whole episode in one call, instead of looping
-step by step through [`single_rollout!`](@ref).
+step by step through [`rollout_step!`](@ref).
 """
 function rollout!(
-    policy::AbstractFullHorizonPolicy, env::AbstractEnvironment, rng::AbstractRNG; kwargs...
+    policy::AbstractTrajectoryPolicy, env::AbstractEnvironment, rng::AbstractRNG; kwargs...
 )
     return policy(env, rng; kwargs...)
 end

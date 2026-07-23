@@ -42,8 +42,8 @@ Full-horizon anticipative policy for the dynamic vehicle scheduling benchmark.
 It solves the anticipative VSP over the whole episode
 via [`anticipative_solver`](@ref).
 """
-struct AnticipativeSolverPolicy <:
-       Utils.AbstractFullHorizonPolicy{DynamicVehicleSchedulingBenchmark} end
+struct AnticipativePolicy <:
+       Utils.AbstractTrajectoryPolicy{DynamicVehicleSchedulingBenchmark} end
 
 """
 $TYPEDSIGNATURES
@@ -54,6 +54,6 @@ The environment is assumed to already be at the state it should be solved from:
 resetting is handled upstream by [`evaluate_policy!`](@ref),
 so this always calls [`anticipative_solver`](@ref) with `reset_env=false`.
 """
-function (::AnticipativeSolverPolicy)(env::DVSPEnv, rng::AbstractRNG; kwargs...)
+function (::AnticipativePolicy)(env::DVSPEnv, rng::AbstractRNG; kwargs...)
     return anticipative_solver(env, rng; reset_env=false, kwargs...)
 end

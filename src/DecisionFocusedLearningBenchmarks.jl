@@ -69,8 +69,13 @@ export ExogenousStochasticBenchmark,
 export AbstractEnvironment, SeededEnvironment
 export get_seed, is_terminated, observe, reset!, reset_to_initial!, step!
 
-export Policy, evaluate_policy!, rollout!, single_rollout!
-export AbstractPolicy, AbstractRolloutPolicy, AbstractFullHorizonPolicy
+export Policy, ScenarioPolicy, evaluate_policy!, rollout_step!
+export AbstractPolicy,
+    AbstractDynamicPolicy,
+    AbstractStaticPolicy,
+    AbstractScenarioPolicy,
+    AbstractStepPolicy,
+    AbstractTrajectoryPolicy
 
 export generate_instance,
     generate_sample,
