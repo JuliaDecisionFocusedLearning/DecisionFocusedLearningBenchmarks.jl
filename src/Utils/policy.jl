@@ -111,13 +111,10 @@ end
 """
 $TYPEDEF
 
-Policy wrapper for stochastic (scenario-based) benchmarks, tagged with the benchmark type
-`B` it was built for (e.g. `ScenarioPolicy{MyBenchmark}("name", "description", f)`). The
+Policy wrapper for stochastic benchmarks with policies taking scenarios as input. The
 wrapped callable typically has signature `(ctx_sample, scenarios) -> Vector{DataSample}`.
 
-Use [`Policy`](@ref) instead for dynamic (environment-stepping) policies: the two are
-kept separate because they wrap fundamentally different calling conventions and neither
-plugs into the other's rollout machinery.
+Use [`Policy`](@ref) instead for dynamic (environment-stepping) policies.
 """
 struct ScenarioPolicy{B,P} <: AbstractScenarioPolicy{B}
     "policy name"
