@@ -228,30 +228,77 @@ function Utils.build_environment(
 end
 
 """
-$TYPEDSIGNATURES
+$TYPEDEF
+
+Callable wrapping [`replenishment_problem`](@ref) with a fixed `model_builder`, so it can
+be passed to `LinearMaximizer` without a closure.
+"""
+struct MaximizerProblem{M}
+    model_builder::M
+end
+function (p::MaximizerProblem)(Θ; kwargs...)
+    return replenishment_problem(Θ; kwargs..., model_builder=p.model_builder)
+end
+
+function Utils.generate_maximizer(
+    ::DynamicReplenishmentBenchmark; model_builder=highs_model
+)
+    return LinearMaximizer(MaximizerProblem(model_builder); g)
+end
 
 """
-function Utils.generate_maximizer(::DynamicReplenishmentBenchmark)
-    return LinearMaximizer(replenishment_problem; g)
+$TYPEDEF
+
+Callable wrapping [`anticipative_solver`](@ref) with a fixed `model_builder`, returned by
+[`Utils.generate_anticipative_solver`](@ref).
+"""
+struct AnticipativeSolverCall{M}
+    model_builder::M
+end
+function (s::AnticipativeSolverCall)(
+    env::Utils.SeededEnvironment; reset_env=false, kwargs...
+)
+    _, trajectory = anticipative_solver(
+        env.env, env.rng; reset_env, kwargs..., model_builder=s.model_builder
+    )
+    return trajectory
 end
 
-function Utils.generate_anticipative_solver(::DynamicReplenishmentBenchmark)
-    return (env::Utils.SeededEnvironment; reset_env=false, kwargs...) -> begin
-        _, trajectory = anticipative_solver(env.env, env.rng; reset_env, kwargs...)
-        return trajectory
-    end
+function Utils.generate_anticipative_solver(
+    ::DynamicReplenishmentBenchmark; model_builder=highs_model
+)
+    return AnticipativeSolverCall(model_builder)
 end
 
-function Utils.generate_parametric_anticipative_solver(::DynamicReplenishmentBenchmark)
-    return (
-        θ, scenario::Scenario, env::Utils.SeededEnvironment; reset_env=true, kwargs...
-    ) -> begin
-        # reset_env && Utils.reset_to_initial!(env)
-        _, trajectory = anticipative_solver(
-            env.env, env.rng, scenario; reset_env=false, θ, kwargs...
-        )
-        return trajectory
-    end
+"""
+$TYPEDEF
+
+Callable wrapping [`anticipative_solver`](@ref) (scenario-conditioned) with a fixed
+`model_builder`, returned by [`Utils.generate_parametric_anticipative_solver`](@ref).
+"""
+struct ParametricAnticipativeSolverCall{M}
+    model_builder::M
+end
+function (s::ParametricAnticipativeSolverCall)(
+    θ, scenario::Scenario, env::Utils.SeededEnvironment; reset_env=true, kwargs...
+)
+    # reset_env && Utils.reset_to_initial!(env)
+    _, trajectory = anticipative_solver(
+        env.env,
+        env.rng,
+        scenario;
+        reset_env=false,
+        θ,
+        kwargs...,
+        model_builder=s.model_builder,
+    )
+    return trajectory
+end
+
+function Utils.generate_parametric_anticipative_solver(
+    ::DynamicReplenishmentBenchmark; model_builder=highs_model
+)
+    return ParametricAnticipativeSolverCall(model_builder)
 end
 
 """
@@ -261,7 +308,9 @@ Returns two policies for the dynamic replenishment benchmark:
 - `Greedy`: "policy that replenishes items in decreasing price order"
 - `Random`: "Policy that replenishes items in a random order with random quantities"
 """
-function Utils.generate_baseline_policies(::DynamicReplenishmentBenchmark)
+function Utils.generate_baseline_policies(
+    ::DynamicReplenishmentBenchmark; model_builder=highs_model, kwargs...
+)
     greedy = Policy(
         "Greedy", "policy that replenishes items in decreasing price order", greedy_policy
     )
@@ -272,7 +321,9 @@ function Utils.generate_baseline_policies(::DynamicReplenishmentBenchmark)
     )
     lazy = Policy("Lazy", "Policy that replenishes nothing", lazy_policy)
     saa = Policy(
-        "SAA", "Policy that solves a sample average approximation problem.", saa_policy
+        "SAA",
+        "Policy that solves a sample average approximation problem.",
+        SAAPolicyCall(model_builder; kwargs...),
     )
     return (; greedy, random, lazy, saa)
 end

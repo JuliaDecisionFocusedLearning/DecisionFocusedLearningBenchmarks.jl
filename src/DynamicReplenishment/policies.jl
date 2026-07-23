@@ -149,3 +149,32 @@ function saa_policy(
     end
 end
 
+"""
+$TYPEDEF
+
+Callable wrapping [`saa_policy`](@ref) with a fixed `model_builder`.
+"""
+struct SAAPolicyCall{M}
+    model_builder::M
+    verbose::Bool
+    mip_gap::Float64
+    nb_scenarios::Int
+end
+
+function SAAPolicyCall(
+    model_builder::M; verbose::Bool=false, mip_gap::Float64=1e-2, nb_scenarios::Int=1
+) where {M}
+    return SAAPolicyCall{M}(model_builder, verbose, mip_gap, nb_scenarios)
+end
+
+function (p::SAAPolicyCall)(env::Environment; kwargs...)
+    return saa_policy(
+        env;
+        kwargs...,
+        model_builder=p.model_builder,
+        verbose=p.verbose,
+        mip_gap=p.mip_gap,
+        nb_scenarios=p.nb_scenarios,
+    )
+end
+

@@ -236,8 +236,7 @@ function solver_variable_to_dataset(
         y=y_init,
         x=x_init,
         state=init_state,
-        next_sales=sales_full[1, :],
-        customers=n_customers[1],
+        extra=(; next_sales=sales_full[1, :], customers=n_customers[1]),
     )
     for t in 2:T
         state_t = DRPState(;
@@ -256,8 +255,7 @@ function solver_variable_to_dataset(
             y=y_true,
             x,
             state=state_t,
-            next_sales=sales_full[t, :],
-            customers=n_customers[t],
+            extra=(; next_sales=sales_full[t, :], customers=n_customers[t]),
         )
     end
     final_state = DRPState(;

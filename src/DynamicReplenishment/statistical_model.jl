@@ -17,7 +17,10 @@ end
 $TYPEDSIGNATURES
 
 """
-function Utils.generate_statistical_model(b::DynamicReplenishmentBenchmark)
+function Utils.generate_statistical_model(
+    b::DynamicReplenishmentBenchmark, seed=nothing; kwargs...
+)
+    seed !== nothing && seed!(seed)
     item_features_size = feature_count(b) + 10
     stock_features_size = item_features_size + 8
     θ_model = Chain(Dense(item_features_size => 1))
