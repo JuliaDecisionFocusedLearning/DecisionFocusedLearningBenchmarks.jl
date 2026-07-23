@@ -14,7 +14,7 @@ The metrics logic is splitted between static and dynamic benchmark:
   maps it over episodes — one value per episode.
 
 In both cases [`evaluate_metric`](@ref) returns a [`MetricStats`](@ref) — the distribution of
-per-unit values — over which `mean_metric`/`std_metric`/`quantile_metric` give summary stats
+per-unit values — over which `mean`/`std`/`quantile` give summary stats
 and [`plot_metric`](@ref) plots the distribution.
 """
 abstract type AbstractMetric{B<:AbstractBenchmark} end
@@ -34,56 +34,11 @@ Short human-readable description of what the metric computes. Defaults to an emp
 metric_description(::AbstractMetric) = ""
 
 """
-$TYPEDSIGNATURES
-
-Return the benchmark `m` is bound to.
-"""
-function metric_benchmark end
-
-"""
-    Metric(bench, name, description, f) -> StaticMetric | DynamicMetric
-
-Build a generic ad hoc metric bound to `bench`, wrapping a per-unit function `f`:
-- static benchmark: `f(bench, sample) -> Real` (see [`StaticMetric`](@ref)),
-- dynamic benchmark: `f(bench, episode) -> Real` (see [`DynamicMetric`](@ref)).
-
-Methods are added in `static_benchmark.jl` / `dynamic_benchmark.jl`.
-"""
-function Metric end
-
-"""
-    ObjectiveMetric(bench::AbstractStaticBenchmark) -> ObjectiveMetric
-
-Predefined static metric: per-sample `objective_value(bench, sample, sample.y)`. See
-`static_benchmark.jl`.
-"""
-function ObjectiveMetric end
-
-"""
-    RewardMetric(bench::AbstractDynamicBenchmark; op=sum) -> RewardMetric
-
-Predefined dynamic metric: per-episode `op` (default `sum`, i.e. the return) of
-`sample.extra.reward`. See `dynamic_benchmark.jl`.
-"""
-function RewardMetric end
-
-"""
-    RelativeGapMetric(bench::AbstractStaticBenchmark, statistical_model, maximizer) -> StaticGapMetric
-    RelativeGapMetric(bench::AbstractDynamicBenchmark, target_datasets) -> DynamicGapMetric
-
-Predefined relative optimality/target gap metric.
-
-- **static**: per-sample gap of `statistical_model`+`maximizer` against the sample's target `y`. 
-- **dynamic**: per-episode gap of a test run against a reference (e.g. anticipative) run
-"""
-function RelativeGapMetric end
-
-"""
 $TYPEDEF
 
 Per-unit (sample or episode) values of an [`AbstractMetric`](@ref). Bound to the metric (field metric) and 
 the policy (field label) that produced them.
-This is used for summary statistics (`mean_metric`, `std_metric`,..) and for plotting.
+This is used for summary statistics (`mean`, `std`,..) and for plotting.
 Plotting a `Vector{<:MetricStats}` (one per policy, same metric) groups them by `label` for comparison.
 
 Note: after the mergin the PR of policies, we could consider storing the actual policy object.
@@ -105,44 +60,33 @@ $TYPEDSIGNATURES
 
 Mean of the per-unit metric values.
 """
-mean_metric(s::MetricStats) = mean(s.values)
+function Statistics.mean(s::MetricStats)
+    return mean(s.values)
+end
 
 """
 $TYPEDSIGNATURES
 
 Standard deviation of the per-unit metric values.
 """
-std_metric(s::MetricStats) = std(s.values)
-
+function Statistics.std(s::MetricStats)
+    return std(s.values)
+end
 """
 $TYPEDSIGNATURES
 
 Quantile `p` of the per-unit metric values.
 """
-quantile_metric(s::MetricStats, p) = quantile(s.values, p)
+function Statistics.quantile(s::MetricStats, p)
+    return quantile(s.values, p)
+end
 
 function Base.show(io::IO, s::MetricStats)
     name =
         isempty(s.label) ? metric_name(s.metric) : "$(metric_name(s.metric)) ($(s.label))"
-    println(
-        io, "$name: mean=$(mean_metric(s)), std=$(std_metric(s)) (n=$(length(s.values)))"
-    )
+    println(io, "$name: mean=$(mean(s)), std=$(std(s)) (n=$(length(s.values)))")
     return nothing
 end
-
-"""
-    evaluate_metric(metric, collection, label="") -> MetricStats
-
-Evaluate `metric` over a `collection` of observation units, returning a [`MetricStats`](@ref)
-holding one value per unit. 
-- **static** metric: `collection` is a dataset (`Vector{DataSample}`); one value per sample.
-  E.g. `collection = generate_dataset(bench, N; target_policy=policy)`.
-- **dynamic** metric: `collection` is a vector of episodes (`Vector{Vector{DataSample}}`);
-  one value per episode. 
-  E.g. `_, collection = evaluate_policy!(policy, env, episodes)`.
-
-"""
-function evaluate_metric end
 
 """
 $TYPEDSIGNATURES

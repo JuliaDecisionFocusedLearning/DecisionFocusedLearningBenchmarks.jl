@@ -1,6 +1,6 @@
 @testset "Metric interface" begin
     using DecisionFocusedLearningBenchmarks
-    using Statistics: mean, std
+    using Statistics: mean, std, quantile
 
     @testset "Static generic Metric / MetricStats mechanics" begin
         struct DummyMetricBenchmark <: AbstractStaticBenchmark end
@@ -18,9 +18,9 @@
         stats = evaluate_metric(m, dataset)
         @test stats isa MetricStats
         @test stats.values == Float64[1, 2, 3, 4, 5]
-        @test mean_metric(stats) == 3.0
-        @test std_metric(stats) == std(1.0:5.0)
-        @test quantile_metric(stats, 0.5) == 3.0
+        @test mean(stats) == 3.0
+        @test std(stats) == std(1.0:5.0)
+        @test quantile(stats, 0.5) == 3.0
     end
 
     @testset "ObjectiveMetric on ArgmaxBenchmark" begin
@@ -40,7 +40,7 @@
         stats = evaluate_metric(om, resolved)
         @test length(stats.values) == length(resolved)
         @test stats.values ≈ [objective_value(b, s, s.y) for s in resolved]
-        @test mean_metric(stats) ≈ mean(objective_value(b, s, s.y) for s in resolved)
+        @test mean(stats) ≈ mean(objective_value(b, s, s.y) for s in resolved)
     end
 
     @testset "Static RelativeGapMetric: mean reproduces compute_gap" begin
@@ -56,7 +56,7 @@
             "Relative optimality gap of statistical_model+maximizer vs. the sample's target."
         stats = evaluate_metric(gm, dataset)
         @test length(stats.values) == length(dataset)
-        @test mean_metric(stats) ≈ compute_gap(b, dataset, model, maximizer)
+        @test mean(stats) ≈ compute_gap(b, dataset, model, maximizer)
     end
 
     @testset "Static RelativeGapMetric on SampleAverageApproximation" begin
@@ -72,7 +72,7 @@
         model = generate_statistical_model(saa; seed=0)
 
         gm = RelativeGapMetric(saa, model, maximizer)
-        @test mean_metric(evaluate_metric(gm, labeled)) ≈
+        @test mean(evaluate_metric(gm, labeled)) ≈
             compute_gap(saa, labeled, model, maximizer)
     end
 
@@ -89,8 +89,8 @@
 
         stats = evaluate_metric(rm, datasets)
         @test stats.values ≈ rewards  # per-episode return == evaluate_policy! rewards
-        @test mean_metric(stats) ≈ mean(rewards)
-        @test std_metric(stats) ≈ std(rewards)
+        @test mean(stats) ≈ mean(rewards)
+        @test std(stats) ≈ std(rewards)
 
         # per-episode whole-trajectory custom metric (episode length)
         len = Metric(b, "length", "number of steps", (_, ep) -> length(ep))

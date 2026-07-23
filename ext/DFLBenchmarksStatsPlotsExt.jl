@@ -5,6 +5,6 @@ using DocStringExtensions: TYPEDSIGNATURES
 using StatsPlots
 import DecisionFocusedLearningBenchmarks: plot_metric
 
-include("plots/metric_plots.jl")
+include("DFLBenchmarkStatsPlotsExt/metric_plots.jl")
 
 end
