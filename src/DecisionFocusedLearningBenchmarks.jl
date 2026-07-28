@@ -71,7 +71,7 @@ export get_seed, is_terminated, observe, reset!, reset_to_initial!, step!
 
 export Policy, ScenarioPolicy, evaluate_policy!, rollout_step!
 export AbstractPolicy,
-    AbstractDynamicPolicy,
+    DynamicPolicy,
     AbstractStaticPolicy,
     AbstractScenarioPolicy,
     AbstractStepPolicy,

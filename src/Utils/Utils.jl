@@ -26,7 +26,7 @@ include("model_builders.jl")
 
 export DataSample, Policy, ScenarioPolicy
 export AbstractPolicy,
-    AbstractDynamicPolicy,
+    DynamicPolicy,
     AbstractStaticPolicy,
     AbstractScenarioPolicy,
     AbstractStepPolicy,

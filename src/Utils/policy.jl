@@ -13,12 +13,15 @@ concrete flavors.
 abstract type AbstractPolicy{B<:AbstractBenchmark} end
 
 """
-$TYPEDEF
+    DynamicPolicy
 
-Abstract type for policies associated to dynamic benchmarks.
-Pre-implemented subtypes are [`AbstractStepPolicy`](@ref) and [`AbstractTrajectoryPolicy`](@ref).
+Type alias matching any [`AbstractPolicy`](@ref) built for a dynamic benchmark, i.e.
+`AbstractPolicy{<:AbstractDynamicBenchmark}`. Use this to dispatch on any policy for a
+dynamic benchmark.
+The subtypes [`AbstractStepPolicy`](@ref) and [`AbstractTrajectoryPolicy`](@ref)
+are DynamicPolicies.
 """
-abstract type AbstractDynamicPolicy{B<:AbstractDynamicBenchmark} <: AbstractPolicy{B} end
+const DynamicPolicy = AbstractPolicy{<:AbstractDynamicBenchmark}
 
 """
 $TYPEDEF
@@ -48,7 +51,7 @@ Specialize [`rollout_step!`](@ref) on `AbstractStepPolicy{B}` for a given benchm
 `B` to customize what gets recorded in each step's [`DataSample`](@ref) (e.g. extra
 `context` or `extra` fields), without reimplementing the rollout loop.
 """
-abstract type AbstractStepPolicy{B} <: AbstractDynamicPolicy{B} end
+abstract type AbstractStepPolicy{B<:AbstractDynamicBenchmark} <: AbstractPolicy{B} end
 
 """
 $TYPEDEF
@@ -61,7 +64,7 @@ A subtype `P <: AbstractTrajectoryPolicy` must be callable as
 where `dataset` is a `Vector{<:DataSample}`. [`rollout!`](@ref) dispatches straight to
 this call instead of stepping through [`rollout_step!`](@ref).
 """
-abstract type AbstractTrajectoryPolicy{B} <: AbstractDynamicPolicy{B} end
+abstract type AbstractTrajectoryPolicy{B<:AbstractDynamicBenchmark} <: AbstractPolicy{B} end
 
 """
 $TYPEDEF
