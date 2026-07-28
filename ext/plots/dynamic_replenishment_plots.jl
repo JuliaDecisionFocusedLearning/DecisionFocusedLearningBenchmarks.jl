@@ -1,5 +1,37 @@
 has_visualization(::DynamicReplenishmentBenchmark) = true
 
+function plot_context(bench::DynamicReplenishmentBenchmark, sample::DataSample; kwargs...)
+    static_u = bench.static_utilities[1:(end - 1)]  # drop the "no purchase" option
+    state = hasproperty(sample.context, :instance) ? sample.instance : sample.context.state
+    stock = Float64.(state.stock)
+    stock_p = Float64.(state.physical_stock)
+    N = length(stock)
+
+    p1 = bar(
+        1:N,
+        stock;
+        label="Virtual stock",
+        color="#5fd6a8",
+        ylabel="Count",
+        title="Stock levels",
+        xticks=(1:N, fill("", N)),
+    )
+    bar!(p1, 1:N, stock_p; label="Physical stock", color="#0f7d52")
+
+    p2 = bar(
+        1:N,
+        static_u;
+        legend=false,
+        xlabel="Item",
+        ylabel="Utility",
+        title="Static utilities",
+        color="#2a78d6",
+    )
+
+    l = Plots.@layout [a{0.6h}; b{0.4h}]
+    return Plots.plot(p1, p2; layout=l, size=(800, 600), kwargs...)
+end
+
 function bar_plot_stock_repl_sales(
     stock,
     stock_p,

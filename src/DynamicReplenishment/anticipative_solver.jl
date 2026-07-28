@@ -178,9 +178,13 @@ Compute the base objective function.
 function compute_objective(y, s, α, v, T, s_min, s_sup, env, nb_customers)
     N = item_count(env)
     # margin
+    # `init`: a scenario can have no customer at all over the horizon (small λ or short
+    # horizon), in which case the inner sum is empty and would throw without it.
     margin = sum(
-        prices(env)[i] * sum(α[i, t, k] for t in 1:T for k in 1:nb_customers[t]) for
-        i in 1:N
+        prices(env)[i] *
+        sum(α[i, t, k] for t in 1:T for k in 1:nb_customers[t]; init=zero(AffExpr)) for
+        i in 1:N;
+        init=zero(AffExpr),
     )
     # virtual stock cost
     virtual_stock = sum(virtual_stock_cost(env)[i] * s[t + 1, i] for t in 1:T for i in 1:N)
@@ -223,7 +227,9 @@ function solver_variable_to_dataset(
     # sales_full[t, i] = total units of item i sold at epoch t
     sales_full = zeros(Int, T, N)
     for t in 1:T, i in 1:N
-        sales_full[t, i] = sum(round(Int, value(α_val[i, t, k])) for k in 1:n_customers[t])
+        sales_full[t, i] = sum(
+            round(Int, value(α_val[i, t, k])) for k in 1:n_customers[t]; init=0
+        )
     end
     dataset = Vector{DataSample}(undef, T)
 

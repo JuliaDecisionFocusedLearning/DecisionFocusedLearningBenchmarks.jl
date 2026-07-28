@@ -32,6 +32,17 @@ function random_policy(env::Environment, rng::AbstractRNG=Xoshiro(nothing))
     return replenishment
 end
 
+"""
+$TYPEDSIGNATURES
+
+Solve a sample average approximation of the replenishment problem over the remaining horizon
+on `nb_scenarios` sampled scenarios, and return the first-stage replenishment decision.
+
+The first replenishment is constrained to be identical across scenarios, so the returned
+decision is implementable without knowing the realized demand. When `θ` is given, the
+objective is augmented with `κ * dot(θ, g(y))` to bias the decision towards the predicted
+utilities.
+"""
 function saa_policy(
     env::Environment;
     nb_scenarios::Int=5,

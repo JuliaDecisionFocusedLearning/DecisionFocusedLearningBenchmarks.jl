@@ -110,6 +110,7 @@ Modules = [
     DecisionFocusedLearningBenchmarks.ContextualStochasticArgmax,
     DecisionFocusedLearningBenchmarks.DynamicVehicleScheduling,
     DecisionFocusedLearningBenchmarks.DynamicAssortment,
+    DecisionFocusedLearningBenchmarks.DynamicReplenishment,
     DecisionFocusedLearningBenchmarks.FixedSizeShortestPath,
     DecisionFocusedLearningBenchmarks.Maintenance,
     DecisionFocusedLearningBenchmarks.PortfolioOptimization,
