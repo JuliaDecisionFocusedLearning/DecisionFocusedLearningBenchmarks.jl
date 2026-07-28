@@ -80,7 +80,7 @@ end
     @test size(state_ini.replenishment_history) == (0, 10)
     @test size(state_ini.sales_history) == (0, 10)
     @test length(state_ini.customer_history) == 0
-    @test state_ini.current_cost == 0.0
+    @test DR.total_cost(state_ini) == 0.0
 
     # custom environment 
     env2 = DR.Environment(b, rng; stock_ini=fill(5, 10))
@@ -158,7 +158,7 @@ end
     @test size(DR.replenishment_history(state)) == (0, N)
     @test size(DR.sales_history(state)) == (0, N)
     @test length(DR.customer_history(state)) == 0
-    @test state.current_cost == 0.0
+    @test DR.total_cost(state) == 0.0
     @test DR.stock_ini(state) == DR.stock_ini(env)
 
     # after one step
@@ -168,7 +168,7 @@ end
     @test size(DR.replenishment_history(state)) == (1, N)
     @test size(DR.sales_history(state)) == (1, N)
     @test length(DR.customer_history(state)) == 1
-    @test state.current_cost == reward
+    @test isapprox(DR.total_cost(state), reward; atol=1e-8)
 end
 
 @testset "DynamicReplenishment - Observe" begin
@@ -202,7 +202,7 @@ end
     N = DR.item_count(b)
 
     model = generate_statistical_model(b)
-    @test model isa DR.statistical_model
+    @test model isa DR.StatisticalModel
 
     rng = Xoshiro(42)
     env = DR.Environment(b, rng)
@@ -288,8 +288,28 @@ end
         @test DR.is_feasible(ant_sample.state, ant_sample.y)
     end
     @test r_greedy[1] <= ant_obj
+end
 
-    # @test isapprox(ant_traj[end].state.current_cost, ant_obj; rtol=1e-5)
+@testset "DynamicReplenishment - rollout cost matches anticipative solver objective" begin
+    b = DynamicReplenishmentBenchmark(; N=5, max_steps=4)
+    env = generate_environment(b; seed=0)
+    # pin env.env.scenario to the one `evaluate_policy!` will reproduce when it resets
+    reset_to_initial!(env)
+    rng = Xoshiro(7)
+    ant_obj, ant_traj = DR.anticipative_solver(
+        env.env, rng, env.env.scenario; reset_env=false
+    )
+
+    replay_policy = Policy(
+        "Replay",
+        "replays fixed anticipative replenishment decisions",
+        (e; kwargs...) -> ant_traj[DR.current_epoch(e)].y,
+    )
+    total_reward, dataset = evaluate_policy!(replay_policy, env)
+
+    @test isapprox(total_reward, ant_obj; rtol=1e-5)
+    @test isapprox(DR.total_cost(env.env.state), ant_obj; rtol=1e-5)
+    @test isapprox(sum(s.extra.reward for s in dataset), total_reward; rtol=1e-5)
 end
 
 @testset "DynamicReplenishment - Parametric Anticipative Solver" begin

@@ -53,7 +53,6 @@ function Environment(
     rng::AbstractRNG;
     stock_ini=rand(rng, 0:5, item_count(config)),
 )
-    N = item_count(config)
     scenario = Utils.generate_scenario(config; rng=rng)
     initial_state = DRPState(config, stock_ini)
     return Environment(; config, state=initial_state, scenario, stock_ini)
@@ -113,6 +112,13 @@ function Utils.step!(env::Environment, replenishment, rng::AbstractRNG)
     if !is_terminated(env)
         env.state.ub_per_item =
             env.state.stock .+ max_quotas(env.config)[current_epoch(env), :]
+        env.state.physical_stock = compute_physical_stock(
+            env.config,
+            current_epoch(env),
+            stock_ini(env.state),
+            env.state.replenishment_history,
+            env.state.sales_history,
+        )
     end
     return delta_cost
 end

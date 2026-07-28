@@ -26,8 +26,6 @@ mutable struct DRPState{B<:DynamicReplenishmentBenchmark}
     customer_history::Vector{Int}
     "Upper bound of replenishment per item (N)"
     ub_per_item::Vector{Int}
-    "Current cost of the state"
-    current_cost::Float64
 end
 
 """
@@ -117,9 +115,6 @@ function DRPState(;
     physical_stock = compute_physical_stock(
         config, current_epoch, s0, replenishment_history, sales_history
     )
-    current_cost = compute_total_cost(
-        config, s0, stock_history, replenishment_history, sales_history
-    )
     return DRPState{B}(
         config,
         current_epoch,
@@ -130,7 +125,6 @@ function DRPState(;
         sales_history,
         customer_history,
         ub_per_item,
-        current_cost,
     )
 end
 
@@ -150,6 +144,31 @@ function DRPState(
     )
 end
 
+"""
+$TYPEDSIGNATURES
+
+Deep-copy a `DRPState` without copying `config`: the benchmark configuration is never
+mutated after construction and is shared across every state of an episode, so cloning it
+on every `deepcopy` (e.g. once per epoch in `rollout!`) would be wasted work (it can hold
+heavy fields such as a `customer_choice_model` neural network).
+"""
+function Base.deepcopy_internal(state::DRPState{B}, stackdict::IdDict) where {B}
+    haskey(stackdict, state) && return stackdict[state]
+    new_state = DRPState{B}(
+        state.config,
+        state.current_epoch,
+        Base.deepcopy_internal(state.stock, stackdict),
+        Base.deepcopy_internal(state.physical_stock, stackdict),
+        Base.deepcopy_internal(state.stock_history, stackdict),
+        Base.deepcopy_internal(state.replenishment_history, stackdict),
+        Base.deepcopy_internal(state.sales_history, stackdict),
+        Base.deepcopy_internal(state.customer_history, stackdict),
+        Base.deepcopy_internal(state.ub_per_item, stackdict),
+    )
+    stackdict[state] = new_state
+    return new_state
+end
+
 current_epoch(state::DRPState) = state.current_epoch
 stock(state::DRPState) = state.stock
 physical_stock(state::DRPState) = state.physical_stock
@@ -159,8 +178,21 @@ replenishment_history(state::DRPState) = state.replenishment_history
 sales_history(state::DRPState) = state.sales_history
 customer_history(state::DRPState) = state.customer_history
 stock_ini(state::DRPState) = stock_history(state)[1, :]
-current_cost(state::DRPState) = state.current_cost
 ub_per_item(state::DRPState) = state.ub_per_item
+
+"""
+$TYPEDSIGNATURES
+
+Compute the cumulative cost of the state's history so far, from raw data (see
+[`compute_total_cost`](@ref)).
+"""
+total_cost(state::DRPState) = compute_total_cost(
+    state.config,
+    stock_ini(state),
+    stock_history(state),
+    replenishment_history(state),
+    sales_history(state),
+)
 
 function reset_state!(state::DRPState, rng::AbstractRNG; reset_stock_ini=false)
     N = item_count(state.config)
@@ -177,7 +209,6 @@ function reset_state!(state::DRPState, rng::AbstractRNG; reset_stock_ini=false)
     state.sales_history = zeros(Int, 0, N)
     state.customer_history = Int[]
     state.ub_per_item = s0 .+ max_quotas(state.config)[1, :]
-    state.current_cost = 0.0
     return state
 end
 
@@ -195,26 +226,39 @@ function is_feasible(state::DRPState, replenishment::Vector{Int}; verbose=false)
     return true
 end
 
+"""
+$TYPEDSIGNATURES
+
+Compute the cost delta incurred at the current epoch (sales margin minus virtual and
+physical stock costs minus over/under stock bound penalties), matching
+[`compute_total_cost`](@ref) exactly. Must be called after `state.sales_history` and
+`state.stock_history` have been updated for the current epoch (i.e. once this epoch's
+sales are known). Does not read or write `state.physical_stock`: the physical stock used
+here already reflects this epoch's own (now realized) sales, whereas `state.physical_stock`
+must keep representing the physical stock as observed *before* those sales, so that the
+state used to make the next decision never leaks this epoch's outcome.
+"""
 function update_cost!(state::DRPState)
     config = state.config
     t = current_epoch(state)
     # sales reward
     sales_t = view(state.sales_history, t, :)
     margin = sum(prices(config) .* sales_t)
-    # physical stock cost
-    physical_cost = sum(physical_stock_cost(config) .* state.physical_stock)
+    # physical stock after this epoch's replenishment delivery and sales are accounted for
+    post_sale_physical_stock = compute_physical_stock(
+        config, t + 1, stock_ini(state), state.replenishment_history, state.sales_history
+    )
+    physical_cost = sum(physical_stock_cost(config) .* post_sale_physical_stock)
     # virtual stock cost
     virtual_stock = view(state.stock_history, t + 1, :)
     virtual_cost = sum(virtual_stock_cost(config) .* virtual_stock)
-    # over / under stock costs
-    total = sum(virtual_stock)
-    under = max(0, stock_inf(config) - total)
-    over = max(0, total - stock_sup(config))
+    # over / under stock costs (based on physical stock, matching the anticipative solver)
+    total_physical = sum(post_sale_physical_stock)
+    under = max(0, stock_inf(config) - total_physical)
+    over = max(0, total_physical - stock_sup(config))
     penalty = over_stock_bound_cost(config) * (under + over)
 
-    delta = margin - virtual_cost - physical_cost - penalty
-    state.current_cost += delta
-    return delta
+    return margin - virtual_cost - physical_cost - penalty
 end
 
 function apply_replenishment!(state::DRPState, replenishment::Vector{Int})
@@ -243,13 +287,6 @@ function apply_sales!(state::DRPState; utilities::Vector{Vector{Float64}})
     state.sales_history = vcat(state.sales_history, sales')
     state.stock_history = vcat(state.stock_history, state.stock')
     delta_cost = update_cost!(state)
-    state.physical_stock = compute_physical_stock(
-        state.config,
-        current_epoch(state),
-        stock_ini(state),
-        state.replenishment_history,
-        state.sales_history,
-    )
     return delta_cost
 end
 

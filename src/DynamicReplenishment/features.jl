@@ -94,7 +94,7 @@ function create_items_features(state::DRPState)
     N = item_count(config)
     nb_static = feature_count(config) + 1     # replaces instance.nb_features
     nb_features = nb_static + 9
-    item_features = zeros(N, nb_features)
+    item_features = zeros(Float32, N, nb_features)
 
     # precompute once
     pos_items = items_with_positive_stock(state)
@@ -139,13 +139,13 @@ The last 8 columns correspond to dynamic stock features:
 - deviation from min_quota and i and scaled with price
 - deviation from mean stock and scaled with price
 """
-function create_stock_features(state::DRPState, item_features::Matrix{Float64})
+function create_stock_features(state::DRPState, item_features::Matrix{Float32})
     config = state.config
     N = item_count(config)
     ub = ub_per_item(state)
     nb_fi = size(item_features, 2)
     total_rows = sum(ub)
-    stock_features = zeros(total_rows, nb_fi + 8 + 1) # +1 for unique index
+    stock_features = zeros(Float32, total_rows, nb_fi + 8 + 1) # +1 for unique index
     t = current_epoch(state)
 
     pos_items = items_with_positive_stock(state)

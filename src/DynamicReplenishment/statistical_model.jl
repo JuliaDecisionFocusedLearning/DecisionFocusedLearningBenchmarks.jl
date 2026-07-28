@@ -4,14 +4,14 @@ $TYPEDEF
 # Fields
 $TYPEDFIELDS
 """
-@kwdef struct statistical_model{L1,L2}
+@kwdef struct StatisticalModel{L1,L2}
     "replenishment reward"
     θ_model::L1
     "stock penalization"
     η_model::L2
 end
 
-@layer statistical_model
+@layer StatisticalModel
 
 """
 $TYPEDSIGNATURES
@@ -20,15 +20,15 @@ $TYPEDSIGNATURES
 function Utils.generate_statistical_model(
     b::DynamicReplenishmentBenchmark, seed=nothing; kwargs...
 )
-    seed !== nothing && seed!(seed)
+    !isnothing(seed) || seed!(seed)
     item_features_size = feature_count(b) + 10
     stock_features_size = item_features_size + 8
     θ_model = Chain(Dense(item_features_size => 1))
     η_model = Chain(Dense(stock_features_size => 1), softplus)
-    return statistical_model(; θ_model, η_model)
+    return StatisticalModel(; θ_model, η_model)
 end
 
-function (m::statistical_model)(x)
+function (m::StatisticalModel)(x)
     item_ids = @view x[end, :]
     starts = [findfirst(==(i), item_ids) for i in 1:maximum(Int, item_ids)]
 

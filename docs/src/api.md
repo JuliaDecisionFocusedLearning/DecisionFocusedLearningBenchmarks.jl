@@ -90,7 +90,7 @@ Private = false
 
 ```@autodocs
 Modules = [DecisionFocusedLearningBenchmarks.DynamicReplenishment]
-Private = true
+Private = false
 ```
 
 ### Warcraft

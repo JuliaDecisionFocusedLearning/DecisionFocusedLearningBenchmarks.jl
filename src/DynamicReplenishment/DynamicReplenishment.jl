@@ -78,6 +78,8 @@ end
         λ=15,
         d=5,
         nb_constraints=2,
+        constraints_matrix=nothing,
+        quotas=nothing,
         stock_inf=0,
         stock_sup=30,
         ub_same_item=30,
@@ -112,8 +114,8 @@ function DynamicReplenishmentBenchmark(;
     seed=nothing,
     rng=Xoshiro(seed),
 )
-    if constraints_matrix === nothing || quotas === nothing
-        if constraints_matrix !== nothing || quotas !== nothing
+    if isnothing(constraints_matrix) || isnothing(quotas)
+        if !isnothing(constraints_matrix) || !isnothing(quotas)
             @warn "If either constraints_matrix or quotas is provided, both must be provided. Generating random constraints and quotas."
         end
         constraints_matrix = rand(rng, 0:1, nb_constraints, N)
@@ -126,7 +128,7 @@ function DynamicReplenishmentBenchmark(;
     end
 
     constraints_matrix = vcat(constraints_matrix, I)
-    quotas = hcat([vcat(quotas[t, :], fill(ub_same_item, N)) for t in 1:max_steps]...)'
+    quotas = hcat(quotas, fill(ub_same_item, max_steps, N))
 
     prices = rand(rng, Uniform(1.0, 10.0), N)
     features = rand(rng, Uniform(-10.0, 10.0), (d, N))

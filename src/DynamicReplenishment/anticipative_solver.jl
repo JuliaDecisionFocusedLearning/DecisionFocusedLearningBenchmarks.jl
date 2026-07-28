@@ -4,7 +4,7 @@ $TYPEDSIGNATURES
 
 Compute big M values for a scenario of a specific environment.
 """
-function compute_bigM_sales!(env::Environment, scenario::Scenario)
+function compute_bigM_sales(env::Environment, scenario::Scenario)
     T = max_steps(env.config)
     N = item_count(env.config)
     max_q = max_quotas(env.config)
@@ -34,13 +34,13 @@ function compute_bigM_sales!(env::Environment, scenario::Scenario)
     return big_M
 end
 
-function compute_bigM_physical_stock!(env::Environment)
+function compute_bigM_physical_stock(env::Environment, scenario::Scenario)
     T = max_steps(env.config) - current_epoch(env) + 1
     N = item_count(env.config)
     delay = delivery_delay(env.config)
     max_q = max_quotas(env.config)[current_epoch(env):end, :]
     s0 = stock(env)
-    n_customer = nb_customers(env.scenario)[current_epoch(env):end]  # borne des ventes
+    n_customer = nb_customers(scenario)[current_epoch(env):end]  # borne des ventes
 
     big_M = zeros(Int, N, T + 1)
     for i in 1:N, t in 2:(T + 1)
@@ -268,7 +268,7 @@ function solver_variable_to_dataset(
         customer_history=n_customers[1:T],
         ub_per_item=s_val[T + 1, :] .+ max_q[end, :],
     )
-    final_obj_val = final_state.current_cost
+    final_obj_val = total_cost(final_state)
 
     if !isnothing(θ)
         g_y = g(dataset[1].y; state=dataset[1].state)
@@ -330,11 +330,11 @@ function anticipative_solver(
         state = env.state
     end
 
-    if bigM_s === nothing
-        bigM_s = compute_bigM_sales!(env, scenario)
+    if isnothing(bigM_s)
+        bigM_s = compute_bigM_sales(env, scenario)
     end
-    if bigM_ps === nothing
-        bigM_ps = compute_bigM_physical_stock!(env)
+    if isnothing(bigM_ps)
+        bigM_ps = compute_bigM_physical_stock(env, scenario)
     end
 
     @assert !is_terminated(env)
@@ -345,6 +345,7 @@ function anticipative_solver(
     N = item_count(env)
     T = max_steps(env) - current_epoch(env) + 1
     n_customers = nb_customers(scenario)[current_epoch(env):end]
+    q = quotas(env)[current_epoch(env):end, :]
     s0 = stock(env)
     ## Variables
     @variable(m, y[1:T, 1:N] >= 0, Int) # replenishments
@@ -361,7 +362,7 @@ function anticipative_solver(
     sales_order_constraints!(
         m, y, s, α, T, N, n_customers, scenario.utilities[current_epoch(env):end], bigM_s
     )
-    quota_constraints!(m, y, T, N, constraints_matrix(env), quotas(env))
+    quota_constraints!(m, y, T, N, constraints_matrix(env), q)
     physical_stock_constraints!(
         m, y, α, v, z, T, N, delivery_delay(env), s0, n_customers, bigM_ps
     )
@@ -369,7 +370,7 @@ function anticipative_solver(
 
     ## Objective
     objective = compute_objective(y, s, α, v, T, s_min, s_sup, env, n_customers)
-    if θ !== nothing
+    if !isnothing(θ)
         g_y = g_model(m, N, ub_per_item(state), y[1, :], s[1, :])
         @assert length(θ) == N + sum(ub_per_item(state))
         objective += κ * dot(θ, g_y)

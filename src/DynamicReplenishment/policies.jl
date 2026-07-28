@@ -12,7 +12,7 @@ function lazy_policy(env::Environment)
     return zeros(Int, N)
 end
 
-function random_policy(env::Environment, rng::AbstractRNG=Xoshiro(0))
+function random_policy(env::Environment, rng::AbstractRNG=Xoshiro(nothing))
     N = item_count(env)
     cons_mat = constraints_matrix(env)
     q = quotas(env)
@@ -27,7 +27,7 @@ function random_policy(env::Environment, rng::AbstractRNG=Xoshiro(0))
                 c in 1:nb_constraints(env.config) if cons_mat[c, item] == 1
             ]),
         )
-        replenishment[item] = rand(0:max_quota_item)
+        replenishment[item] = rand(rng, 0:max_quota_item)
     end
     return replenishment
 end
@@ -35,7 +35,7 @@ end
 function saa_policy(
     env::Environment;
     nb_scenarios::Int=5,
-    rng::AbstractRNG=Xoshiro(0),
+    rng::AbstractRNG=Xoshiro(nothing),
     model_builder=highs_model,
     verbose::Bool=false,
     mip_gap::Float64=0.0,
@@ -44,8 +44,8 @@ function saa_policy(
     κ::Float64=1.0,
 )
     scenarios = [generate_scenario(env.config; rng=rng) for _ in 1:nb_scenarios]
-    bigM_s = [compute_bigM_sales!(env, scenario) for scenario in scenarios]
-    bigM_ps = compute_bigM_physical_stock!(env)
+    bigM_s = [compute_bigM_sales(env, scenario) for scenario in scenarios]
+    bigM_ps = [compute_bigM_physical_stock(env, scenario) for scenario in scenarios]
 
     @assert !is_terminated(env)
 
@@ -107,7 +107,7 @@ function saa_policy(
             delivery_delay(env),
             s0,
             n_customers[s_idx],
-            bigM_ps,
+            bigM_ps[s_idx],
         )
         stock_bounds_constraints!(
             m,

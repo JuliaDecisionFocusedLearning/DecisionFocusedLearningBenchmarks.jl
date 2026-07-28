@@ -64,33 +64,28 @@ function replenishment_problem(
 end
 
 function g(y; state::DRPState, kwargs...)
-    config = state.config
-    N = item_count(config)
+    N = item_count(state.config)
     ub = ub_per_item(state)
-    yθ = copy(y)  # shape (1, N)
-    stock_and_replenishment = state.stock .+ y
-    yη = zeros(sum(ub))
+    stock_and_replenishment = round.(Int, state.stock .+ y)
+    yη = Vector{Float64}(undef, sum(ub))
     row = 1
     for i in 1:N
-        for k in 1:ub[i]
-            if k == 1
-                yη[row] = stock_and_replenishment[i] > 0 ? 1 : 0
-            else
-                yη[row + k - 1] = -max(0, stock_and_replenishment[i] - (k - 1))
-            end
+        yη[row] = stock_and_replenishment[i] > 0 ? 1 : 0
+        for k in 2:ub[i]
+            yη[row + k - 1] = -max(0, stock_and_replenishment[i] - (k - 1))
         end
         row += ub[i]
     end
-    return vcat(vec(yθ), vec(yη))
+    return vcat(vec(y), vec(yη))
 end
 
 function get_z_from_y(y_true::Vector{Int}, state::DRPState)
     N = length(y_true)
     ub = ub_per_item(state)
+    stock_and_replenishment = round.(Int, state.stock .+ y_true)
     z_true = zeros(Int, N, maximum(ub))
     for i in 1:N
-        stock_and_replenishment = round(Int(state.stock[i] + y_true[i]))
-        z_true[i, 1:stock_and_replenishment] .= 1
+        z_true[i, 1:min(ub[i], stock_and_replenishment[i])] .= 1
     end
     return z_true
 end
