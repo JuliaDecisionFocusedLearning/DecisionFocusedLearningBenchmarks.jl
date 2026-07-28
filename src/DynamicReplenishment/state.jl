@@ -186,13 +186,15 @@ $TYPEDSIGNATURES
 Compute the cumulative cost of the state's history so far, from raw data (see
 [`compute_total_cost`](@ref)).
 """
-total_cost(state::DRPState) = compute_total_cost(
-    state.config,
-    stock_ini(state),
-    stock_history(state),
-    replenishment_history(state),
-    sales_history(state),
-)
+function total_cost(state::DRPState)
+    return compute_total_cost(
+        state.config,
+        stock_ini(state),
+        stock_history(state),
+        replenishment_history(state),
+        sales_history(state),
+    )
+end
 
 function reset_state!(state::DRPState, rng::AbstractRNG; reset_stock_ini=false)
     N = item_count(state.config)

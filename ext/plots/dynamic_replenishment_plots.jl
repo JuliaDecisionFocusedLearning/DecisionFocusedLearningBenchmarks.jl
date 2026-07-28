@@ -67,7 +67,7 @@ function plot_sample(
     else
         n_sales
     end
-    p = bar_plot_stock_repl_sales(
+    return p = bar_plot_stock_repl_sales(
         stock,
         stock_p,
         repl,

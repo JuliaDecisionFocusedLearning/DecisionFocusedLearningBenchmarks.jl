@@ -177,4 +177,3 @@ function (p::SAAPolicyCall)(env::Environment; kwargs...)
         nb_scenarios=p.nb_scenarios,
     )
 end
-
