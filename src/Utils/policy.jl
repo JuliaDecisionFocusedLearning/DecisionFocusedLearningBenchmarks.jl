@@ -7,8 +7,9 @@ built for, which lets [`rollout_step!`](@ref) and [`rollout!`](@ref) be speciali
 benchmark by dispatching on the policy's type rather than on a separate benchmark
 argument.
 
-See [`AbstractStepPolicy`](@ref) and [`AbstractTrajectoryPolicy`](@ref) for the two
-concrete flavors.
+The generic wrapper [`Policy`](@ref) covers most cases; see [`AbstractStepPolicy`](@ref)
+and [`AbstractTrajectoryPolicy`](@ref) for custom policy types that decide one step at a
+time or plan a whole episode at once.
 """
 abstract type AbstractPolicy{B<:AbstractBenchmark} end
 
@@ -17,27 +18,27 @@ abstract type AbstractPolicy{B<:AbstractBenchmark} end
 
 Type alias matching any [`AbstractPolicy`](@ref) built for a dynamic benchmark, i.e.
 `AbstractPolicy{<:AbstractDynamicBenchmark}`. Use this to dispatch on any policy for a
-dynamic benchmark.
-The subtypes [`AbstractStepPolicy`](@ref) and [`AbstractTrajectoryPolicy`](@ref)
-are DynamicPolicies.
+dynamic benchmark. Such a policy is stepped through the environment by
+[`rollout!`](@ref), unless it is an [`AbstractTrajectoryPolicy`](@ref).
 """
 const DynamicPolicy = AbstractPolicy{<:AbstractDynamicBenchmark}
 
 """
-$TYPEDEF
+    StaticPolicy
 
-Abstract type for policies associated to static benchmarks.
+Type alias matching any [`AbstractPolicy`](@ref) built for a static benchmark, i.e.
+`AbstractPolicy{<:AbstractStaticBenchmark}`.
 """
-abstract type AbstractStaticPolicy{B<:AbstractStaticBenchmark} <: AbstractPolicy{B} end
+const StaticPolicy = AbstractPolicy{<:AbstractStaticBenchmark}
 
 """
-$TYPEDEF
+    StochasticPolicy
 
-Abstract type for stochastic policies that take scenarios as input, e.g. a callable with
-signature `(ctx_sample, scenarios) -> Vector{DataSample}`. See [`ScenarioPolicy`](@ref)
-for the wrapper type.
+Type alias matching any [`AbstractPolicy`](@ref) built for a stochastic benchmark, i.e.
+`AbstractPolicy{<:AbstractStochasticBenchmark}`. Such policies take scenarios as input,
+e.g. a callable with signature `(ctx_sample, scenarios) -> Vector{DataSample}`.
 """
-abstract type AbstractScenarioPolicy{B<:AbstractStochasticBenchmark} <: AbstractPolicy{B} end
+const StochasticPolicy = AbstractPolicy{<:AbstractStochasticBenchmark}
 
 """
 $TYPEDEF
@@ -45,11 +46,9 @@ $TYPEDEF
 Abstract supertype for policies that decide one step at a time. Such a policy is called
 once per environment step (as `policy(env; kwargs...) -> y`), via
 [`rollout_step!`](@ref), which [`rollout!`](@ref) loops until the environment
-terminates.
-
-Specialize [`rollout_step!`](@ref) on `AbstractStepPolicy{B}` for a given benchmark
-`B` to customize what gets recorded in each step's [`DataSample`](@ref) (e.g. extra
-`context` or `extra` fields), without reimplementing the rollout loop.
+terminates. This is the default behavior for any [`DynamicPolicy`](@ref) (including the
+generic [`Policy`](@ref) wrapper); subtype `AbstractStepPolicy` to state it explicitly
+for a custom policy type.
 """
 abstract type AbstractStepPolicy{B<:AbstractDynamicBenchmark} <: AbstractPolicy{B} end
 
@@ -69,12 +68,15 @@ abstract type AbstractTrajectoryPolicy{B<:AbstractDynamicBenchmark} <: AbstractP
 """
 $TYPEDEF
 
-Policy type for decision-focused learning benchmarks, tagged with the benchmark type `B`
-it was built for (e.g. `Policy{MyBenchmark}("name", "description", f)`). Wrapping a
-callable in `Policy{B}` makes it an [`AbstractStepPolicy`](@ref)`{B}`, which enables
-per-benchmark specialization of [`rollout_step!`](@ref).
+Policy wrapper for decision-focused learning benchmarks, tagged with the benchmark type
+`B` it was built for (e.g. `Policy{MyBenchmark}("name", "description", f)`). The wrapped
+callable's signature depends on the benchmark flavor: `(env; kwargs...) -> y` for a
+dynamic benchmark, `(ctx_sample, scenarios) -> Vector{DataSample}` for a stochastic one.
+
+Wrapping a callable in `Policy{B}` makes it an [`AbstractPolicy`](@ref)`{B}`, which
+enables per-benchmark specialization of [`rollout_step!`](@ref).
 """
-struct Policy{B,P} <: AbstractStepPolicy{B}
+struct Policy{B,P} <: AbstractPolicy{B}
     "policy name"
     name::String
     "policy description"
@@ -92,9 +94,14 @@ function Policy{B}(name::String, description::String, policy::P) where {B,P}
     return Policy{B,P}(name, description, policy)
 end
 
+"""
+$TYPEDSIGNATURES
+
+Construct a `Policy` tagged for the type of the given benchmark instance.
+"""
 function Policy(
-    b::B, name::String, description::String, policy::P
-) where {B<:AbstractDynamicBenchmark,P}
+    ::B, name::String, description::String, policy::P
+) where {B<:AbstractBenchmark,P}
     return Policy{B,P}(name, description, policy)
 end
 
@@ -102,7 +109,7 @@ function Base.show(io::IO, p::Policy)
     println(io, "$(p.name): $(p.description)")
     return nothing
 end
-"""
+"""scen
 $TYPEDSIGNATURES
 
 Run the policy and get the next decision on the given environment/instance.
@@ -112,65 +119,24 @@ function (p::Policy)(args...; kwargs...)
 end
 
 """
-$TYPEDEF
-
-Policy wrapper for stochastic benchmarks with policies taking scenarios as input. The
-wrapped callable typically has signature `(ctx_sample, scenarios) -> Vector{DataSample}`.
-
-Use [`Policy`](@ref) instead for dynamic (environment-stepping) policies.
-"""
-struct ScenarioPolicy{B,P} <: AbstractScenarioPolicy{B}
-    "policy name"
-    name::String
-    "policy description"
-    description::String
-    "policy run function"
-    policy::P
-end
-
-"""
-$TYPEDSIGNATURES
-
-Construct a `ScenarioPolicy{B}` tagged for benchmark type `B`, e.g.
-`ScenarioPolicy{MyBenchmark}("SAA", "...", saa_policy)`.
-"""
-function ScenarioPolicy{B}(name::String, description::String, policy::P) where {B,P}
-    return ScenarioPolicy{B,P}(name, description, policy)
-end
-
-function Base.show(io::IO, p::ScenarioPolicy)
-    println(io, "$(p.name): $(p.description)")
-    return nothing
-end
-
-"""
-$TYPEDSIGNATURES
-
-Run the policy on the given context sample and scenarios.
-"""
-function (p::ScenarioPolicy)(args...; kwargs...)
-    return p.policy(args...; kwargs...)
-end
-
-"""
 $TYPEDSIGNATURES
 
 Perform a single step of a rollout: query `policy` for a decision on the current state of
-`env`, record the pre-step features/state, apply the decision with `step!`, and package
-the result into a [`DataSample`](@ref) with `extra=(; reward)`.
+`env`, record the pre-step features/state, apply the decision with `step!`, record the reward
+and return the couple (reward, sample), where sample is a [`DataSample`](@ref).
 
 This is the extension point for customizing what a rollout records: add a method
-specialized on `policy::AbstractStepPolicy{B}` for a given benchmark `B` to add extra
+specialized on `policy::AbstractPolicy{B}` for a given benchmark `B` to add extra
 `context` or `extra` fields, without having to reimplement [`rollout!`](@ref) itself.
 """
 function rollout_step!(
-    policy::AbstractStepPolicy, env::AbstractEnvironment, rng::AbstractRNG; kwargs...
+    policy::DynamicPolicy, env::AbstractEnvironment, rng::AbstractRNG; kwargs...
 )
     y = policy(env; kwargs...)
     features, state = observe(env)
     state_copy = deepcopy(state)
     reward = step!(env, y, rng)
-    return DataSample(; x=features, y=y, instance=state_copy, extra=(; reward))
+    return reward, DataSample(; x=features, y=y, instance=state_copy, extra=(; reward))
 end
 
 """
@@ -183,18 +149,18 @@ Each step delegates to [`rollout_step!`](@ref); specialize that function instead
 this one to customize what gets recorded per step.
 """
 function rollout!(
-    policy::AbstractStepPolicy, env::AbstractEnvironment, rng::AbstractRNG; kwargs...
+    policy::DynamicPolicy, env::AbstractEnvironment, rng::AbstractRNG; kwargs...
 )
     total_reward = 0.0
     labeled_dataset = DataSample[]
     while !is_terminated(env)
-        sample = rollout_step!(policy, env, rng; kwargs...)
+        reward, sample = rollout_step!(policy, env, rng; kwargs...)
         if isempty(labeled_dataset)
             labeled_dataset = typeof(sample)[sample]
         else
             push!(labeled_dataset, sample)
         end
-        total_reward += sample.reward
+        total_reward += reward
     end
     return total_reward, labeled_dataset
 end
@@ -221,7 +187,9 @@ running, which makes the rollout reproducible. Pass `seed` to override the wrapp
 stored seed for this evaluation. The wrapper's `rng` is the single source of
 randomness threaded into the underlying environment.
 """
-function evaluate_policy!(policy, env::SeededEnvironment; seed=nothing, kwargs...)
+function evaluate_policy!(
+    policy::DynamicPolicy, env::SeededEnvironment; seed=nothing, kwargs...
+)
     isnothing(seed) ? reset_to_initial!(env) : reset!(env, seed)
     return rollout!(policy, env.env, env.rng; kwargs...)
 end

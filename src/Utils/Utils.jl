@@ -24,14 +24,14 @@ include("grid_graph.jl")
 include("misc.jl")
 include("model_builders.jl")
 
-export DataSample, Policy, ScenarioPolicy
+export DataSample, Policy
 export AbstractPolicy,
     DynamicPolicy,
-    AbstractStaticPolicy,
-    AbstractScenarioPolicy,
+    StaticPolicy,
+    StochasticPolicy,
     AbstractStepPolicy,
     AbstractTrajectoryPolicy
-export evaluate_policy!, rollout!, rollout_step!
+export evaluate_policy!, rollout_step!
 export TopKMaximizer, one_hot_argmax
 
 export AbstractEnvironment, SeededEnvironment
