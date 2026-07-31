@@ -42,6 +42,9 @@ The first replenishment is constrained to be identical across scenarios, so the 
 decision is implementable without knowing the realized demand. When `θ` is given, the
 objective is augmented with `κ * dot(θ, g(y))` to bias the decision towards the predicted
 utilities.
+
+The solver is stopped after `time_limit` seconds (10 minutes by default), returning the
+best feasible solution found so far; pass `time_limit=nothing` to disable it.
 """
 function saa_policy(
     env::Environment;
@@ -50,6 +53,7 @@ function saa_policy(
     model_builder=highs_model,
     verbose::Bool=false,
     mip_gap::Float64=0.0,
+    time_limit::Union{Real,Nothing}=600.0,
     θ=nothing,
     state::DRPState=env.state,
     κ::Float64=1.0,
@@ -63,6 +67,7 @@ function saa_policy(
     m = model_builder()
     verbose || set_silent(m)
     set_attribute(m, MOI.RelativeGapTolerance(), mip_gap)
+    isnothing(time_limit) || set_attribute(m, MOI.TimeLimitSec(), Float64(time_limit))
     N = item_count(env)
     T = max_steps(env) - current_epoch(env) + 1
     n_customers = [nb_customers(scenario)[current_epoch(env):end] for scenario in scenarios]
@@ -170,12 +175,24 @@ struct SAAPolicyCall{M}
     verbose::Bool
     mip_gap::Float64
     nb_scenarios::Int
+    "solver time limit in seconds, `nothing` to disable"
+    time_limit::Union{Float64,Nothing}
 end
 
 function SAAPolicyCall(
-    model_builder::M; verbose::Bool=false, mip_gap::Float64=1e-2, nb_scenarios::Int=1
+    model_builder::M;
+    verbose::Bool=false,
+    mip_gap::Float64=1e-2,
+    nb_scenarios::Int=1,
+    time_limit::Union{Real,Nothing}=600.0,
 ) where {M}
-    return SAAPolicyCall{M}(model_builder, verbose, mip_gap, nb_scenarios)
+    return SAAPolicyCall{M}(
+        model_builder,
+        verbose,
+        mip_gap,
+        nb_scenarios,
+        isnothing(time_limit) ? nothing : Float64(time_limit),
+    )
 end
 
 function (p::SAAPolicyCall)(env::Environment; kwargs...)
@@ -186,5 +203,6 @@ function (p::SAAPolicyCall)(env::Environment; kwargs...)
         verbose=p.verbose,
         mip_gap=p.mip_gap,
         nb_scenarios=p.nb_scenarios,
+        time_limit=p.time_limit,
     )
 end
