@@ -335,10 +335,11 @@ end
 $TYPEDSIGNATURES
 
 Returns baseline policies for the dynamic replenishment benchmark: `Greedy`, `Random`,
-`Lazy`, `MeanAnticipative` and `SAA`.
+`Lazy`, `MeanAnticipative`, `MeanAnticipativePerEpoch` and `SAA`.
 
-`MeanAnticipative` needs `anticipative_results`, the expert demonstrations it averages;
-left empty it falls back to `Lazy`. Remaining keyword arguments go to the SAA policy.
+Both mean policies need `anticipative_results` (anticipative decisions), if empty, they fall back to `Lazy`. 
+Remaining keyword arguments go to the SAA
+policy.
 """
 function Utils.generate_baseline_policies(
     ::DynamicReplenishmentBenchmark;
@@ -358,15 +359,20 @@ function Utils.generate_baseline_policies(
     lazy = Policy("Lazy", "Policy that replenishes nothing", lazy_policy)
     mean_anticipative = Policy(
         "MeanAnticipative",
-        "Policy that replenishes items in increasing mean feature order, with quantities equal to the mean of the anticipative results",
+        "Policy that replenishes items in increasing mean feature order, with quantities equal to the mean of the anticipative results over the whole horizon",
         MeanAnticipativePolicyCall(anticipative_results, order_item),
+    )
+    mean_anticipative_per_epoch = Policy(
+        "MeanAnticipativePerEpoch",
+        "Policy that replenishes items in increasing mean feature order, with quantities equal to the mean of the anticipative results at the current epoch",
+        MeanAnticipativePolicyCall(anticipative_results, order_item; per_epoch=true),
     )
     saa = Policy(
         "SAA",
         "Policy that solves a sample average approximation problem.",
         SAAPolicyCall(model_builder; kwargs...),
     )
-    return (; greedy, random, lazy, mean_anticipative, saa)
+    return (; greedy, random, lazy, mean_anticipative, mean_anticipative_per_epoch, saa)
 end
 
 export DynamicReplenishmentBenchmark

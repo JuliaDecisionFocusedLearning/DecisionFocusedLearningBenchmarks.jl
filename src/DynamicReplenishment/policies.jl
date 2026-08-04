@@ -58,31 +58,62 @@ function random_policy(env::Environment, rng::AbstractRNG=Xoshiro(nothing))
     return replenishment
 end
 
+"""
+$TYPEDSIGNATURES
+
+Mean replenishment over `anticipative_results`. 
+When `per_epoch` is `true`, only the samples decided at epoch `t` are averaged.
+"""
+function mean_replenishment(
+    anticipative_results::AbstractVector{<:DataSample}, N::Int, t::Int; per_epoch::Bool
+)
+    total = zeros(Float64, N)
+    count = 0
+    for sample in anticipative_results
+        per_epoch &&
+            hasproperty(sample, :state) &&
+            current_epoch(sample.state) != t &&
+            continue
+        total .+= sample.y
+        count += 1
+    end
+    count == 0 && return nothing
+    return total ./ count
+end
+
+"""
+$TYPEDSIGNATURES
+
+Replenish the mean quantities of a set of anticipative decisions, item by item in `order_item` order.
+- `per_epoch=false` averages decisions of the complete dataset
+- `per_epoch=true` averages only the decisions taken at the current
+epoch
+"""
 function mean_anticipative_policy(
     env::Environment;
     rng::AbstractRNG=Xoshiro(nothing),
     anticipative_results::AbstractVector{<:DataSample}=DataSample[],
     order_item::Function=mean_feature_order,
+    per_epoch::Bool=false,
 )
     if isempty(anticipative_results)
         @warn "mean_anticipative_policy: no anticipative results provided, falling back to lazy policy"
         return lazy_policy(env)
     end
     N = item_count(env)
-    mean_anticipative_replenishment = zeros(Float64, N)
-    for sample in anticipative_results
-        mean_anticipative_replenishment .+= sample.y
-    end
-    mean_anticipative_replenishment ./= length(anticipative_results)
-    replenishment = zeros(Int, N)
     t = current_epoch(env)
+    anticipative_repl = mean_replenishment(anticipative_results, N, t; per_epoch)
+    if isnothing(anticipative_repl)
+        @warn "mean_anticipative_policy: no demonstration at epoch $t, averaging over the whole horizon instead" maxlog =
+            1
+        anticipative_repl = mean_replenishment(anticipative_results, N, t; per_epoch=false)
+    end
+    replenishment = zeros(Int, N)
     q = quotas(env)
     cons_mat = constraints_matrix(env)
     for item in order_item(env; rng=rng)
         max_quota_item = max_quotas_item_after_repl(item, replenishment, t, q, cons_mat)
-        replenishment[item] = min(
-            round(Int, mean_anticipative_replenishment[item]), max_quota_item
-        )
+        replenishment[item] = min(round(Int, anticipative_repl[item]), max_quota_item)
     end
     return replenishment
 end
@@ -95,11 +126,21 @@ Callable wrapping [`mean_anticipative_policy`](@ref) with a dataset of anticipat
 struct MeanAnticipativePolicyCall
     anticipative_results::Vector{DataSample}
     order_item::Function
+    "average only the decisions decided at the epoch of the decision"
+    per_epoch::Bool
+end
+
+function MeanAnticipativePolicyCall(anticipative_results, order_item; per_epoch::Bool=false)
+    return MeanAnticipativePolicyCall(anticipative_results, order_item, per_epoch)
 end
 
 function (p::MeanAnticipativePolicyCall)(env::Environment; kwargs...)
     return mean_anticipative_policy(
-        env; kwargs..., anticipative_results=p.anticipative_results, order_item=p.order_item
+        env;
+        kwargs...,
+        anticipative_results=p.anticipative_results,
+        order_item=p.order_item,
+        per_epoch=p.per_epoch,
     )
 end
 

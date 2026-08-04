@@ -276,6 +276,41 @@ end
     @test sort(DR.mean_feature_order(env.env)) == 1:DR.item_count(b)
 end
 
+@testset "DynamicReplenishment - MeanAnticipative per epoch" begin
+    b = DynamicReplenishmentBenchmark(; N=5, max_steps=3)
+    env = generate_environments(b, 1; seed=0)[1]
+    rng = Xoshiro(0)
+    _, ant_traj = DR.anticipative_solver(env.env, rng)
+    N = DR.item_count(b)
+
+    policies = generate_baseline_policies(b; anticipative_results=ant_traj)
+    @test policies.mean_anticipative.name == "MeanAnticipative"
+    @test policies.mean_anticipative_per_epoch.name == "MeanAnticipativePerEpoch"
+
+    # Only one expert trajectory here: the per-epoch mean is that epoch's decision,
+    # whereas the whole-horizon mean mixes every epoch together.
+    for (t, sample) in enumerate(ant_traj)
+        @test DR.mean_replenishment(ant_traj, N, t; per_epoch=true) ≈ sample.y
+    end
+    horizon_mean = sum(sample.y for sample in ant_traj) ./ length(ant_traj)
+    @test DR.mean_replenishment(ant_traj, N, 1; per_epoch=false) ≈ horizon_mean
+
+    # At the first epoch the per-epoch variant replays the expert decision exactly:
+    # it satisfies the quotas, so nothing is clipped.
+    @test DR.current_epoch(env.env) == 1
+    per_epoch_action = policies.mean_anticipative_per_epoch(env.env)
+    @test per_epoch_action == ant_traj[1].y
+    @test DR.is_feasible(env.env.state, per_epoch_action)
+
+    # An epoch no demonstration covers: the mean is empty, and the policy falls back
+    # to the whole-horizon mean instead of failing.
+    @test isnothing(DR.mean_replenishment(ant_traj, N, DR.max_steps(b) + 1; per_epoch=true))
+
+    # Without demonstrations, both variants fall back to Lazy.
+    empty_policies = generate_baseline_policies(b)
+    @test all(iszero, empty_policies.mean_anticipative_per_epoch(env.env))
+end
+
 @testset "DynamicReplenishment - Anticipative Solver" begin
     b = DynamicReplenishmentBenchmark(; N=5, max_steps=3)
     rng = Xoshiro(42)
