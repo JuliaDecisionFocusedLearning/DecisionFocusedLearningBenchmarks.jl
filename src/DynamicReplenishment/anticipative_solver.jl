@@ -235,14 +235,6 @@ function solver_variable_to_dataset(
     dataset = Vector{DataSample}(undef, T)
 
     # initial state, before any replenishment/sales (epoch 0 / pre-action).
-    # The MILP constrains s[1, i] == s0[i] == stock(env), so s_val[1, :] merely reproduces
-    # the stock `state` already held: reuse `state` itself (deep-copied) rather than
-    # reconstructing it. This preserves fields the reconstruction lost — most importantly
-    # `current_epoch`, which for a partial solve (`reset_env=false`, e.g. every DAgger
-    # rollout step) is *not* 1: `s_val`/`max_q` are already sliced relative to the solve's
-    # start, so a freshly-built `DRPState(config, s_val[1, :])` silently reset the epoch to
-    # its default (1), corrupting `ub_per_item` for every sample built from a mid-episode
-    # solve. Full `reset_env=true` solves start at epoch 1 already, so this is a no-op there.
     init_state = deepcopy(state)
     x_init = compute_features(init_state)
     y_init = y_val[1, :]
@@ -300,10 +292,7 @@ Construct yη vector for
 """
 function g_model(m, N, ub, y, s)
     # Same encoding as `replenishment_problem`: z is the staircase indicator of the
-    # stock level, z[i, j] = 1 iff j <= s[i] + y[i]. The equality pins z to y, so the
-    # encoding stays exact whatever the sign of the θ coefficients — bounding each
-    # max(0, s + y - (k - 1)) from below only would let the solver inflate it as soon
-    # as a coefficient turns positive, which perturbed solvers do produce.
+    # stock level, z[i, j] = 1 iff j <= s[i] + y[i]. 
     @variable(m, z_eta[i in 1:N, j in 1:ub[i]], Bin)
 
     @constraint(m, [i in 1:N], sum(z_eta[i, j] for j in 1:ub[i]) == s[i] + y[i])

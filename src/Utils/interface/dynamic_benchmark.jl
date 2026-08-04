@@ -78,13 +78,9 @@ function build_environment end
         -> AbstractEnvironment
 
 **Optional.** Rebuild a bare environment positioned at the state carried by `sample` and
-running on `scenario`, so that solvers taking an environment (e.g. the callable returned by
-[`generate_parametric_anticipative_solver`](@ref)) can be evaluated at an arbitrary state of
-a stored trajectory rather than only at the current state of a live environment.
-
-The benchmark decides which field of `sample` holds the state (typically `sample.state`).
-Implementations should be cheap: they are called once per solve, and must not mutate the
-state stored in `sample`.
+running on `scenario`. Useful for solvers that takes an environment as argument.
+Useful for algorithms that need to run an anticipative or parametric solver from a state of
+a stored trajectory.
 """
 function build_environment(b::AbstractDynamicBenchmark, ::DataSample, scenario)
     return error(
