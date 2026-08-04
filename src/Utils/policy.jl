@@ -109,7 +109,7 @@ function Base.show(io::IO, p::Policy)
     println(io, "$(p.name): $(p.description)")
     return nothing
 end
-"""scen
+"""
 $TYPEDSIGNATURES
 
 Run the policy and get the next decision on the given environment/instance.
