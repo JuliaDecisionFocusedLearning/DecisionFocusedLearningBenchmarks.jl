@@ -1,3 +1,35 @@
+# policy utils
+
+function mean_feature_order(env::Environment; rng::AbstractRNG=Xoshiro(nothing))
+    item_features = features(env)   # (d, N), price is a separate field
+    # if no features other than price, return a random order
+    if size(item_features, 1) == 0
+        return randperm(rng, item_count(env))
+    end
+    # else order items by the mean of their features
+    return sortperm(vec(mean(item_features; dims=1)))
+end
+
+function max_quotas_item_after_repl(
+    item_idx::Int,
+    replenishment::Vector{Int},
+    time_idx::Int,
+    quotas::Matrix{Int},
+    cons_mat::Matrix{Int},
+)
+    N = size(cons_mat, 2)
+    nb_constraints = size(cons_mat, 1)
+    return max(
+        0,
+        minimum([
+            quotas[time_idx, c] - sum(replenishment[j] * cons_mat[c, j] for j in 1:N) for
+            c in 1:nb_constraints if cons_mat[c, item_idx] == 1
+        ]),
+    )
+end
+
+# Policies 
+
 function greedy_policy(env::Environment; model_builder=highs_model)
     _, state = observe(env)
     N = item_count(env)
@@ -20,16 +52,55 @@ function random_policy(env::Environment, rng::AbstractRNG=Xoshiro(nothing))
     order_item = randperm(rng, N)
     t = current_epoch(env)
     for item in order_item
-        max_quota_item = max(
-            0,
-            minimum([
-                q[t, c] - sum(replenishment[j] * cons_mat[c, j] for j in 1:N) for
-                c in 1:nb_constraints(env.config) if cons_mat[c, item] == 1
-            ]),
-        )
+        max_quota_item = max_quotas_item_after_repl(item, replenishment, t, q, cons_mat)
         replenishment[item] = rand(rng, 0:max_quota_item)
     end
     return replenishment
+end
+
+function mean_anticipative_policy(
+    env::Environment;
+    rng::AbstractRNG=Xoshiro(nothing),
+    anticipative_results::AbstractVector{<:DataSample}=DataSample[],
+    order_item::Function=mean_feature_order,
+)
+    if isempty(anticipative_results)
+        @warn "mean_anticipative_policy: no anticipative results provided, falling back to lazy policy"
+        return lazy_policy(env)
+    end
+    N = item_count(env)
+    mean_anticipative_replenishment = zeros(Float64, N)
+    for sample in anticipative_results
+        mean_anticipative_replenishment .+= sample.y
+    end
+    mean_anticipative_replenishment ./= length(anticipative_results)
+    replenishment = zeros(Int, N)
+    t = current_epoch(env)
+    q = quotas(env)
+    cons_mat = constraints_matrix(env)
+    for item in order_item(env; rng=rng)
+        max_quota_item = max_quotas_item_after_repl(item, replenishment, t, q, cons_mat)
+        replenishment[item] = min(
+            round(Int, mean_anticipative_replenishment[item]), max_quota_item
+        )
+    end
+    return replenishment
+end
+
+"""
+$TYPEDEF
+
+Callable wrapping [`mean_anticipative_policy`](@ref) with a dataset of anticipative results.
+"""
+struct MeanAnticipativePolicyCall
+    anticipative_results::Vector{DataSample}
+    order_item::Function
+end
+
+function (p::MeanAnticipativePolicyCall)(env::Environment; kwargs...)
+    return mean_anticipative_policy(
+        env; kwargs..., anticipative_results=p.anticipative_results, order_item=p.order_item
+    )
 end
 
 """
@@ -44,7 +115,10 @@ objective is augmented with `κ * dot(θ, g(y))` to bias the decision towards th
 utilities.
 
 The solver is stopped after `time_limit` seconds (10 minutes by default), returning the
-best feasible solution found so far; pass `time_limit=nothing` to disable it.
+best feasible solution found so far; pass `time_limit=nothing` to disable it. If no feasible
+point was found at all, the policy falls back to replenishing nothing.
+
+`warm_start` hands the solver an initial all-zero replenishment.
 """
 function saa_policy(
     env::Environment;
@@ -54,6 +128,7 @@ function saa_policy(
     verbose::Bool=false,
     mip_gap::Float64=0.0,
     time_limit::Union{Real,Nothing}=600.0,
+    warm_start::Bool=true,
     θ=nothing,
     state::DRPState=env.state,
     κ::Float64=1.0,
@@ -156,12 +231,20 @@ function saa_policy(
     end
     @objective(m, Max, objective)
 
+    # Warm start: replenishing nothing is always feasible
+    if warm_start
+        for s_idx in 1:nb_scenarios, t in 1:T, i in 1:N
+            set_start_value(y[s_idx, t, i], 0)
+        end
+    end
+
     optimize!(m)
     if primal_status(m) == MOI.FEASIBLE_POINT
         return round.(Int, value.(y[1, 1, :]))
     else
-        @warn("No feasible points found.")
-        return nothing
+        # Fall back to a lazy decision instead of `nothing`
+        @warn "SAA: no feasible point found, falling back to lazy replenishment"
+        return zeros(Int, N)
     end
 end
 
@@ -177,6 +260,8 @@ struct SAAPolicyCall{M}
     nb_scenarios::Int
     "solver time limit in seconds, `nothing` to disable"
     time_limit::Union{Float64,Nothing}
+    "hand the solver an all-zero replenishment as initial solution"
+    warm_start::Bool
 end
 
 function SAAPolicyCall(
@@ -185,6 +270,7 @@ function SAAPolicyCall(
     mip_gap::Float64=1e-2,
     nb_scenarios::Int=1,
     time_limit::Union{Real,Nothing}=600.0,
+    warm_start::Bool=true,
 ) where {M}
     return SAAPolicyCall{M}(
         model_builder,
@@ -192,6 +278,7 @@ function SAAPolicyCall(
         mip_gap,
         nb_scenarios,
         isnothing(time_limit) ? nothing : Float64(time_limit),
+        warm_start,
     )
 end
 
@@ -204,5 +291,6 @@ function (p::SAAPolicyCall)(env::Environment; kwargs...)
         mip_gap=p.mip_gap,
         nb_scenarios=p.nb_scenarios,
         time_limit=p.time_limit,
+        warm_start=p.warm_start,
     )
 end

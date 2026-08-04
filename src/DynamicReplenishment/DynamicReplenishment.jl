@@ -15,7 +15,8 @@ using JuMP:
     set_silent,
     MOI,
     AffExpr,
-    set_attribute
+    set_attribute,
+    set_start_value
 using Random: Random, AbstractRNG, seed!, randperm, Xoshiro
 using Distributions: Poisson, Uniform, Gumbel
 using Flux: Chain, Dense, @layer, softplus, relu
@@ -207,6 +208,9 @@ over_stock_bound_cost(b::DynamicReplenishmentBenchmark) = b.over_stock_bound_cos
 nb_constraints(b::DynamicReplenishmentBenchmark) = size(b.constraints_matrix, 1)
 max_quotas(b::DynamicReplenishmentBenchmark) = b.max_quotas
 
+# The objective is a margin net of stock costs, maximized.
+Utils.is_minimization_problem(::DynamicReplenishmentBenchmark) = false
+
 include("utils.jl")
 
 include("state.jl")
@@ -227,6 +231,30 @@ function Utils.build_environment(
     b::DynamicReplenishmentBenchmark, rng::AbstractRNG; kwargs...
 )
     return Environment(b, rng)
+end
+
+"""
+$TYPEDSIGNATURES
+
+Rebuild an environment sitting at `sample.state` and running on `scenario`, so that the
+callable returned by [`Utils.generate_parametric_anticipative_solver`](@ref) can be applied
+at any epoch of a stored trajectory.
+
+The state is shared with `sample`, not copied: the solvers reading it must not mutate it.
+"""
+function Utils.build_environment(
+    ::DynamicReplenishmentBenchmark, sample::DataSample, scenario::Scenario
+)
+    hasproperty(sample, :state) || error(
+        "`build_environment` needs the epoch state in `sample.state`, got a DataSample " *
+        "with $(propertynames(sample)).",
+    )
+    state = sample.state
+    state isa DRPState ||
+        error("`sample.state` should be a `DRPState`, got a $(typeof(state)) instead.")
+    return Environment(;
+        config=state.config, state=state, scenario=scenario, stock_ini=stock_ini(state)
+    )
 end
 
 """
@@ -306,12 +334,18 @@ end
 """
 $TYPEDSIGNATURES
 
-Returns two policies for the dynamic replenishment benchmark:
-- `Greedy`: "policy that replenishes items in decreasing price order"
-- `Random`: "Policy that replenishes items in a random order with random quantities"
+Returns baseline policies for the dynamic replenishment benchmark: `Greedy`, `Random`,
+`Lazy`, `MeanAnticipative` and `SAA`.
+
+`MeanAnticipative` needs `anticipative_results`, the expert demonstrations it averages;
+left empty it falls back to `Lazy`. Remaining keyword arguments go to the SAA policy.
 """
 function Utils.generate_baseline_policies(
-    ::DynamicReplenishmentBenchmark; model_builder=highs_model, kwargs...
+    ::DynamicReplenishmentBenchmark;
+    model_builder=highs_model,
+    anticipative_results::AbstractVector{<:DataSample}=DataSample[],
+    order_item::Function=mean_feature_order,
+    kwargs...,
 )
     greedy = Policy(
         "Greedy", "policy that replenishes items in decreasing price order", greedy_policy
@@ -322,12 +356,17 @@ function Utils.generate_baseline_policies(
         random_policy,
     )
     lazy = Policy("Lazy", "Policy that replenishes nothing", lazy_policy)
+    mean_anticipative = Policy(
+        "MeanAnticipative",
+        "Policy that replenishes items in increasing mean feature order, with quantities equal to the mean of the anticipative results",
+        MeanAnticipativePolicyCall(anticipative_results, order_item),
+    )
     saa = Policy(
         "SAA",
         "Policy that solves a sample average approximation problem.",
         SAAPolicyCall(model_builder; kwargs...),
     )
-    return (; greedy, random, lazy, saa)
+    return (; greedy, random, lazy, mean_anticipative, saa)
 end
 
 export DynamicReplenishmentBenchmark

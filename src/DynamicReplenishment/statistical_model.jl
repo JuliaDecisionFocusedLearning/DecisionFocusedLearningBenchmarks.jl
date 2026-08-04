@@ -18,9 +18,9 @@ $TYPEDSIGNATURES
 
 """
 function Utils.generate_statistical_model(
-    b::DynamicReplenishmentBenchmark, seed=nothing; kwargs...
+    b::DynamicReplenishmentBenchmark; seed=nothing, kwargs...
 )
-    !isnothing(seed) || seed!(seed)
+    isnothing(seed) || seed!(seed)
     item_features_size = feature_count(b) + 10
     stock_features_size = item_features_size + 8
     θ_model = Chain(Dense(item_features_size => 1))
