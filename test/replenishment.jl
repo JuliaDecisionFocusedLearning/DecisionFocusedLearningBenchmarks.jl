@@ -269,9 +269,7 @@ end
     lazy_action = policies.lazy(env.env)
     @test DR.is_feasible(env.env.state, lazy_action)
     @test all(lazy_action .== 0)
-    mean_ant_action = DR.mean_anticipative_policy(
-        env.env; anticipative_results=greedy_traj
-    )
+    mean_ant_action = DR.mean_anticipative_policy(env.env; anticipative_results=greedy_traj)
     @test DR.is_feasible(env.env.state, mean_ant_action)
     @test sort(DR.mean_feature_order(env.env)) == 1:DR.item_count(b)
 end
