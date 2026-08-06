@@ -16,7 +16,7 @@ function read_dataset(decompressed_path::String, dtype::String="train")
     # Reshape for Flux
     terrain_images = permutedims(terrain_images, (2, 3, 4, 1))
     terrain_labels = permutedims(terrain_labels, (2, 3, 1))
-    terrain_weights = permutedims(terrain_weights, (2, 3, 1))
+    terrain_weights = Array{Float32}(permutedims(terrain_weights, (2, 3, 1)))
     # Normalize images
     terrain_images = Array{Float32}(terrain_images ./ 255)
     return terrain_images, terrain_labels, terrain_weights
