@@ -24,7 +24,9 @@ $TYPEDSIGNATURES
 Deterministic baseline policy: solves the deterministic MIP (ignores scenario delays).
 Returns a single labeled [`DataSample`](@ref) with `extra=(; scenarios)`.
 """
-function svs_deterministic_policy(ctx_sample::DataSample, scenarios; model_builder=highs_model)
+function svs_deterministic_policy(
+    ctx_sample::DataSample, scenarios; model_builder=highs_model
+)
     y = deterministic_mip(ctx_sample.instance; model_builder)
     return [
         DataSample(;
