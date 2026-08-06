@@ -182,7 +182,7 @@ $TYPEDSIGNATURES
 Transform the features in the dataset.
 """
 function StatsBase.transform(t, dataset::AbstractVector{<:DataSample})
-    return map(dataset) do d
+    return map(dataset) do d::DataSample
         (; context, extra, x, θ, y) = d
         return DataSample(; x=StatsBase.transform(t, x), θ, y, context..., extra)
     end
