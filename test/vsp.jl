@@ -31,21 +31,21 @@
     )
     @test length(saa_dataset) == N
     @test hasproperty(saa_dataset[1].extra, :scenarios)
-    @test saa_dataset[1].extra.scenarios isa Vector{VSPScenario}
+    @test saa_dataset[1].extra.scenarios isa Vector{VSPScenario{Nothing}}
     @test length(saa_dataset[1].extra.scenarios) == K
     det_dataset = generate_dataset(
         b, N; nb_scenarios=K, seed=0, rng=StableRNG(0), target_policy=policies.deterministic
     )
     @test length(det_dataset) == N
     @test hasproperty(det_dataset[1].extra, :scenarios)
-    @test det_dataset[1].extra.scenarios isa Vector{VSPScenario}
+    @test det_dataset[1].extra.scenarios isa Vector{VSPScenario{Nothing}}
     @test length(det_dataset[1].extra.scenarios) == K
     ls_dataset = generate_dataset(
         b, N; nb_scenarios=K, seed=0, rng=StableRNG(0), target_policy=policies.local_search
     )
     @test length(ls_dataset) == N
     @test hasproperty(ls_dataset[1].extra, :scenarios)
-    @test ls_dataset[1].extra.scenarios isa Vector{VSPScenario}
+    @test ls_dataset[1].extra.scenarios isa Vector{VSPScenario{Nothing}}
     @test length(ls_dataset[1].extra.scenarios) == K
 
     # Plots work unchanged

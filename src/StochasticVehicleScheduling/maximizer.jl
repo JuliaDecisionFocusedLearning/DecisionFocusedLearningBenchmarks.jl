@@ -4,7 +4,7 @@ $TYPEDSIGNATURES
 Given arcs weights θ, solve the deterministic VSP problem associated to `instance`.
 """
 function vsp_maximizer(
-    θ::AbstractVector; instance::Instance, model_builder=highs_model, silent=true
+    θ::AbstractVector; instance::Instance, model_builder=highs_model, silent=true, kwargs...
 )
     (; graph) = instance
 
