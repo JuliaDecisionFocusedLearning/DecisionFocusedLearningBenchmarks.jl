@@ -86,16 +86,18 @@ Each policy has signature `(ctx_sample, scenarios) -> Vector{DataSample}`.
 """
 function svs_generate_baseline_policies(::StochasticVehicleSchedulingBenchmark)
     return (;
-        deterministic=Policy(
+        deterministic=Policy{StochasticVehicleSchedulingBenchmark}(
             "Deterministic MIP", "Ignores delays", svs_deterministic_policy
         ),
-        saa=Policy("SAA (col gen)", "Stochastic MIP over K scenarios", svs_saa_policy),
-        saa_mip=Policy(
+        saa=Policy{StochasticVehicleSchedulingBenchmark}(
+            "SAA (col gen)", "Stochastic MIP over K scenarios", svs_saa_policy
+        ),
+        saa_mip=Policy{StochasticVehicleSchedulingBenchmark}(
             "SAA (exact MIP)",
             "Exact stochastic MIP over K scenarios via compact linearized formulation",
             svs_saa_mip_policy,
         ),
-        local_search=Policy(
+        local_search=Policy{StochasticVehicleSchedulingBenchmark}(
             "Local search", "Heuristic with K scenarios", svs_local_search_policy
         ),
     )

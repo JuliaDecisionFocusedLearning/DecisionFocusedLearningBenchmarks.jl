@@ -125,7 +125,11 @@ Return the named baseline policies for [`ContextualStochasticArgmaxBenchmark`](@
 Each policy has signature `(ctx_sample, scenarios) -> Vector{DataSample}`.
 """
 function Utils.generate_baseline_policies(::ContextualStochasticArgmaxBenchmark)
-    return (; saa=Policy("SAA", "argmax of mean scenarios", csa_saa_policy))
+    return (;
+        saa=Policy{ContextualStochasticArgmaxBenchmark}(
+            "SAA", "argmax of mean scenarios", csa_saa_policy
+        ),
+    )
 end
 
 """

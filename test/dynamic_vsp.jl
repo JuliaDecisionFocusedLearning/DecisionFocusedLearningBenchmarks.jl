@@ -52,6 +52,26 @@
     @test isapprox(cost, cost2; atol=1e-5)
 end
 
+@testset "DVSP - AnticipativePolicy (full-horizon policy)" begin
+    using DecisionFocusedLearningBenchmarks.DynamicVehicleScheduling
+
+    b = DynamicVehicleSchedulingBenchmark(; two_dimensional_features=true)
+    env = generate_environment(b; seed=0)
+
+    policy = DynamicVehicleScheduling.AnticipativePolicy()
+    @test policy isa AbstractTrajectoryPolicy{DynamicVehicleSchedulingBenchmark}
+
+    r, dataset = evaluate_policy!(policy, env; nb_epochs=3)
+
+    # generate_anticipative_solver resets to the same initial seed by default, so it
+    # should reproduce the exact same trajectory as the full-horizon policy above.
+    trajectory = generate_anticipative_solver(b)(env; nb_epochs=3)
+
+    @test length(dataset) == length(trajectory) == 3
+    @test r ≈ sum(s.reward for s in trajectory)
+    @test all(d.y == t.y for (d, t) in zip(dataset, trajectory))
+end
+
 @testset "DVSP - generate_dataset with environments" begin
     using DecisionFocusedLearningBenchmarks.DynamicVehicleScheduling
 
