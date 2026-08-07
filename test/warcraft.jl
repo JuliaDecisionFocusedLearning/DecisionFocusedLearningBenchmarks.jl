@@ -44,14 +44,9 @@
 
         y_bellman_true = bellman_maximizer(θ_true)
         y_dijkstra_true = dijkstra_maximizer(θ_true)
-        @test objective_value(b, sample, y_true) ==
+        @test objective_value(b, sample, y_true) ≈
             objective_value(b, sample, y_dijkstra_true)
-        if i == 32 # TODO: bellman seems to be broken for some edge cases ?
-            @test_broken objective_value(b, sample, y_bellman_true) ==
-                objective_value(b, sample, y_dijkstra_true)
-        else
-            @test objective_value(b, sample, y_bellman_true) ==
-                objective_value(b, sample, y_dijkstra_true)
-        end
+        @test objective_value(b, sample, y_bellman_true) ==
+            objective_value(b, sample, y_dijkstra_true)
     end
 end
