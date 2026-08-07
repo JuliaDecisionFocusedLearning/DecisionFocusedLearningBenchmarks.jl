@@ -182,9 +182,10 @@ $TYPEDSIGNATURES
 Transform the features in the dataset.
 """
 function StatsBase.transform(t, dataset::AbstractVector{<:DataSample})
-    return map(dataset) do d
+    return map(dataset) do d::DataSample
         (; context, extra, x, θ, y) = d
-        return DataSample(; x=StatsBase.transform(t, x), θ, y, context..., extra)
+        x_transformed = isnothing(x) ? nothing : StatsBase.transform(t, x)
+        return DataSample(; x=x_transformed, θ, y, context..., extra)
     end
 end
 
@@ -195,7 +196,7 @@ Transform the features in the dataset, in place.
 """
 function StatsBase.transform!(t, dataset::AbstractVector{<:DataSample})
     for d in dataset
-        StatsBase.transform!(t, d.x)
+        isnothing(d.x) || StatsBase.transform!(t, d.x)
     end
 end
 
@@ -207,7 +208,8 @@ Reconstruct the features in the dataset.
 function StatsBase.reconstruct(t, dataset::AbstractVector{<:DataSample})
     return map(dataset) do d
         (; context, extra, x, θ, y) = d
-        return DataSample(StatsBase.reconstruct(t, x), θ, y, context, extra)
+        x_reconstructed = isnothing(x) ? nothing : StatsBase.reconstruct(t, x)
+        return DataSample(x_reconstructed, θ, y, context, extra)
     end
 end
 
