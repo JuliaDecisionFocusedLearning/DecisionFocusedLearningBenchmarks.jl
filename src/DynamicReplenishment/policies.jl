@@ -187,6 +187,7 @@ function saa_policy(
     N = item_count(env)
     T = max_steps(env) - current_epoch(env) + 1
     n_customers = [nb_customers(scenario)[current_epoch(env):end] for scenario in scenarios]
+    q = quotas(env)[current_epoch(env):end, :]
     s0 = stock(env)
     ## Variables
     @variable(m, y[1:nb_scenarios, 1:T, 1:N] >= 0, Int) # replenishments
@@ -227,7 +228,7 @@ function saa_policy(
             scenarios[s_idx].utilities[current_epoch(env):end],
             bigM_s[s_idx],
         )
-        quota_constraints!(m, y[s_idx, :, :], T, N, constraints_matrix(env), quotas(env))
+        quota_constraints!(m, y[s_idx, :, :], T, N, constraints_matrix(env), q)
         physical_stock_constraints!(
             m,
             y[s_idx, :, :],
@@ -333,5 +334,89 @@ function (p::SAAPolicyCall)(env::Environment; kwargs...)
         nb_scenarios=p.nb_scenarios,
         time_limit=p.time_limit,
         warm_start=p.warm_start,
+    )
+end
+
+"""
+$TYPEDEF
+
+Full-horizon anticipative policy for the dynamic replenishment benchmark.
+
+# Fields
+$TYPEDFIELDS
+"""
+struct AnticipativePolicy{M} <:
+       Utils.AbstractTrajectoryPolicy{DynamicReplenishmentBenchmark}
+    "JuMP model builder handed to [`anticipative_solver`](@ref)"
+    model_builder::M
+    "relative MIP gap tolerance"
+    mip_gap::Float64
+    "solver time limit in seconds, `nothing` to solve to optimality"
+    time_limit::Union{Float64,Nothing}
+end
+
+function AnticipativePolicy(
+    model_builder::M=highs_model; mip_gap::Real=0.0, time_limit::Union{Real,Nothing}=nothing
+) where {M}
+    return AnticipativePolicy{M}(
+        model_builder,
+        Float64(mip_gap),
+        isnothing(time_limit) ? nothing : Float64(time_limit),
+    )
+end
+
+"""
+$TYPEDSIGNATURES
+
+Solve the whole remaining horizon at once via [`anticipative_solver`](@ref) and return
+`(total_reward, dataset)`.
+"""
+function (p::AnticipativePolicy)(env::Environment, rng::AbstractRNG; kwargs...)
+    total_reward, dataset = anticipative_solver(
+        env,
+        rng;
+        reset_env=false,
+        mip_gap=p.mip_gap,
+        time_limit=p.time_limit,
+        kwargs...,
+        model_builder=p.model_builder,
+    )
+    if isnothing(total_reward)
+        # `anticipative_solver` already warned; keep the `(reward, dataset)` contract so a
+        # single infeasible episode does not blow up a whole benchmark run.
+        return 0.0, DataSample[]
+    end
+    return total_reward, dataset
+end
+
+"""
+$TYPEDSIGNATURES
+
+Record a dynamic replenishment rollout step with the fields: 
+- the pre-decision `state` in the context,
+- `next_sales` and `customers` in `extra`: the sales and the number of customers of time t
+- the reward of the step in `extra`.
+"""
+function Utils.rollout_step!(
+    policy::Utils.AbstractPolicy{DynamicReplenishmentBenchmark},
+    env::Environment,
+    rng::AbstractRNG;
+    kwargs...,
+)
+    y = policy(env; kwargs...)
+    features, state = observe(env)
+    state_copy = deepcopy(state)
+    t = current_epoch(env)
+    reward = step!(env, y, rng)
+    return reward,
+    DataSample(;
+        x=features,
+        y=y,
+        state=state_copy,
+        extra=(;
+            next_sales=sales_history(state)[t, :],
+            customers=customer_history(state)[t],
+            reward,
+        ),
     )
 end

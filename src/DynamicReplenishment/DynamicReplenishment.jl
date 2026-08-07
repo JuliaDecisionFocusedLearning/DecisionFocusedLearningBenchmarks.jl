@@ -11,6 +11,7 @@ using JuMP:
     value,
     fix,
     primal_status,
+    termination_status,
     objective_value,
     set_silent,
     MOI,
@@ -158,7 +159,7 @@ function DynamicReplenishmentBenchmark(;
     virtual_stock_cost = prices ./ (max_steps * 10)
     physical_stock_cost = prices ./ (max_steps * 5)
     over_stock_bound_cost = maximum(prices)
-    max_quotas = Matrix{Float64}(undef, max_steps, N)
+    max_quotas = Matrix{Int}(undef, max_steps, N)
     for i in 1:N, t in 1:max_steps
         max_quotas[t, i] = minimum(
             quotas[t, c] for
@@ -284,20 +285,59 @@ Callable wrapping [`anticipative_solver`](@ref) with a fixed `model_builder`, re
 """
 struct AnticipativeSolverCall{M}
     model_builder::M
+    "relative MIP gap tolerance"
+    mip_gap::Float64
+    "solver time limit in seconds, `nothing` to solve to optimality"
+    time_limit::Union{Float64,Nothing}
 end
+
+function AnticipativeSolverCall(
+    model_builder::M; mip_gap::Real=0.0, time_limit::Union{Real,Nothing}=nothing
+) where {M}
+    return AnticipativeSolverCall{M}(
+        model_builder,
+        Float64(mip_gap),
+        isnothing(time_limit) ? nothing : Float64(time_limit),
+    )
+end
+
 function (s::AnticipativeSolverCall)(
     env::Utils.SeededEnvironment; reset_env=false, kwargs...
 )
     _, trajectory = anticipative_solver(
-        env.env, env.rng; reset_env, kwargs..., model_builder=s.model_builder
+        env.env,
+        env.rng;
+        reset_env,
+        mip_gap=s.mip_gap,
+        time_limit=s.time_limit,
+        kwargs...,
+        model_builder=s.model_builder,
     )
     return trajectory
 end
 
+"""
+$TYPEDSIGNATURES
+
+Return the anticipative solver for the dynamic replenishment benchmark, as a callable
+taking a [`SeededEnvironment`](@ref) and returning the anticipative trajectory.
+
+`mip_gap` and `time_limit` are baked into the returned callable, so that callers that only
+hand it an environment (e.g. an imitation-learning expert loop) can still bound how long
+each expert call is allowed to run. Both stay overridable per call.
+
+This callable drops the MILP objective value. When that bound is what you need — it is the
+reference every optimality gap is measured against — use [`AnticipativePolicy`](@ref)
+instead: as an [`AbstractTrajectoryPolicy`](@ref), `rollout!` returns it alongside the
+trajectory.
+"""
 function Utils.generate_anticipative_solver(
-    ::DynamicReplenishmentBenchmark; model_builder=highs_model
+    ::DynamicReplenishmentBenchmark;
+    model_builder=highs_model,
+    mip_gap::Real=0.0,
+    time_limit::Union{Real,Nothing}=nothing,
 )
-    return AnticipativeSolverCall(model_builder)
+    return AnticipativeSolverCall(model_builder; mip_gap, time_limit)
 end
 
 """
@@ -308,7 +348,22 @@ Callable wrapping [`anticipative_solver`](@ref) (scenario-conditioned) with a fi
 """
 struct ParametricAnticipativeSolverCall{M}
     model_builder::M
+    "relative MIP gap tolerance"
+    mip_gap::Float64
+    "solver time limit in seconds, `nothing` to solve to optimality"
+    time_limit::Union{Float64,Nothing}
 end
+
+function ParametricAnticipativeSolverCall(
+    model_builder::M; mip_gap::Real=0.0, time_limit::Union{Real,Nothing}=nothing
+) where {M}
+    return ParametricAnticipativeSolverCall{M}(
+        model_builder,
+        Float64(mip_gap),
+        isnothing(time_limit) ? nothing : Float64(time_limit),
+    )
+end
+
 function (s::ParametricAnticipativeSolverCall)(
     θ, scenario::Scenario, env::Utils.SeededEnvironment; reset_env=true, kwargs...
 )
@@ -319,6 +374,8 @@ function (s::ParametricAnticipativeSolverCall)(
         scenario;
         reset_env=false,
         θ,
+        mip_gap=s.mip_gap,
+        time_limit=s.time_limit,
         kwargs...,
         model_builder=s.model_builder,
     )
@@ -326,9 +383,12 @@ function (s::ParametricAnticipativeSolverCall)(
 end
 
 function Utils.generate_parametric_anticipative_solver(
-    ::DynamicReplenishmentBenchmark; model_builder=highs_model
+    ::DynamicReplenishmentBenchmark;
+    model_builder=highs_model,
+    mip_gap::Real=0.0,
+    time_limit::Union{Real,Nothing}=nothing,
 )
-    return ParametricAnticipativeSolverCall(model_builder)
+    return ParametricAnticipativeSolverCall(model_builder; mip_gap, time_limit)
 end
 
 """
@@ -348,26 +408,28 @@ function Utils.generate_baseline_policies(
     order_item::Function=mean_feature_order,
     kwargs...,
 )
-    greedy = Policy(
+    greedy = Policy{DynamicReplenishmentBenchmark}(
         "Greedy", "policy that replenishes items in decreasing price order", greedy_policy
     )
-    random = Policy(
+    random = Policy{DynamicReplenishmentBenchmark}(
         "Random",
         "Policy that replenishes items in a random order with random quantities",
         random_policy,
     )
-    lazy = Policy("Lazy", "Policy that replenishes nothing", lazy_policy)
-    mean_anticipative = Policy(
+    lazy = Policy{DynamicReplenishmentBenchmark}(
+        "Lazy", "Policy that replenishes nothing", lazy_policy
+    )
+    mean_anticipative = Policy{DynamicReplenishmentBenchmark}(
         "MeanAnticipative",
         "Policy that replenishes items in increasing mean feature order, with quantities equal to the mean of the anticipative results over the whole horizon",
         MeanAnticipativePolicyCall(anticipative_results, order_item),
     )
-    mean_anticipative_per_epoch = Policy(
+    mean_anticipative_per_epoch = Policy{DynamicReplenishmentBenchmark}(
         "MeanAnticipativePerEpoch",
         "Policy that replenishes items in increasing mean feature order, with quantities equal to the mean of the anticipative results at the current epoch",
         MeanAnticipativePolicyCall(anticipative_results, order_item; per_epoch=true),
     )
-    saa = Policy(
+    saa = Policy{DynamicReplenishmentBenchmark}(
         "SAA",
         "Policy that solves a sample average approximation problem.",
         SAAPolicyCall(model_builder; kwargs...),

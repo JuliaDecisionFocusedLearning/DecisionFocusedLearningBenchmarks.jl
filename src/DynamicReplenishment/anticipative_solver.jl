@@ -329,6 +329,7 @@ function anticipative_solver(
     state::DRPState=env.state,
     κ::Float64=1.0,
     mip_gap::Float64=0.0,
+    time_limit::Union{Real,Nothing}=nothing,
 )
     if reset_env
         reset!(env, rng)
@@ -348,6 +349,7 @@ function anticipative_solver(
     m = model_builder()
     verbose || set_silent(m)
     set_attribute(m, MOI.RelativeGapTolerance(), mip_gap)
+    isnothing(time_limit) || set_attribute(m, MOI.TimeLimitSec(), Float64(time_limit))
     N = item_count(env)
     T = max_steps(env) - current_epoch(env) + 1
     n_customers = nb_customers(scenario)[current_epoch(env):end]

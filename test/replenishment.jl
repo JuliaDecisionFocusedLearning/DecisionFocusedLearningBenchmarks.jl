@@ -320,7 +320,7 @@ end
     r_greedy, greedy_traj = evaluate_policy!(policies.greedy, env)
     @test length(ant_traj) == DR.max_steps(b) == length(greedy_traj)
     for g_sample in greedy_traj
-        @test DR.is_feasible(g_sample.instance, g_sample.y)
+        @test DR.is_feasible(g_sample.state, g_sample.y)
     end
     for ant_sample in ant_traj
         @test DR.is_feasible(ant_sample.state, ant_sample.y)
@@ -331,23 +331,46 @@ end
 @testset "DynamicReplenishment - rollout cost matches anticipative solver objective" begin
     b = DynamicReplenishmentBenchmark(; N=5, max_steps=4)
     env = generate_environment(b; seed=0)
-    # pin env.env.scenario to the one `evaluate_policy!` will reproduce when it resets
-    reset_to_initial!(env)
-    rng = Xoshiro(7)
-    ant_obj, ant_traj = DR.anticipative_solver(
-        env.env, rng, env.env.scenario; reset_env=false
-    )
+    # `AnticipativePolicy` is a trajectory policy: `evaluate_policy!` resets the wrapper to
+    # its initial seed, then returns the MILP objective and the planned trajectory in one
+    # call, without stepping the environment.
+    ant_obj, ant_traj = evaluate_policy!(DR.AnticipativePolicy(), env)
+    @test length(ant_traj) == DR.max_steps(b)
 
-    replay_policy = Policy(
-        "Replay",
-        "replays fixed anticipative replenishment decisions",
-        (e; kwargs...) -> ant_traj[DR.current_epoch(e)].y,
-    )
-    total_reward, dataset = evaluate_policy!(replay_policy, env)
+    # Replaying those decisions through the simulator must reproduce the MILP objective:
+    # this is what makes `ant_obj` usable as the reference bound for optimality gaps.
+    # Resetting to the same seed replays the very same scenario.
+    reset_to_initial!(env)
+    total_reward = sum(step!(env.env, sample.y, env.rng) for sample in ant_traj)
 
     @test isapprox(total_reward, ant_obj; rtol=1e-5)
     @test isapprox(DR.total_cost(env.env.state), ant_obj; rtol=1e-5)
-    @test isapprox(sum(s.extra.reward for s in dataset), total_reward; rtol=1e-5)
+end
+
+@testset "DynamicReplenishment - rollout logs the anticipative solver's fields" begin
+    b = DynamicReplenishmentBenchmark(; N=5, max_steps=4)
+    env = generate_environment(b; seed=0)
+
+    ant_obj, ant_traj = evaluate_policy!(DR.AnticipativePolicy(), env)
+    total_reward, traj = evaluate_policy!(generate_baseline_policies(b).greedy, env)
+
+    # A rollout sample carries everything an anticipative sample does, plus the step reward.
+    for field in propertynames(ant_traj[1])
+        @test hasproperty(traj[1], field)
+    end
+    @test hasproperty(traj[1], :reward)
+    # `state` (not `instance`) is what both dataset kinds use, so `per_epoch` filtering works
+    @test all(DR.current_epoch(s.state) == t for (t, s) in enumerate(traj))
+    @test DR.mean_replenishment(traj, DR.item_count(b), 2; per_epoch=true) ≈ traj[2].y
+
+    # `next_sales` / `customers` describe the epoch the decision was taken at
+    final_state = env.env.state
+    for (t, s) in enumerate(traj)
+        @test s.next_sales == DR.sales_history(final_state)[t, :]
+        @test s.customers == DR.customer_history(final_state)[t]
+    end
+    @test isapprox(sum(s.reward for s in traj), total_reward; rtol=1e-5)
+    @test total_reward <= ant_obj
 end
 
 @testset "DynamicReplenishment - Parametric Anticipative Solver" begin
@@ -363,7 +386,7 @@ end
     r_greedy, greedy_traj = evaluate_policy!(policies.greedy, env)
     @test length(ant_traj) == DR.max_steps(b) == length(greedy_traj)
     for g_sample in greedy_traj
-        @test DR.is_feasible(g_sample.instance, g_sample.y)
+        @test DR.is_feasible(g_sample.state, g_sample.y)
     end
     for ant_sample in ant_traj
         @test DR.is_feasible(ant_sample.state, ant_sample.y)
@@ -378,7 +401,7 @@ end
     _, traj = evaluate_policy!(policies.greedy, env)
     maximizer = generate_maximizer(b)
     model = generate_statistical_model(b)
-    x_1, state_1 = traj[1].x, traj[1].instance
+    x_1, state_1 = traj[1].x, traj[1].state
     N = DR.item_count(b)
     ub = DR.ub_per_item(state_1)
 
