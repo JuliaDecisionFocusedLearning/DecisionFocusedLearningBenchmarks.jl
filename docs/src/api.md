@@ -86,6 +86,13 @@ Modules = [DecisionFocusedLearningBenchmarks.StochasticVehicleScheduling]
 Private = false
 ```
 
+### Dynamic Replenishment
+
+```@autodocs
+Modules = [DecisionFocusedLearningBenchmarks.DynamicReplenishment]
+Private = false
+```
+
 ### Warcraft
 
 ```@autodocs
@@ -103,6 +110,7 @@ Modules = [
     DecisionFocusedLearningBenchmarks.ContextualStochasticArgmax,
     DecisionFocusedLearningBenchmarks.DynamicVehicleScheduling,
     DecisionFocusedLearningBenchmarks.DynamicAssortment,
+    DecisionFocusedLearningBenchmarks.DynamicReplenishment,
     DecisionFocusedLearningBenchmarks.FixedSizeShortestPath,
     DecisionFocusedLearningBenchmarks.Maintenance,
     DecisionFocusedLearningBenchmarks.PortfolioOptimization,

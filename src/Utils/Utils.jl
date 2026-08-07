@@ -3,7 +3,7 @@ module Utils
 using DocStringExtensions: TYPEDEF, TYPEDFIELDS, TYPEDSIGNATURES
 using Flux: softplus
 using HiGHS: HiGHS
-using JuMP: Model
+using JuMP: Model, set_attribute
 using LinearAlgebra: dot
 using Random: Random, Xoshiro, AbstractRNG
 using SCIP: SCIP
