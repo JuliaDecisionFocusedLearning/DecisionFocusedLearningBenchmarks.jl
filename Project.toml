@@ -44,7 +44,7 @@ DFLBenchmarksPlotsExt = "Plots"
 [compat]
 Combinatorics = "1.0.3"
 ConstrainedShortestPaths = "0.6.6"
-DataDeps = "0.7"
+DataDeps = "0.7, 1.0"
 Distributions = "0.25"
 DocStringExtensions = "0.9"
 FileIO = "1.17.0"
