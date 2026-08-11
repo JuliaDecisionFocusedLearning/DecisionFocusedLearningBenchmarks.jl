@@ -27,6 +27,12 @@ function replenishment_problem(
     ub = ub_per_item(state)
     t = current_epoch(state)
 
+    if !all(isfinite, Θ) || maximum(abs, Θ) > 1e12
+        @warn "Maximiser: Θ infinite" max_abs_theta = maximum(abs, Θ) nonfinite_theta = count(
+            !isfinite, Θ
+        ) maxlog = 10
+    end
+
     m = model_builder()
     set_silent(m)
     # Variables
@@ -59,6 +65,15 @@ function replenishment_problem(
     end
 
     optimize!(m)
+
+    if primal_status(m) == MOI.FEASIBLE_POINT
+        obj = objective_value(m)
+        if !isfinite(obj) || abs(obj) >= 1e20
+            @warn "Maximiser: infinite objective" objective = obj max_abs_theta = maximum(
+                abs, Θ
+            ) nonfinite_theta = count(!isfinite, Θ) maxlog = 10
+        end
+    end
 
     return Int.(round.(value.(y)))
 end

@@ -316,21 +316,6 @@ function (s::AnticipativeSolverCall)(
     return trajectory
 end
 
-"""
-$TYPEDSIGNATURES
-
-Return the anticipative solver for the dynamic replenishment benchmark, as a callable
-taking a [`SeededEnvironment`](@ref) and returning the anticipative trajectory.
-
-`mip_gap` and `time_limit` are baked into the returned callable, so that callers that only
-hand it an environment (e.g. an imitation-learning expert loop) can still bound how long
-each expert call is allowed to run. Both stay overridable per call.
-
-This callable drops the MILP objective value. When that bound is what you need — it is the
-reference every optimality gap is measured against — use [`AnticipativePolicy`](@ref)
-instead: as an [`AbstractTrajectoryPolicy`](@ref), `rollout!` returns it alongside the
-trajectory.
-"""
 function Utils.generate_anticipative_solver(
     ::DynamicReplenishmentBenchmark;
     model_builder=highs_model,

@@ -379,6 +379,11 @@ function anticipative_solver(
     ## Objective
     objective = compute_objective(y, s, α, v, T, s_min, s_sup, env, n_customers)
     if !isnothing(θ)
+        if !all(isfinite, θ) || maximum(abs, θ) > 1e12
+            @warn "Solveur anticipatif paramétré : θ hors échelle en entrée" max_abs_theta = maximum(
+                abs, θ
+            ) nonfinite_theta = count(!isfinite, θ) epoch = current_epoch(env) maxlog = 10
+        end
         g_y = g_model(m, N, ub_per_item(state), y[1, :], s[1, :])
         @assert length(θ) == N + sum(ub_per_item(state))
         objective += κ * dot(θ, g_y)
@@ -388,6 +393,11 @@ function anticipative_solver(
     optimize!(m)
     if primal_status(m) == MOI.FEASIBLE_POINT
         obj_val = objective_value(m)
+        if !isnothing(θ) && (!isfinite(obj_val) || abs(obj_val) >= 1e20)
+            @warn "Parametric Anticipatif Solver: infinite objective" objective = obj_val max_abs_theta = maximum(
+                abs, θ
+            ) nonfinite_theta = count(!isfinite, θ) epoch = current_epoch(env) maxlog = 10
+        end
         dataset = solver_variable_to_dataset(
             env,
             scenario,
