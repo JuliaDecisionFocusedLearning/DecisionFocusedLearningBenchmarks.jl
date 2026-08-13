@@ -4,7 +4,7 @@ using ..Utils
 using DocStringExtensions: TYPEDEF, TYPEDFIELDS, TYPEDSIGNATURES
 using Flux: Chain, Dense
 using LinearAlgebra: dot, norm
-using Random: Random, Xoshiro, AbstractRNG
+using Random: Random, AbstractRNG
 
 include("polytope.jl")
 
@@ -78,13 +78,10 @@ $TYPEDSIGNATURES
 
 Generate a statistical model for the [`Argmax2DBenchmark`](@ref).
 """
-function Utils.generate_statistical_model(
-    bench::Argmax2DBenchmark; seed=nothing, rng=Xoshiro(seed)
-)
-    Random.seed!(rng, seed)
+function Utils.generate_statistical_model(bench::Argmax2DBenchmark; seed=nothing)
+    Random.seed!(seed)
     (; nb_features) = bench
-    model = Dense(nb_features => 2; bias=false)
-    return model
+    return Dense(nb_features => 2; bias=false)
 end
 
 export Argmax2DBenchmark

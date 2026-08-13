@@ -6,7 +6,7 @@ using DocStringExtensions: TYPEDEF, TYPEDFIELDS, TYPEDSIGNATURES, SIGNATURES
 using Distributions: Uniform, Categorical
 using Flux: Chain, Dense
 using LinearAlgebra: dot
-using Random: Random, AbstractRNG, Xoshiro
+using Random: Random, AbstractRNG
 using Statistics: mean
 
 using Combinatorics: combinations

@@ -3,7 +3,7 @@ module Argmax
 using ..Utils
 using DocStringExtensions: TYPEDEF, TYPEDFIELDS, TYPEDSIGNATURES
 using Flux: Chain, Dense
-using Random
+using Random: Random, AbstractRNG, seed!, randn
 
 using LinearAlgebra: dot
 

@@ -1,5 +1,13 @@
 """
-    neg_tensor(x)
+$TYPEDSIGNATURES
+
+Return a [`StableRNG`](@ref) seeded with `seed`, or with a random seed if `seed` is `nothing`.
+"""
+make_rng(seed::Integer) = StableRNG(seed)
+make_rng(::Nothing) = StableRNG(rand(RandomDevice(), UInt))
+
+"""
+$TYPEDSIGNATURES
 
 Compute minus softplus element-wise on tensor `x`.
 """
@@ -8,7 +16,7 @@ function neg_tensor(x)
 end
 
 """
-    squeeze_last_dims(x)
+$TYPEDSIGNATURES
 
 Squeeze two last dimensions on tensor `x`.
 """
@@ -17,7 +25,7 @@ function squeeze_last_dims(x)
 end
 
 """
-    average_tensor(x)
+$TYPEDSIGNATURES
 
 Average the tensor `x` along its third axis.
 """

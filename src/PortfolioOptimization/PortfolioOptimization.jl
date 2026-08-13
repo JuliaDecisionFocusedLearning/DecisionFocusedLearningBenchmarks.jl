@@ -7,7 +7,7 @@ using Flux: Chain, Dense
 using Ipopt: Ipopt
 using JuMP: @variable, @objective, @constraint, optimize!, value, Model, set_silent
 using LinearAlgebra: I, dot
-using Random: Random, AbstractRNG, Xoshiro
+using Random: Random, AbstractRNG
 
 """
 $TYPEDEF
@@ -48,9 +48,9 @@ $TYPEDSIGNATURES
 Constructor for [`PortfolioOptimizationBenchmark`](@ref).
 """
 function PortfolioOptimizationBenchmark(;
-    d::Int=50, p::Int=5, deg::Int=1, ν::Float32=1.0f0, seed=0
+    d::Int=50, p::Int=5, deg::Int=1, ν::Float32=1.0f0, seed=nothing
 )
-    rng = Xoshiro(seed)
+    rng = Utils.make_rng(seed)
     f = randn(rng, Float32, 4)
     L = Float32.(rand(rng, Uniform(-0.0025ν, 0.0025ν), d, 4))
     Σ = L * L' + (0.01f0ν)^2 * I
