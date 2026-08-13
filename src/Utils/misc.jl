@@ -1,7 +1,7 @@
 """
 $TYPEDSIGNATURES
 
-Return a [`StableRNG`](@ref) seeded with `seed`, or with a random seed if `seed` is `nothing`.
+Return a `StableRNG` seeded with `seed`, or with a random seed if `seed` is `nothing`.
 """
 make_rng(seed::Integer) = StableRNG(seed)
 make_rng(::Nothing) = StableRNG(rand(RandomDevice(), UInt))
