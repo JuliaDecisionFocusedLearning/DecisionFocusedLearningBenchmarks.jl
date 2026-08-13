@@ -13,7 +13,7 @@ using IterTools: partition
 using JSON
 using JuMP
 using Printf: @printf, @sprintf
-using Random: Random, AbstractRNG, Xoshiro, seed!, randperm
+using Random: Random, AbstractRNG, seed!, randperm
 using Requires: @require
 using Statistics: mean, quantile
 
@@ -63,13 +63,17 @@ Reads from pre-existing DVRPTW files and creates [`DVSPEnv`](@ref) environments
 wrapped in [`SeededEnvironment`](@ref) for reproducible episode replay.
 """
 function Utils.generate_environments(
-    b::DynamicVehicleSchedulingBenchmark, n::Int; seed=nothing, rng=Xoshiro(seed), kwargs...
+    b::DynamicVehicleSchedulingBenchmark,
+    n::Int;
+    seed=nothing,
+    rng=Utils.make_rng(seed),
+    kwargs...,
 )
     (; max_requests_per_epoch, Δ_dispatch, epoch_duration, two_dimensional_features) = b
     files = readdir(datadep"dvrptw"; join=true)
     n = min(n, length(files))
-    gen_rng = Xoshiro(rand(rng, UInt))
-    seed_rng = Xoshiro(rand(rng, UInt))
+    gen_rng = Utils.make_rng(rand(rng, UInt))
+    seed_rng = Utils.make_rng(rand(rng, UInt))
     return [
         Utils.SeededEnvironment(
             DVSPEnv(
