@@ -1,10 +1,11 @@
 module SubsetSelection
 
 using ..Utils
+using ..Utils: LinearModel
 using DocStringExtensions: TYPEDEF, TYPEDFIELDS, TYPEDSIGNATURES
-using Flux: Chain, Dense
+using Lux: Dense
 using LinearAlgebra: dot
-using Random
+using Random: AbstractRNG
 
 """
 $TYPEDEF
@@ -35,12 +36,14 @@ end
 Utils.objective_value(::SubsetSelectionBenchmark, sample::DataSample, y) = dot(sample.θ, y)
 Utils.is_minimization_problem(::SubsetSelectionBenchmark) = false
 
-function SubsetSelectionBenchmark(; n::Int=25, k::Int=5, identity_mapping::Bool=true)
+function SubsetSelectionBenchmark(;
+    n::Int=25, k::Int=5, identity_mapping::Bool=true, seed=nothing
+)
     @assert n >= k "number of items n must be greater than k"
     mapping = if identity_mapping
         copy
     else
-        Dense(n => n; bias=false)
+        LinearModel(randn(Utils.make_rng(seed), Float32, n, n))
     end
     return SubsetSelectionBenchmark(n, k, mapping)
 end
@@ -78,12 +81,11 @@ end
 """
 $TYPEDSIGNATURES
 
-Initialize a linear model for `bench` using `Flux`.
+Returns a Lux model architecture for the subset selection benchmark.
 """
-function Utils.generate_statistical_model(bench::SubsetSelectionBenchmark; seed=nothing)
-    Random.seed!(seed)
+function Utils.generate_statistical_model(bench::SubsetSelectionBenchmark)
     (; n) = bench
-    return Dense(n => n; bias=false)
+    return Dense(n => n; use_bias=false)
 end
 
 export SubsetSelectionBenchmark

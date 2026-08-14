@@ -4,15 +4,22 @@ using ..Utils
 
 using DataDeps: @datadep_str
 using DocStringExtensions: TYPEDEF, TYPEDFIELDS, TYPEDSIGNATURES
-using Flux
-using Graphs
-using Images
-using LinearAlgebra
-using Metalhead
-using NPZ
-using Random
-using SimpleWeightedGraphs
-using SparseArrays
+using Graphs: Graphs, nv, vertices, inneighbors, dijkstra_shortest_paths
+using Images: RGB, N0f8
+using LinearAlgebra: dot
+using Lux:
+    Chain,
+    Conv,
+    InstanceNorm,
+    MaxPool,
+    AdaptiveMaxPool,
+    SkipConnection,
+    WrappedFunction,
+    relu
+using NPZ: npzread
+using Random: Random, AbstractRNG
+using SimpleWeightedGraphs: SimpleWeightedDiGraph
+using SparseArrays: sparse
 
 include("utils.jl")
 
@@ -57,29 +64,39 @@ end
 """
 $TYPEDSIGNATURES
 
-Create and return a `Flux.Chain` embedding for the Warcraft terrains, inspired by [differentiation of blackbox combinatorial solvers](https://github.com/martius-lab/blackbox-differentiation-combinatorial-solvers/blob/master/models.py).
+Returns a Lux model architecture for the Warcraft terrain embedding, inspired by
+[differentiation of blackbox combinatorial solvers](https://github.com/martius-lab/blackbox-differentiation-combinatorial-solvers/blob/master/models.py).
 
-The embedding is made as follows:
-1) The first 5 layers of ResNet18 (convolution, batch normalization, relu, maxpooling and first resnet block).
-2) An adaptive maxpooling layer to get a (12x12x64) tensor per input image.
-3) An average over the third axis (of size 64) to get a (12x12x1) tensor per input image.
-4) The element-wize `neg_tensor` function to get cell weights of proper sign to apply shortest path algorithms.
-5) A squeeze function to forget the two last dimensions.
+The architecture consists of:
+1) A conv stem (7x7 convolution, instance normalization, relu, max pooling).
+2) One residual block with skip connection.
+3) An adaptive max pooling layer to get a (12x12x64) tensor per input image.
+4) An average over the channel axis to get a (12x12x1) tensor per input image.
+5) The element-wise `neg_tensor` function to get cell weights of proper sign.
+6) A squeeze function to forget the two last dimensions.
+
+Uses `InstanceNorm` instead of `BatchNorm` since the DFL training loop processes one image at a time.
 """
-function Utils.generate_statistical_model(::WarcraftBenchmark; seed=nothing)
-    Random.seed!(seed)
-    resnet18 = ResNet(18; pretrain=false, nclasses=1)
-    model_embedding = Chain(
-        resnet18.layers[1][1][1],
-        resnet18.layers[1][1][2],
-        resnet18.layers[1][1][3],
-        resnet18.layers[1][2][1],
+function Utils.generate_statistical_model(::WarcraftBenchmark)
+    return Chain(
+        Conv((7, 7), 3 => 64; stride=2, pad=3, use_bias=false),
+        InstanceNorm(64, relu),
+        MaxPool((3, 3); stride=2, pad=1),
+        SkipConnection(
+            Chain(
+                Conv((3, 3), 64 => 64; pad=1, use_bias=false),
+                InstanceNorm(64, relu),
+                Conv((3, 3), 64 => 64; pad=1, use_bias=false),
+                InstanceNorm(64),
+            ),
+            +,
+        ),
+        WrappedFunction(relu),
         AdaptiveMaxPool((12, 12)),
-        average_tensor,
-        neg_tensor,
-        squeeze_last_dims,
+        WrappedFunction(average_tensor),
+        WrappedFunction(neg_tensor),
+        WrappedFunction(squeeze_last_dims),
     )
-    return model_embedding
 end
 
 export WarcraftBenchmark

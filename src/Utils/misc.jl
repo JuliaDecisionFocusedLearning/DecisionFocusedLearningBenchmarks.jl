@@ -7,6 +7,21 @@ make_rng(seed::Integer) = StableRNG(seed)
 make_rng(::Nothing) = StableRNG(rand(RandomDevice(), UInt))
 
 """
+$TYPEDEF
+
+Simple callable wrapper around a weight matrix: `x ↦ weights * x`.
+
+# Fields
+$TYPEDFIELDS
+"""
+struct LinearModel{W<:AbstractMatrix}
+    "weight matrix"
+    weights::W
+end
+
+(m::LinearModel)(x) = m.weights * x
+
+"""
 $TYPEDSIGNATURES
 
 Compute minus softplus element-wise on tensor `x`.

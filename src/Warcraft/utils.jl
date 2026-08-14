@@ -4,7 +4,7 @@ $TYPEDSIGNATURES
 Read the dataset of type `dtype` at the `decompressed_path` location.
 The dataset is made of images of Warcraft terrains, cell cost labels and shortest path labels.
 They are returned separately, with proper axis permutation and image scaling to be consistent with
-`Flux` embeddings.
+`Lux` embeddings.
 """
 function read_dataset(decompressed_path::String, dtype::String="train")
     # Open files
@@ -13,7 +13,7 @@ function read_dataset(decompressed_path::String, dtype::String="train")
     terrain_images = npzread(joinpath(data_dir, dtype * "_" * data_suffix * ".npy"))
     terrain_weights = npzread(joinpath(data_dir, dtype * "_vertex_weights.npy"))
     terrain_labels = npzread(joinpath(data_dir, dtype * "_shortest_paths.npy"))
-    # Reshape for Flux
+    # Reshape for Lux
     terrain_images = permutedims(terrain_images, (2, 3, 4, 1))
     terrain_labels = permutedims(terrain_labels, (2, 3, 1))
     terrain_weights = Array{Float32}(permutedims(terrain_weights, (2, 3, 1)))

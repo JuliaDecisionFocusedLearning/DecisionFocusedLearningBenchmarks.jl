@@ -4,7 +4,9 @@
 # features alone.
 
 using DecisionFocusedLearningBenchmarks
+using Lux: Lux
 using Plots
+using StableRNGs: StableRNG
 
 b = RankingBenchmark()
 
@@ -29,17 +31,17 @@ plot_sample(b, sample)
 # ## Untrained policy
 
 # A DFL policy chains two components: a statistical model predicting item scores:
-model = generate_statistical_model(b)     # linear map: features → predicted costs
+model, ps, st = generate_statistical_model(b, StableRNG(0))     # linear map: features → predicted costs
 # and a maximizer ranking items by those scores:
 maximizer = generate_maximizer(b)         # ordinal ranking via sortperm
 
 # A randomly initialized policy produces an arbitrary ranking:
-θ_pred = model(sample.x)
+θ_pred, _ = model(sample.x, ps, Lux.testmode(st))
 y_pred = maximizer(θ_pred)
 plot_sample(b, DataSample(sample; θ=θ_pred, y=y_pred))
 
 # Optimality gap on the dataset (lower is better):
-compute_gap(b, dataset, model, maximizer)
+compute_gap(b, dataset, model, ps, st, maximizer)
 
 # ---
 # ## Problem Description

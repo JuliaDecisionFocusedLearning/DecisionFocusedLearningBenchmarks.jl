@@ -21,20 +21,23 @@ The sections below explain what changes between these settings. For most purpose
 Every benchmark exposes three key methods. For any static benchmark:
 
 ```julia
+using Lux, StableRNGs
+
 bench = ArgmaxBenchmark()
-model = generate_statistical_model(bench; seed=0)   # Flux model
-maximizer = generate_maximizer(bench)               # combinatorial oracle
-dataset = generate_dataset(bench, 100; seed=0)      # Vector{DataSample}
+model, ps, st = generate_statistical_model(bench, StableRNG(0))  # Lux model + params + state
+maximizer = generate_maximizer(bench)                             # combinatorial oracle
+dataset = generate_dataset(bench, 100; seed=0)                    # Vector{DataSample}
 ```
 
-- **`generate_statistical_model`**: returns an untrained neural network that maps input features `x` to cost parameters `θ`.
+- **`generate_statistical_model(bench)`**: returns a Lux model architecture (no parameters).
+- **`generate_statistical_model(bench, rng)`**: convenience method returning `(model, ps, st)` ready to use.
 - **`generate_maximizer`**: returns a callable `(θ; context...) -> y` that solves the combinatorial problem given cost parameters.
 - **`generate_dataset`**: returns labeled training data as a `Vector{DataSample}`.
 
-At inference time these two pieces compose naturally as an end-to-end policy:
+At inference time these pieces compose naturally as an end-to-end policy:
 
 ```julia
-θ = model(sample.x)                  # predict cost parameters
+θ, st = model(sample.x, ps, st)     # predict cost parameters
 y = maximizer(θ; sample.context...)  # solve the optimization problem
 ```
 
@@ -155,10 +158,14 @@ It is the single source of randomness for the episode, so re-running a policy on
 
 ## Evaluation
 
+`compute_gap` computes the average relative optimality gap over a labeled dataset.
+Pass the Lux model components directly:
+
 ```julia
-# Average relative optimality gap across a dataset
-gap = compute_gap(bench, dataset, model, maximizer)
+gap = compute_gap(bench, dataset, model, ps, st, maximizer)
 ```
+
+A callable `statistical_model(x) -> θ` is also accepted instead of `model, ps, st`.
 
 Objective value for a single decision:
 

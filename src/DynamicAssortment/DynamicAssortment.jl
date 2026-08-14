@@ -4,12 +4,14 @@ using ..Utils
 
 using DocStringExtensions: TYPEDEF, TYPEDFIELDS, TYPEDSIGNATURES, SIGNATURES
 using Distributions: Uniform, Categorical
-using Flux: Chain, Dense
+using Lux: Chain, Dense, WrappedFunction
 using LinearAlgebra: dot
 using Random: Random, AbstractRNG
 using Statistics: mean
 
 using Combinatorics: combinations
+
+using ..Utils: LinearModel
 
 """
 $TYPEDEF
@@ -40,7 +42,7 @@ end
         d=2,
         K=4,
         max_steps=80,
-        customer_choice_model=Chain(Dense([-0.8 0.6 -0.4 0.3 0.5]), vec),
+        customer_choice_model=LinearModel(Float32[-0.8 0.6 -0.4 0.3 0.5]),
         exogenous=false
     )
 
@@ -54,8 +56,10 @@ function DynamicAssortmentBenchmark(;
     d=2,
     K=4,
     max_steps=80,
-    customer_choice_model=Chain(
-        Dense(hcat([-0.8 0.6 -0.4], reshape([0.3 + 0.2 * (i - 1) for i in 1:d], 1, d))), vec
+    customer_choice_model=vec ∘ LinearModel(
+        hcat(
+            Float32[-0.8 0.6 -0.4], reshape(Float32[0.3 + 0.2 * (i - 1) for i in 1:d], 1, d)
+        ),
     ),
     exogenous=false,
 )
@@ -81,10 +85,9 @@ $TYPEDSIGNATURES
 Generates a statistical model for the dynamic assortment benchmark.
 The model is a small neural network with one hidden layer of size 5 and no activation function.
 """
-function Utils.generate_statistical_model(b::DynamicAssortmentBenchmark; seed=nothing)
-    Random.seed!(seed)
+function Utils.generate_statistical_model(b::DynamicAssortmentBenchmark)
     d = feature_count(b)
-    return Chain(Dense(d + 8 => 5), Dense(5 => 1), vec)
+    return Chain(Dense(d + 8 => 5), Dense(5 => 1), WrappedFunction(vec))
 end
 
 """

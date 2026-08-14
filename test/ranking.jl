@@ -11,7 +11,7 @@
     @test String(take!(io)) == "RankingBenchmark(instance_dim=10, nb_features=5)"
 
     dataset = generate_dataset(b, 50)
-    model = generate_statistical_model(b)
+    model, ps, st = generate_statistical_model(b, StableRNG(0))
     maximizer = generate_maximizer(b)
 
     for (i, sample) in enumerate(dataset)
@@ -24,14 +24,14 @@
         @test isempty(sample.context)
         @test all(y_true .== maximizer(θ_true))
 
-        θ = model(x)
+        θ, _ = model(x, ps, Lux.testmode(st))
         @test length(θ) == instance_dim
 
         y = maximizer(θ)
         @test length(y) == instance_dim
     end
 
-    gap = compute_gap(b, dataset[1:5], model, maximizer)
+    gap = compute_gap(b, dataset[1:5], model, ps, st, maximizer)
     @test isfinite(gap)
     @test gap >= 0
 

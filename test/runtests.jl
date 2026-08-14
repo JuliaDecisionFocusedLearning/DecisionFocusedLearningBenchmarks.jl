@@ -1,5 +1,6 @@
 using Test
 using DecisionFocusedLearningBenchmarks
+using Lux: Lux
 using Random
 using StableRNGs: StableRNG
 

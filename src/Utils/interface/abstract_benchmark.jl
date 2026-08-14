@@ -31,17 +31,29 @@ function generate_maximizer(bench::AbstractBenchmark; kwargs...)
 end
 
 """
-    generate_statistical_model(::AbstractBenchmark, seed=nothing; kwargs...)
+    generate_statistical_model(::AbstractBenchmark; kwargs...)
 
-Returns an untrained statistical model (usually a Flux neural network) that maps a
-feature matrix `x` to an output array `θ`. The `seed` parameter controls initialization
-randomness for reproducibility.
+Returns a Lux model architecture (no parameters) that maps features `x` to
+an output array `θ`. Call `Lux.setup(rng, model)` to initialize parameters.
 """
-function generate_statistical_model(bench::AbstractBenchmark, seed=nothing; kwargs...)
+function generate_statistical_model(bench::AbstractBenchmark; kwargs...)
     return error(
         "`generate_statistical_model` is not implemented for $(typeof(bench)). " *
-        "Implement `generate_statistical_model(::$(typeof(bench)), seed=nothing; kwargs...) -> model`.",
+        "Implement `generate_statistical_model(::$(typeof(bench)); kwargs...) -> model`.",
     )
+end
+
+"""
+    generate_statistical_model(::AbstractBenchmark, rng::AbstractRNG; kwargs...)
+
+Convenience method that returns `(model, ps, st)` ready to use.
+Calls the base `generate_statistical_model(bench)` to get the architecture,
+then initializes parameters with `Lux.setup(rng, model)`.
+"""
+function generate_statistical_model(bench::AbstractBenchmark, rng::AbstractRNG; kwargs...)
+    model = generate_statistical_model(bench; kwargs...)
+    ps, st = Lux.setup(rng, model)
+    return model, ps, st
 end
 
 """
@@ -135,6 +147,36 @@ function compute_gap(
             target_obj = objective_value(bench, sample)
             x = sample.x
             θ = statistical_model(x)
+            y = maximizer(θ; sample.context...)
+            obj = objective_value(bench, sample, y)
+            Δ = check ? obj - target_obj : target_obj - obj
+            return Δ / abs(target_obj)
+        end,
+    )
+end
+
+"""
+$TYPEDSIGNATURES
+
+Convenience method accepting a Lux model with its parameters and state directly.
+Switches to test mode and computes the gap inline.
+"""
+function compute_gap(
+    bench::AbstractBenchmark,
+    dataset::AbstractVector{<:DataSample{<:Any,<:Any,<:Any,<:AbstractArray}},
+    model::Lux.AbstractLuxLayer,
+    ps,
+    st,
+    maximizer,
+    op=mean,
+)
+    check = is_minimization_problem(bench)
+    st_test = Lux.testmode(st)
+
+    return op(
+        map(dataset) do sample
+            target_obj = objective_value(bench, sample)
+            θ = first(model(sample.x, ps, st_test))
             y = maximizer(θ; sample.context...)
             obj = objective_value(bench, sample, y)
             Δ = check ? obj - target_obj : target_obj - obj

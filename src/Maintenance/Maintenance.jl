@@ -4,7 +4,7 @@ using ..Utils
 
 using DocStringExtensions: TYPEDEF, TYPEDFIELDS, TYPEDSIGNATURES, SIGNATURES
 using Distributions: Uniform, Categorical
-using Flux: Chain, Dense
+using Lux: Chain, Dense, WrappedFunction
 using LinearAlgebra: dot
 using Random: Random, AbstractRNG
 using Statistics: mean
@@ -95,10 +95,9 @@ $TYPEDSIGNATURES
 Generates a statistical model for the maintenance benchmark.
 The model is a small neural network with one hidden layer no activation function.
 """
-function Utils.generate_statistical_model(b::MaintenanceBenchmark; seed=nothing)
-    Random.seed!(seed)
+function Utils.generate_statistical_model(b::MaintenanceBenchmark)
     N = component_count(b)
-    return Chain(Dense(N => N), Dense(N => N), vec)
+    return Chain(Dense(N => N), Dense(N => N), WrappedFunction(vec))
 end
 
 """
