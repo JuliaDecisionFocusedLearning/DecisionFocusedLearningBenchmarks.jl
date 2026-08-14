@@ -96,9 +96,8 @@ $TYPEDSIGNATURES
 
 Compute the objective value of the target in the sample (needs to exist).
 """
-function objective_value(
-    bench::AbstractBenchmark, sample::DataSample{CTX,EX,F,S,C}
-) where {CTX,EX,F,S<:AbstractArray,C}
+function objective_value(bench::AbstractBenchmark, sample::DataSample)
+    isnothing(sample.y) && error("Sample has no target solution (y=nothing)")
     return objective_value(bench, sample, sample.y)
 end
 
@@ -123,7 +122,7 @@ Override for custom evaluation logic.
 """
 function compute_gap(
     bench::AbstractBenchmark,
-    dataset::AbstractVector{<:DataSample{<:Any,<:Any,<:Any,<:AbstractArray}},
+    dataset::AbstractVector{<:DataSample},
     statistical_model,
     maximizer,
     op=mean,
