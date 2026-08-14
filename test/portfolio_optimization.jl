@@ -6,7 +6,7 @@
     b = PortfolioOptimizationBenchmark(; d=d, p=p)
 
     dataset = generate_dataset(b, 50)
-    model = generate_statistical_model(b)
+    model, ps, st = generate_statistical_model(b, StableRNG(0))
     maximizer = generate_maximizer(b)
 
     for sample in dataset
@@ -19,7 +19,7 @@
         @test isempty(sample.context)
         @test all(y_true .== maximizer(θ_true))
 
-        θ = model(x)
+        θ, _ = model(x, ps, Lux.testmode(st))
         @test length(θ) == d
 
         y = maximizer(θ)
@@ -27,7 +27,7 @@
         @test sum(y) <= 1 + 1e-6
     end
 
-    gap = compute_gap(b, dataset[1:5], model, maximizer)
+    gap = compute_gap(b, dataset[1:5], model, ps, st, maximizer)
     @test isfinite(gap)
 
     @testset "Plots" begin

@@ -8,7 +8,7 @@ using Test
     rng = Xoshiro(1234)
     @test_throws ErrorException generate_instance(b, rng)
     @test_throws ErrorException generate_maximizer(b)
-    @test_throws ErrorException generate_statistical_model(b; seed=0)
+    @test_throws ErrorException generate_statistical_model(b)
     @test !has_visualization(b)
 
     function DecisionFocusedLearningBenchmarks.generate_instance(

@@ -2,7 +2,7 @@ module Argmax2D
 
 using ..Utils
 using DocStringExtensions: TYPEDEF, TYPEDFIELDS, TYPEDSIGNATURES
-using Flux: Chain, Dense
+using Lux: Dense
 using LinearAlgebra: dot, norm
 using Random: Random, AbstractRNG
 
@@ -16,11 +16,11 @@ Argmax becnhmark on a 2d polytope.
 # Fields
 $TYPEDFIELDS
 """
-struct Argmax2DBenchmark{E,R} <: AbstractStaticBenchmark
+struct Argmax2DBenchmark{W<:AbstractMatrix,R} <: AbstractStaticBenchmark
     "number of features"
     nb_features::Int
-    "true mapping between features and costs"
-    encoder::E
+    "true weight matrix mapping features to costs"
+    encoder_weights::W
     ""
     polytope_vertex_range::R
 end
@@ -38,9 +38,8 @@ $TYPEDSIGNATURES
 Custom constructor for [`Argmax2DBenchmark`](@ref).
 """
 function Argmax2DBenchmark(; nb_features::Int=5, seed=nothing, polytope_vertex_range=[6])
-    Random.seed!(seed)
-    model = Dense(nb_features => 2; bias=false)
-    return Argmax2DBenchmark(nb_features, model, polytope_vertex_range)
+    encoder_weights = randn(Utils.make_rng(seed), Float32, 2, nb_features)
+    return Argmax2DBenchmark(nb_features, encoder_weights, polytope_vertex_range)
 end
 
 function Utils.is_minimization_problem(::Argmax2DBenchmark)
@@ -55,9 +54,9 @@ $TYPEDSIGNATURES
 Generate a sample for the [`Argmax2DBenchmark`](@ref).
 """
 function Utils.generate_sample(bench::Argmax2DBenchmark, rng::AbstractRNG)
-    (; nb_features, encoder, polytope_vertex_range) = bench
+    (; nb_features, encoder_weights, polytope_vertex_range) = bench
     x = randn(rng, Float32, nb_features)
-    θ_true = encoder(x)
+    θ_true = encoder_weights * x
     θ_true ./= 2 * norm(θ_true)
     instance = build_polytope(rand(rng, polytope_vertex_range); shift=rand(rng))
     y_true = maximizer(θ_true; instance)
@@ -76,12 +75,11 @@ end
 """
 $TYPEDSIGNATURES
 
-Generate a statistical model for the [`Argmax2DBenchmark`](@ref).
+Returns a Lux model architecture for the Argmax2D benchmark.
 """
-function Utils.generate_statistical_model(bench::Argmax2DBenchmark; seed=nothing)
-    Random.seed!(seed)
+function Utils.generate_statistical_model(bench::Argmax2DBenchmark)
     (; nb_features) = bench
-    return Dense(nb_features => 2; bias=false)
+    return Dense(nb_features => 2; use_bias=false)
 end
 
 export Argmax2DBenchmark

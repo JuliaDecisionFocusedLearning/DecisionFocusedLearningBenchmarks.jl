@@ -2,9 +2,9 @@ module ContextualStochasticArgmax
 
 using ..Utils
 using DocStringExtensions: TYPEDEF, TYPEDFIELDS, TYPEDSIGNATURES
-using Flux: Dense
 using LinearAlgebra: dot
-using Random: Random, AbstractRNG
+using Lux: Dense
+using Random: AbstractRNG
 using Statistics: mean
 
 """
@@ -109,11 +109,13 @@ function Utils.generate_scenario(
     return θ_true + bench.noise_std * randn(rng, Float32, bench.n)
 end
 
-function Utils.generate_statistical_model(
-    bench::ContextualStochasticArgmaxBenchmark; seed=nothing
-)
-    Random.seed!(seed)
-    return Dense(bench.n + bench.d => bench.n; bias=false)
+"""
+$TYPEDSIGNATURES
+
+Returns a Lux model architecture for the contextual stochastic argmax benchmark.
+"""
+function Utils.generate_statistical_model(bench::ContextualStochasticArgmaxBenchmark)
+    return Dense(bench.n + bench.d => bench.n; use_bias=false)
 end
 
 include("policies.jl")

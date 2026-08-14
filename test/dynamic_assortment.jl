@@ -340,7 +340,7 @@ end
     b = DynamicAssortmentBenchmark(; N=4, d=3, K=2)
 
     # Test statistical model generation
-    model = generate_statistical_model(b; seed=42)
+    model, ps, st = generate_statistical_model(b, StableRNG(42))
     # Test maximizer generation
     maximizer = generate_maximizer(b)
 
@@ -353,7 +353,7 @@ end
     # Test model-maximizer pipeline
     sample = data_samples[1]
     x = sample.x
-    θ = model(x)
+    θ, _ = model(x, ps, Lux.testmode(st))
     y = maximizer(θ)
 
     @test length(θ) == DAP.item_count(b)

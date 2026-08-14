@@ -3,9 +3,9 @@ module FixedSizeShortestPath
 using ..Utils
 using DocStringExtensions: TYPEDEF, TYPEDFIELDS, TYPEDSIGNATURES
 using Distributions
-using Flux: Chain, Dense
 using Graphs
 using LinearAlgebra
+using Lux: Dense
 using Random
 using SparseArrays
 
@@ -131,14 +131,11 @@ end
 """
 $TYPEDSIGNATURES
 
-Initialize a linear model for `bench` using `Flux`.
+Returns a Lux model architecture for the fixed size shortest path benchmark.
 """
-function Utils.generate_statistical_model(
-    bench::FixedSizeShortestPathBenchmark; seed=nothing
-)
-    Random.seed!(seed)
+function Utils.generate_statistical_model(bench::FixedSizeShortestPathBenchmark)
     (; p, graph) = bench
-    return Dense(p, ne(graph))
+    return Dense(p => ne(graph))
 end
 
 export FixedSizeShortestPathBenchmark

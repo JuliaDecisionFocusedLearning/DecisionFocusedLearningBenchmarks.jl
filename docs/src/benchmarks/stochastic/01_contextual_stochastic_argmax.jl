@@ -5,7 +5,9 @@
 # context-to-utility mapping.
 
 using DecisionFocusedLearningBenchmarks
+using Lux: Lux
 using Plots
+using StableRNGs: StableRNG
 
 b = ContextualStochasticArgmaxBenchmark()
 
@@ -44,13 +46,13 @@ plot_sample(b, DataSample(sample; θ=sample.scenario))
 # ## Untrained policy
 
 # A DFL policy chains two components: a statistical model predicting expected item utilities:
-model = generate_statistical_model(b)     # linear map: features → predicted expected utilities
+model, ps, st = generate_statistical_model(b, StableRNG(0))     # linear map: features → predicted expected utilities
 # and a maximizer selecting the item with the highest predicted utility:
 maximizer = generate_maximizer(b)         # one-hot argmax
 
 # A randomly initialized policy selects items with no relation to their expected utilities.
 # Top: feature vector x. Bottom: predicted utilities θ̂ with the selected item in red:
-θ_pred = model(sample.x)
+θ_pred, _ = model(sample.x, ps, Lux.testmode(st))
 y_pred = maximizer(θ_pred)
 plot_sample(b, DataSample(sample; θ=θ_pred, y=y_pred))
 
