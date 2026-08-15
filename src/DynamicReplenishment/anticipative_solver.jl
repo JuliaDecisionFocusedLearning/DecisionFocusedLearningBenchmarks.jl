@@ -83,7 +83,7 @@ function sales_order_constraints!(m, y, s, α, T, N, nb_customers, utilities, bi
                     @constraint(m, α[i_1, t, k] == 0)
                     continue
                 else
-                    # don't sell i_1 if ∃ i_2 in stock s.t. u_{i_2} > u_{i_1} 
+                    # don't sell i_1 if ∃ i_2 in stock s.t. u_{i_2} > u_{i_1}
                     if k == 1
                         @constraint(
                             m,
@@ -214,6 +214,7 @@ function solver_variable_to_dataset(
     θ=nothing,
     κ=1.0,
     state::DRPState=env.state,
+    mip_gap=nothing,
 )
     s_val = Int.(round.(s_val))      # (T+1, N)
     y_val = Int.(round.(y_val))      # (T, N)
@@ -281,7 +282,21 @@ function solver_variable_to_dataset(
         @assert length(θ) == N + sum(ub_per_item(dataset[1].state))
         final_obj_val += κ * dot(θ, g_y)
     end
-    @assert isapprox(obj_val, final_obj_val, atol=1e-3, rtol=1e-3)
+    if !isapprox(obj_val, final_obj_val, atol=1e-3, rtol=1e-3)
+        # Écart entre l'objectif rapporté par le solveur et l'objectif recalculé
+        # depuis la trajectoire arrondie : signe d'instabilité numérique du solveur
+        # (le même MILP produit les warnings SCIP "LP solution value is above SCIP's
+        # infinity value" même sans θ). On logue au lieu de planter — la trajectoire
+        # elle-même reste utilisable — pour avoir enfin les chiffres la prochaine
+        # fois que ça se produit.
+        abs_diff = abs(obj_val - final_obj_val)
+        rel_diff = abs_diff / max(abs(final_obj_val), 1.0)
+        epoch = current_epoch(env)
+        max_abs_theta = isnothing(θ) ? nothing : maximum(abs, θ)
+        nonfinite_theta = isnothing(θ) ? nothing : count(!isfinite, θ)
+        @warn "Anticipatif paramétrique : objectif solveur et objectif recalculé en désaccord (instabilité numérique probable) — trajectoire conservée telle quelle" obj_val final_obj_val abs_diff rel_diff mip_gap epoch max_abs_theta nonfinite_theta maxlog =
+            20
+    end
     return dataset
 end
 
@@ -409,6 +424,7 @@ function anticipative_solver(
             θ=θ,
             κ=κ,
             state=state,
+            mip_gap=mip_gap,
         )
         return obj_val, dataset
     else
