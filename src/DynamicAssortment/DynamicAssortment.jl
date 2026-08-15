@@ -6,7 +6,7 @@ using DocStringExtensions: TYPEDEF, TYPEDFIELDS, TYPEDSIGNATURES, SIGNATURES
 using Distributions: Uniform, Categorical
 using Flux: Chain, Dense
 using LinearAlgebra: dot
-using Random: Random, AbstractRNG, Xoshiro
+using Random: Random, AbstractRNG
 using Statistics: mean
 
 using Combinatorics: combinations
@@ -115,12 +115,12 @@ Returns two policies for the dynamic assortment benchmark:
 - `Expert`: selects the assortment with the highest expected revenue (through brute-force enumeration)
 """
 function Utils.generate_baseline_policies(::DynamicAssortmentBenchmark)
-    greedy = Policy(
+    greedy = Policy{DynamicAssortmentBenchmark}(
         "Greedy",
         "policy that selects the assortment with items with the highest prices",
         greedy_policy,
     )
-    expert = Policy(
+    expert = Policy{DynamicAssortmentBenchmark}(
         "Expert",
         "policy that selects the assortment with the highest expected revenue",
         expert_policy,

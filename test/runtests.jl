@@ -1,6 +1,7 @@
 using Test
 using DecisionFocusedLearningBenchmarks
 using Random
+using StableRNGs: StableRNG
 
 @testset "DecisionFocusedLearningBenchmarks tests" begin
     @testset "Code quality" begin

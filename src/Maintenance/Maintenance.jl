@@ -6,7 +6,7 @@ using DocStringExtensions: TYPEDEF, TYPEDFIELDS, TYPEDSIGNATURES, SIGNATURES
 using Distributions: Uniform, Categorical
 using Flux: Chain, Dense
 using LinearAlgebra: dot
-using Random: Random, AbstractRNG, Xoshiro
+using Random: Random, AbstractRNG
 using Statistics: mean
 
 using Combinatorics: combinations
@@ -128,7 +128,7 @@ Returns a policy for the maintenance benchmark:
 - `Greedy`: maintains components when they are in the last state before failure, up to the maintenance capacity
 """
 function Utils.generate_baseline_policies(::MaintenanceBenchmark)
-    greedy = Policy(
+    greedy = Policy{MaintenanceBenchmark}(
         "Greedy",
         "policy that maintains components when they are in the last state before failure, up to the maintenance capacity",
         greedy_policy,

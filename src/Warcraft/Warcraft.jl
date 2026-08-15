@@ -37,12 +37,7 @@ Downloads and decompresses the Warcraft dataset the first time it is called.
     `dataset_size` is capped at 10000, i.e. the number of available samples in the dataset files.
 """
 function Utils.generate_dataset(
-    ::WarcraftBenchmark,
-    dataset_size::Int=10;
-    target_policy=nothing,
-    seed=nothing,
-    rng=Xoshiro(seed),
-    kwargs...,
+    ::WarcraftBenchmark, dataset_size::Int=10; target_policy=nothing, kwargs...
 )
     decompressed_path = datadep"warcraft/data"
     dataset = create_dataset(decompressed_path, dataset_size)

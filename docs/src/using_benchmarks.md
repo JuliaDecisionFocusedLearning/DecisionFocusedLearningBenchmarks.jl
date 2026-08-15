@@ -132,11 +132,11 @@ rollout and returns the resulting trajectory.
 
 ## Seed / RNG control
 
-`generate_dataset` accepts either `seed` (creates an internal `Xoshiro`) or `rng` (any `AbstractRNG`)::
+`generate_dataset` accepts either `seed` (creates an internal `StableRNG` from [StableRNGs.jl](https://github.com/JuliaRandom/StableRNGs.jl)) or `rng` (any `AbstractRNG`):
 
 ```julia
-using Random
-rng = Xoshiro(42)
+using StableRNGs: StableRNG
+rng = StableRNG(42)
 dataset = generate_dataset(bench, 50; rng=rng)
 ```
 

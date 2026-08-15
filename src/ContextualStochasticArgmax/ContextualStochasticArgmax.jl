@@ -4,7 +4,7 @@ using ..Utils
 using DocStringExtensions: TYPEDEF, TYPEDFIELDS, TYPEDSIGNATURES
 using Flux: Dense
 using LinearAlgebra: dot
-using Random: Random, AbstractRNG, Xoshiro
+using Random: Random, AbstractRNG
 using Statistics: mean
 
 """
@@ -37,7 +37,7 @@ end
 function ContextualStochasticArgmaxBenchmark(;
     n::Int=10, d::Int=5, noise_std::Float32=0.1f0, seed=nothing
 )
-    rng = Xoshiro(seed)
+    rng = Utils.make_rng(seed)
     W = randn(rng, Float32, n, d)
     return ContextualStochasticArgmaxBenchmark(n, d, W, noise_std)
 end
@@ -125,7 +125,11 @@ Return the named baseline policies for [`ContextualStochasticArgmaxBenchmark`](@
 Each policy has signature `(ctx_sample, scenarios) -> Vector{DataSample}`.
 """
 function Utils.generate_baseline_policies(::ContextualStochasticArgmaxBenchmark)
-    return (; saa=Policy("SAA", "argmax of mean scenarios", csa_saa_policy))
+    return (;
+        saa=Policy{ContextualStochasticArgmaxBenchmark}(
+            "SAA", "argmax of mean scenarios", csa_saa_policy
+        ),
+    )
 end
 
 """

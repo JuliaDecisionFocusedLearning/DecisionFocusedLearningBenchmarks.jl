@@ -67,7 +67,7 @@ function generate_dataset(
     dataset_size::Int;
     target_policy=nothing,
     seed=nothing,
-    rng=Xoshiro(seed),
+    rng=make_rng(seed),
     kwargs...,
 )
     return [

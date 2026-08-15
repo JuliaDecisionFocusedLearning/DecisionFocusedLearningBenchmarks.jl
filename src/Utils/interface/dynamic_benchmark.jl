@@ -96,9 +96,9 @@ from files); an override must return already-wrapped [`SeededEnvironment`](@ref)
 function generate_environments(
     bench::AbstractDynamicBenchmark, n::Int; seed=nothing, kwargs...
 )
-    root_rng = Xoshiro(seed)
-    gen_rng = Xoshiro(rand(root_rng, UInt))
-    seed_rng = Xoshiro(rand(root_rng, UInt))
+    root_rng = make_rng(seed)
+    gen_rng = make_rng(rand(root_rng, UInt))
+    seed_rng = make_rng(rand(root_rng, UInt))
     return [
         SeededEnvironment(
             build_environment(bench, gen_rng; kwargs...); seed=rand(seed_rng, UInt)

@@ -32,11 +32,11 @@ end
 """
 $TYPEDSIGNATURES
 
-Wrap `env` in a [`SeededEnvironment`](@ref). By default the generator is a `Xoshiro`
+Wrap `env` in a [`SeededEnvironment`](@ref). By default the generator is a `StableRNG`
 seeded with `seed` (so `seed=nothing` produces an unseeded generator). Pass `rng`
 explicitly to supply a different generator.
 """
-function SeededEnvironment(env::AbstractEnvironment; seed=nothing, rng=Random.Xoshiro(seed))
+function SeededEnvironment(env::AbstractEnvironment; seed=nothing, rng=make_rng(seed))
     return SeededEnvironment(isnothing(seed) ? nothing : UInt(seed), rng, env)
 end
 

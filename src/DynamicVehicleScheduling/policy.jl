@@ -34,3 +34,26 @@ function (π::KleopatraVSPPolicy)(env::DVSPEnv; model_builder=highs_model)
     routes = prize_collecting_vsp(θ; instance=state, model_builder)
     return routes
 end
+
+"""
+$TYPEDEF
+
+Full-horizon anticipative policy for the dynamic vehicle scheduling benchmark. 
+It solves the anticipative VSP over the whole episode
+via [`anticipative_solver`](@ref).
+"""
+struct AnticipativePolicy <:
+       Utils.AbstractTrajectoryPolicy{DynamicVehicleSchedulingBenchmark} end
+
+"""
+$TYPEDSIGNATURES
+
+Solve the whole episode at once via [`anticipative_solver`](@ref) and return
+`(total_reward, dataset)`. 
+The environment is assumed to already be at the state it should be solved from: 
+resetting is handled upstream by [`evaluate_policy!`](@ref),
+so this always calls [`anticipative_solver`](@ref) with `reset_env=false`.
+"""
+function (::AnticipativePolicy)(env::DVSPEnv, rng::AbstractRNG; kwargs...)
+    return anticipative_solver(env, rng; reset_env=false, kwargs...)
+end

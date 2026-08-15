@@ -37,7 +37,7 @@ end
         @test senv isa AbstractEnvironment
         @test senv.env === e
         @test get_seed(senv) == 42
-        @test DFLUtils.get_rng(senv) isa Xoshiro
+        @test DFLUtils.get_rng(senv) isa StableRNG
         @test occursin("seed=", sprint(show, senv))
 
         # Integer seeds are accepted and stored as UInt
@@ -79,7 +79,7 @@ end
         s8 = senv.env.state
         @test s7a == s7b
         @test s7a != s8
-        @test s7a == rand(Xoshiro(7))   # confirms env.rng was seeded to 7 then drawn
+        @test s7a == rand(StableRNG(7))   # confirms env.rng was seeded to 7 then drawn
         @test senv.env.step == 0
 
         # rng argument: resets using the provided rng, not the wrapper's

@@ -5,31 +5,41 @@ using Flux: softplus
 using HiGHS: HiGHS
 using JuMP: Model
 using LinearAlgebra: dot
-using Random: Random, Xoshiro, AbstractRNG
+using Random: Random, AbstractRNG, RandomDevice
 using SCIP: SCIP
 using SimpleWeightedGraphs: SimpleWeightedDiGraph
 using StatsBase: StatsBase
+using StableRNGs: StableRNG
 using Statistics: Statistics, mean, std, quantile
 
+include("misc.jl")
 include("data_sample.jl")
 include("maximizers.jl")
 include("environment/abstract_environment.jl")
 include("environment/seeded_environment.jl")
-include("policy.jl")
 include("interface/abstract_benchmark.jl")
 include("interface/static_benchmark.jl")
 include("interface/stochastic_benchmark.jl")
 include("interface/dynamic_benchmark.jl")
+<<<<<<< HEAD
 include("metric/abstract_metric.jl")
 include("metric/static_metric.jl")
 include("metric/stochastic_metric.jl")
 include("metric/dynamic_metric.jl")
+=======
+include("policy.jl")
+>>>>>>> main
 include("grid_graph.jl")
-include("misc.jl")
 include("model_builders.jl")
 
 export DataSample, Policy
-export evaluate_policy!
+export AbstractPolicy,
+    DynamicPolicy,
+    StaticPolicy,
+    StochasticPolicy,
+    AbstractStepPolicy,
+    AbstractTrajectoryPolicy
+export evaluate_policy!, rollout_step!
 export TopKMaximizer, one_hot_argmax
 
 export AbstractMetric, AbstractStaticMetric, AbstractDynamicMetric
