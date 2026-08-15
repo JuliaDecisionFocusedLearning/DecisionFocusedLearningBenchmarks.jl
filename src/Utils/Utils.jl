@@ -21,14 +21,11 @@ include("interface/abstract_benchmark.jl")
 include("interface/static_benchmark.jl")
 include("interface/stochastic_benchmark.jl")
 include("interface/dynamic_benchmark.jl")
-<<<<<<< HEAD
 include("metric/abstract_metric.jl")
 include("metric/static_metric.jl")
 include("metric/stochastic_metric.jl")
 include("metric/dynamic_metric.jl")
-=======
 include("policy.jl")
->>>>>>> main
 include("grid_graph.jl")
 include("model_builders.jl")
 
