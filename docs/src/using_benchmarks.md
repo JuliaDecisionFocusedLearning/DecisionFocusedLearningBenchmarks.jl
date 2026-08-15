@@ -166,6 +166,87 @@ Objective value for a single decision:
 obj = objective_value(bench, sample, y)
 ```
 
+### Metrics
+
+An [`AbstractMetric`](@ref) is bound to one specific benchmark and maps **one observation
+unit** to a real value. The unit — and how you evaluate over a collection of them — differs
+by benchmark category:
+
+- **static** ([`AbstractStaticMetric`](@ref)): the unit is a **sample**, `f(bench, sample) ->
+  Real`. `evaluate_metric(metric, dataset)` maps it over the samples of a dataset — one value
+  per instance.
+- **dynamic** ([`AbstractDynamicMetric`](@ref)): the unit is an **episode**, `f(bench,
+  episode) -> Real` (a trajectory). `evaluate_metric(metric, episodes)` maps it over episodes
+  — one value per episode. How the episode value is computed (a sum of per-step rewards, a
+  quantity read from the final state, …) is entirely up to `f`.
+
+Either way `evaluate_metric` returns a [`MetricStats`](@ref) — the distribution of per-unit
+values — with `mean_metric`, `std_metric`, `quantile_metric` for summary statistics.
+
+**Predefined metrics** (available for every benchmark):
+
+```julia
+# static: objective value of the policy's decision, per instance
+dataset = generate_dataset(bench, 100; target_policy=policy)   # y = policy's decision
+stats = evaluate_metric(ObjectiveMetric(bench), dataset)       # one value per sample
+mean_metric(stats)
+
+# static: relative optimality gap (mean reproduces compute_gap)
+gm = RelativeGapMetric(bench, model, maximizer)                # dataset must be labeled (y*)
+mean_metric(evaluate_metric(gm, dataset))                      # == compute_gap(bench, dataset, model, maximizer)
+
+# dynamic: episode return (sum of per-step rewards)
+rewards, datasets = evaluate_policy!(pol, env, n_episodes)
+stats = evaluate_metric(RewardMetric(bench), datasets)         # one value per episode
+stats.values == rewards                                        # exactly evaluate_policy!'s returns
+```
+
+**Custom metrics.** Build an ad hoc metric with `Metric(bench, name, description, f)` — `f`
+is per-sample on a static benchmark, per-episode on a dynamic one:
+
+```julia
+episode_length = Metric(dyn_bench, "length", "steps per episode", (bench, ep) -> length(ep))
+```
+
+Or subtype `AbstractStaticMetric` / `AbstractDynamicMetric`, implement the per-unit callable
+`(m::MyMetric)(unit) -> Real` and [`metric_benchmark`](@ref) (useful e.g. to also give a
+specialised [`plot_metric`](@ref)).
+
+### Comparing policies
+
+Reuse the *same* explicit seeds across policies (`evaluate_policy!(pol, env; seed=s)` reseeds
+the environment deterministically, see [`SeededEnvironment`](@ref)) so every policy is
+compared on identical scenarios, then evaluate all policies in one call — each `label =>
+collection` pair yields one labeled `MetricStats`:
+
+```julia
+seeds = 1:20
+datasets_greedy = [evaluate_policy!(policies.greedy, env; seed=s)[2] for s in seeds]
+datasets_lazy   = [evaluate_policy!(policies.lazy,   env; seed=s)[2] for s in seeds]
+
+comparison = evaluate_metric(
+    RewardMetric(bench),
+    policies.greedy.name => datasets_greedy,
+    policies.lazy.name   => datasets_lazy,
+)   # Vector{MetricStats}, one per policy
+
+plot_metric(comparison)  # grouped boxplot, one box per policy
+```
+
+`comparison` is a plain `Vector{MetricStats}` — no dedicated "comparison" type is needed,
+since `plot_metric` groups by each `MetricStats`'s `label`.
+
+For the **dynamic relative gap**, build the metric from a reference (e.g. anticipative) run's
+episodes and evaluate it on the test policy's episodes (seeds aligned between target and
+test), comparing episode returns and respecting [`is_minimization_problem`](@ref):
+
+```julia
+target = [evaluate_policy!(anticipative, env; seed=s)[2] for s in seeds]
+test   = [evaluate_policy!(policy,       env; seed=s)[2] for s in seeds]
+gm = RelativeGapMetric(bench, target)
+evaluate_metric(gm, test)   # one relative gap per episode
+```
+
 ---
 
 ## Baseline policies
@@ -217,3 +298,23 @@ gif(anim, "episode.gif")
 - `plot_sample(bench, sample, y; kwargs...)`: 3-arg convenience form that overrides `y` before plotting.
 - `plot_trajectory(bench, traj; kwargs...)`: dynamic benchmarks only; produces a grid of per-epoch subplots.
 - `animate_trajectory(bench, traj; kwargs...)`: dynamic benchmarks only, returns a `Plots.Animation` that can be saved with `gif(anim, "file.gif")`.
+
+### Plotting metrics
+
+`plot_metric` additionally requires `StatsPlots` (load with `using StatsPlots`, on top of
+`using Plots`) since the generic default renders a boxplot:
+
+```julia
+using Plots, StatsPlots
+
+stats = evaluate_metric(RewardMetric(bench), datasets)
+plot_metric(stats)  # boxplot of the per-unit values
+```
+
+Custom metrics can override the rendering via dispatch on the metric's concrete type:
+
+```julia
+function DecisionFocusedLearningBenchmarks.plot_metric(stats::MetricStats{<:MyMetricType}; kwargs...)
+    # custom rendering
+end
+```

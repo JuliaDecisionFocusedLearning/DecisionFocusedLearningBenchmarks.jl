@@ -10,7 +10,7 @@ using SCIP: SCIP
 using SimpleWeightedGraphs: SimpleWeightedDiGraph
 using StatsBase: StatsBase
 using StableRNGs: StableRNG
-using Statistics: mean
+using Statistics: Statistics, mean, std, quantile
 
 include("misc.jl")
 include("data_sample.jl")
@@ -21,6 +21,10 @@ include("interface/abstract_benchmark.jl")
 include("interface/static_benchmark.jl")
 include("interface/stochastic_benchmark.jl")
 include("interface/dynamic_benchmark.jl")
+include("metric/abstract_metric.jl")
+include("metric/static_metric.jl")
+include("metric/stochastic_metric.jl")
+include("metric/dynamic_metric.jl")
 include("policy.jl")
 include("grid_graph.jl")
 include("model_builders.jl")
@@ -34,6 +38,12 @@ export AbstractPolicy,
     AbstractTrajectoryPolicy
 export evaluate_policy!, rollout_step!
 export TopKMaximizer, one_hot_argmax
+
+export AbstractMetric, AbstractStaticMetric, AbstractDynamicMetric
+export Metric, StaticMetric, DynamicMetric
+export ObjectiveMetric, RewardMetric, RelativeGapMetric, DynamicGapMetric
+export MetricStats,
+    evaluate_metric, metric_name, metric_description, metric_benchmark, plot_metric
 
 export AbstractEnvironment, SeededEnvironment
 export get_seed, is_terminated, observe, reset!, reset_to_initial!, step!
