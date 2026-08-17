@@ -46,12 +46,14 @@ ub_per_item(env::Environment) = ub_per_item(env.state)
 $TYPEDSIGNATURES
 
 Creates an [`Environment`](@ref) from an instance of the dynamic replenishment benchmark.
-Initialize the initial stock to Uniform(0, 5).
+Initialize the initial stock to Uniform(0, `stock_ini_max`) per item, `stock_ini_max=5` by
+default. Pass `stock_ini` directly to bypass the random draw entirely (e.g. all-zero stock).
 """
 function Environment(
     config::DynamicReplenishmentBenchmark,
     rng::AbstractRNG;
-    stock_ini=rand(rng, 0:5, item_count(config)),
+    stock_ini_max::Int=5,
+    stock_ini=rand(rng, 0:stock_ini_max, item_count(config)),
 )
     scenario = Utils.generate_scenario(config; rng=rng)
     initial_state = DRPState(config, stock_ini)
@@ -62,7 +64,8 @@ function Environment(
     config::DynamicReplenishmentBenchmark,
     scenario::Scenario,
     rng::AbstractRNG;
-    stock_ini=rand(rng, 0:5, item_count(config)),
+    stock_ini_max::Int=5,
+    stock_ini=rand(rng, 0:stock_ini_max, item_count(config)),
 )
     initial_state = DRPState(config, stock_ini)
     return Environment(; config, state=initial_state, scenario, stock_ini)

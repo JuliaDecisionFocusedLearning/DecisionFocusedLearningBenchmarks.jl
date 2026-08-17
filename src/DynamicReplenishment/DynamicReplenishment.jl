@@ -229,9 +229,9 @@ $TYPEDSIGNATURES
 Creates a random environment for the dynamic replenishment benchmark using the provided random number generator.
 """
 function Utils.build_environment(
-    b::DynamicReplenishmentBenchmark, rng::AbstractRNG; kwargs...
+    b::DynamicReplenishmentBenchmark, rng::AbstractRNG; stock_ini_max=nothing, kwargs...
 )
-    return Environment(b, rng)
+    return isnothing(stock_ini_max) ? Environment(b, rng) : Environment(b, rng; stock_ini_max)
 end
 
 """
