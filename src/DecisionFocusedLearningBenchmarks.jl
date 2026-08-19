@@ -95,6 +95,7 @@ export is_minimization_problem
 export objective_value
 export has_visualization, plot_context, plot_sample, plot_trajectory, animate_trajectory
 export compute_gap
+export compute_feature_std
 
 # Export all benchmarks
 using .Argmax
@@ -118,6 +119,7 @@ export FixedSizeShortestPathBenchmark
 export PortfolioOptimizationBenchmark
 export RankingBenchmark
 export StochasticVehicleSchedulingBenchmark
+export ContextualStochasticVehicleSchedulingBenchmark
 export SubsetSelectionBenchmark
 export WarcraftBenchmark
 export MaintenanceBenchmark

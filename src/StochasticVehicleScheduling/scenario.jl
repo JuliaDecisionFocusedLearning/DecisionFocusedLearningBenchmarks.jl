@@ -6,11 +6,23 @@ Represents a single scenario for the stochastic vehicle scheduling problem.
 # Fields
 $TYPEDFIELDS
 """
-struct VSPScenario
+struct VSPScenario{T<:Union{Nothing,Bool}}
     "delays per task (length = nb_tasks + 2): scenario_end_time - nominal_end_time"
     delays::Vector{Float64}
     "scalar slack per arc for this scenario"
     slacks::SparseMatrixCSC{Float64,Int}
+    "whether the storm is active in this scenario; `nothing` when the storm concept does not apply (non-contextual SVS)"
+    storm_active::T
+end
+
+"""
+$TYPEDSIGNATURES
+
+Construct a [`VSPScenario`](@ref) with no storm information (`storm_active = nothing`),
+as used by the non-contextual stochastic VSP. Yields a `VSPScenario{Nothing}`.
+"""
+function VSPScenario(delays::Vector{Float64}, slacks::SparseMatrixCSC{Float64,Int})
+    return VSPScenario(delays, slacks, nothing)
 end
 
 """
@@ -19,7 +31,8 @@ $TYPEDSIGNATURES
 Display a compact summary of a [`VSPScenario`](@ref): number of tasks and edges.
 """
 function Base.show(io::IO, s::VSPScenario)
-    return print(io, "VSPScenario($(length(s.delays) - 2) tasks)")
+    storm = isnothing(s.storm_active) ? "" : ", storm=$(s.storm_active)"
+    return print(io, "VSPScenario($(length(s.delays) - 2) tasks$storm)")
 end
 
 """
@@ -27,8 +40,22 @@ $TYPEDSIGNATURES
 
 Draw a single fresh scenario from the city's random distributions,
 independently of the stored scenario draws in the `City` struct.
+
+The `district_delay_fn(x, y) -> LogNormal{Float64}` keyword controls the per-district
+delay distribution used at grid position `(x, y)`. By default it reads from
+`city.districts[x, y].random_delay`; pass a custom callable to override the lookup
+(used by the contextual variant to build distributions from per-sample `(μ_d, σ_d)`).
+
+The `storm_active` keyword (default `nothing`) is stored verbatim on the returned
+scenario; pass a `Bool` from the contextual variant to record whether the storm fired.
 """
-function draw_scenario(city::City, graph::AbstractGraph, rng::AbstractRNG)
+function draw_scenario(
+    city::City,
+    graph::AbstractGraph,
+    rng::AbstractRNG;
+    district_delay_fn=(x, y) -> city.districts[x, y].random_delay,
+    storm_active=nothing,
+)
     tasks = city.tasks
     N = length(tasks)
 
@@ -46,8 +73,9 @@ function draw_scenario(city::City, graph::AbstractGraph, rng::AbstractRNG)
     for x in 1:nb_per_edge
         for y in 1:nb_per_edge
             prev = 0.0
+            d = district_delay_fn(x, y)
             for h in 1:24
-                prev = scenario_next_delay(prev, city.districts[x, y].random_delay, rng)
+                prev = scenario_next_delay(prev, d, rng)
                 district_delays[x, y][h] = prev
             end
         end
@@ -93,7 +121,7 @@ function draw_scenario(city::City, graph::AbstractGraph, rng::AbstractRNG)
     end
     slacks = sparse(I_idx, J_idx, slack_vals, N, N)
 
-    return VSPScenario(delays, slacks)
+    return VSPScenario(delays, slacks, storm_active)
 end
 
 """
@@ -103,7 +131,7 @@ Build a stochastic [`Instance`](@ref) from a base instance and a vector of fresh
 [`VSPScenario`](@ref)s. Each scenario contributes one column to the `intrinsic_delays`
 matrix and one entry per edge to the `slacks` sparse matrix.
 """
-function build_stochastic_instance(instance::Instance, scenarios::Vector{VSPScenario})
+function build_stochastic_instance(instance::Instance, scenarios::Vector{<:VSPScenario})
     K = length(scenarios)
     nb_nodes = length(first(scenarios).delays)
     intrinsic_delays = Matrix{Float64}(undef, nb_nodes, K)
