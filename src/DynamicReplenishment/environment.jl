@@ -45,15 +45,33 @@ ub_per_item(env::Environment) = ub_per_item(env.state)
 """
 $TYPEDSIGNATURES
 
+Draw an initial stock with a fill_rate relative to the stock_sup, spread
+uniformly at random over the items.
+"""
+function draw_stock_ini(rng::AbstractRNG, N::Int, stock_sup::Int, fill_rate::Real)
+    0 <= fill_rate <= 1 ||
+        throw(ArgumentError("`stock_ini_fill_rate` must be in [0, 1], got $fill_rate."))
+    stock_ini = zeros(Int, N)
+    for _ in 1:round(Int, fill_rate * stock_sup)
+        stock_ini[rand(rng, 1:N)] += 1
+    end
+    return stock_ini
+end
+
+"""
+$TYPEDSIGNATURES
+
 Creates an [`Environment`](@ref) from an instance of the dynamic replenishment benchmark.
-Initialize the initial stock to Uniform(0, `stock_ini_max`) per item, `stock_ini_max=5` by
-default. Pass `stock_ini` directly to bypass the random draw entirely (e.g. all-zero stock).
+The initial stock fills half of `stock_sup` by default, see [`draw_stock_ini`](@ref). Pass
+`stock_ini` directly to bypass the random draw entirely (e.g. all-zero stock).
 """
 function Environment(
     config::DynamicReplenishmentBenchmark,
     rng::AbstractRNG;
-    stock_ini_max::Int=5,
-    stock_ini=rand(rng, 0:stock_ini_max, item_count(config)),
+    stock_ini_fill_rate::Real=0.5,
+    stock_ini=draw_stock_ini(
+        rng, item_count(config), stock_sup(config), stock_ini_fill_rate
+    ),
 )
     scenario = Utils.generate_scenario(config; rng=rng)
     initial_state = DRPState(config, stock_ini)
@@ -64,8 +82,10 @@ function Environment(
     config::DynamicReplenishmentBenchmark,
     scenario::Scenario,
     rng::AbstractRNG;
-    stock_ini_max::Int=5,
-    stock_ini=rand(rng, 0:stock_ini_max, item_count(config)),
+    stock_ini_fill_rate::Real=0.5,
+    stock_ini=draw_stock_ini(
+        rng, item_count(config), stock_sup(config), stock_ini_fill_rate
+    ),
 )
     initial_state = DRPState(config, stock_ini)
     return Environment(; config, state=initial_state, scenario, stock_ini)

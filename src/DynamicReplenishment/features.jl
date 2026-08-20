@@ -101,7 +101,7 @@ function create_items_features(state::DRPState)
     mean_sales = mean_sales_history(state)
     mean_stock = mean_stock_history(state)
     current_stock = stock(state)
-    static_features = vcat(reshape(prices(config), 1, :), features(config))
+    static_features = scaled_features(config)
 
     for i in 1:N
         p = prices(config)[i]

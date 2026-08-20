@@ -57,6 +57,31 @@ const DR = DecisionFocusedLearningBenchmarks.DynamicReplenishment
     @test length(DR.virtual_stock_cost(b)) == 10
     @test length(DR.physical_stock_cost(b)) == 10
     @test DR.nb_constraints(b) == 12
+
+    @test size(DR.scaled_features(b)) == (6, 10)
+    @test all(isapprox.(vec(sum(DR.scaled_features(b); dims=2)), 0.0; atol=1e-10))
+
+    # Two instances sharing prices and customer weights but differing in features:
+    # same catalogue, different stores.
+    shared = (;
+        prices=DR.prices(b_custom),
+        customer_choice_model=DR.customer_choice_model(b_custom),
+        constraints_matrix=[1 1 1 0 0; 0 0 0 1 1; 0 0 0 0 1],
+        quotas=[20 15 5; 10 20 5],
+        N=5,
+        d=3,
+        max_steps=2,
+    )
+    b_same = DynamicReplenishmentBenchmark(; features=DR.features(b_custom), shared...)
+    @test DR.prices(b_same) == DR.prices(b_custom)
+    @test b_same.static_utilities == b_custom.static_utilities
+
+    b_other = DynamicReplenishmentBenchmark(; features=zeros(3, 5) .+ (1:5)', shared...)
+    @test DR.prices(b_other) == DR.prices(b_custom)
+    @test b_other.static_utilities != b_custom.static_utilities
+
+    @test_throws AssertionError DynamicReplenishmentBenchmark(; N=4, prices=[1.0, 2.0])
+    @test_throws AssertionError DynamicReplenishmentBenchmark(; N=4, d=2, features=zeros(3, 4))
 end
 
 @testset "DynamicReplenishment - Environment Initialization" begin
@@ -67,7 +92,22 @@ end
     @test DR.item_count(env1) == 10
     @test DR.max_steps(env1) == 10
     @test length(DR.stock_ini(env1)) == 10
-    @test all(0 .≤ DR.stock_ini(env1) .≤ 5)
+    # The total is a fixed fraction of stock_sup, spread over the items: it does not
+    # scale with N the way a per-item draw would.
+    @test sum(DR.stock_ini(env1)) == round(Int, 0.5 * DR.stock_sup(b))
+    @test all(DR.stock_ini(env1) .≥ 0)
+
+    env_full = DR.Environment(b, rng; stock_ini_fill_rate=1.0)
+    @test sum(DR.stock_ini(env_full)) == DR.stock_sup(b)
+    env_empty = DR.Environment(b, rng; stock_ini_fill_rate=0.0)
+    @test all(iszero, DR.stock_ini(env_empty))
+
+    # Same fill rate, twice the items: the shelf still starts at the same level.
+    b_wide = DynamicReplenishmentBenchmark(; N=20)
+    @test sum(DR.stock_ini(DR.Environment(b_wide, rng))) ==
+        sum(DR.stock_ini(DR.Environment(b, rng)))
+
+    @test_throws ArgumentError DR.Environment(b, rng; stock_ini_fill_rate=1.5)
 
     @test DR.current_epoch(env1) == 1
     @test env1.stock_ini == DR.stock_ini(env1)
@@ -186,6 +226,11 @@ end
     @test size(x, 2) == sum(ub)
     @test size(x, 1) >= DR.feature_count(b) + 1
     static_features = x[1:(DR.feature_count(b) + 1), :]
+
+    # The static block is the *scaled* price/features matrix, the one
+    # `static_utilities` was built from — not the raw values.
+    @test DR.create_items_features(state)[:, 1:(DR.feature_count(b) + 1)]' ≈
+        Float32.(DR.scaled_features(b))
 
     starts = [1; cumsum(ub)[1:(end - 1)] .+ 1]
     ends = cumsum(ub)

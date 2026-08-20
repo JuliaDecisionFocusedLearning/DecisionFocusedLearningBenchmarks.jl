@@ -60,6 +60,10 @@ struct DynamicReplenishmentBenchmark{M} <: AbstractDynamicBenchmark{true}
     prices::Vector{Float64}
     "items' features (d x N)"
     features::Matrix{Float64}
+    "price and features, centered and scaled across items ((d+1) x N)"
+    scaled_features::Matrix{Float64}
+    "the transform mapping `[prices'; features]` to `scaled_features`"
+    feature_transform::ZScoreTransform{Float64,Vector{Float64}}
     "cost of virtual stock (N)"
     virtual_stock_cost::Vector{Float64}
     "cost of physical stock (N)"
@@ -113,6 +117,8 @@ function DynamicReplenishmentBenchmark(;
     delivery_delay::Int=3,
     max_steps::Int=10,
     customer_choice_model=nothing,
+    prices=nothing,
+    features=nothing,
     seed=nothing,
     rng=Xoshiro(seed),
 )
@@ -132,8 +138,18 @@ function DynamicReplenishmentBenchmark(;
     constraints_matrix = vcat(constraints_matrix, I)
     quotas = hcat(quotas, fill(ub_same_item, max_steps, N))
 
-    prices = rand(rng, Uniform(1.0, 10.0), N)
-    features = rand(rng, Uniform(-10.0, 10.0), (d, N))
+    if isnothing(prices)
+        prices = rand(rng, Uniform(1.0, 10.0), N)
+    else
+        @assert length(prices) == N "`prices` must have length N=$N, got $(length(prices))."
+        prices = collect(Float64, prices)
+    end
+    if isnothing(features)
+        features = rand(rng, Uniform(-10.0, 10.0), (d, N))
+    else
+        @assert size(features) == (d, N) "`features` must be of size (d, N)=($d, $N), got $(size(features))."
+        features = Matrix{Float64}(features)
+    end
     if customer_choice_model === nothing
         price_w = rand(rng, Uniform(-1.0, -0.7), 1)
         features_w = rand(rng, Uniform(-0.8, -0.1), d)
@@ -151,7 +167,8 @@ function DynamicReplenishmentBenchmark(;
     end
     full_features = vcat(prices', features)   # (d+1, N)
     dt = fit(ZScoreTransform, full_features; dims=2)
-    full_features = transform(dt, full_features)
+    scaled_features = transform(dt, full_features)
+    full_features = scaled_features
     static_utilities = customer_choice_model(full_features)
     # add no purchase option
     static_utilities = vcat(static_utilities, 0.0)
@@ -180,6 +197,8 @@ function DynamicReplenishmentBenchmark(;
         delivery_delay,
         prices,
         features,
+        scaled_features,
+        dt,
         virtual_stock_cost,
         physical_stock_cost,
         over_stock_bound_cost,
@@ -203,6 +222,8 @@ ub_same_item(b::DynamicReplenishmentBenchmark) = b.ub_same_item
 delivery_delay(b::DynamicReplenishmentBenchmark) = b.delivery_delay
 prices(b::DynamicReplenishmentBenchmark) = b.prices
 features(b::DynamicReplenishmentBenchmark) = b.features
+scaled_features(b::DynamicReplenishmentBenchmark) = b.scaled_features
+feature_transform(b::DynamicReplenishmentBenchmark) = b.feature_transform
 virtual_stock_cost(b::DynamicReplenishmentBenchmark) = b.virtual_stock_cost
 physical_stock_cost(b::DynamicReplenishmentBenchmark) = b.physical_stock_cost
 over_stock_bound_cost(b::DynamicReplenishmentBenchmark) = b.over_stock_bound_cost
@@ -229,9 +250,16 @@ $TYPEDSIGNATURES
 Creates a random environment for the dynamic replenishment benchmark using the provided random number generator.
 """
 function Utils.build_environment(
-    b::DynamicReplenishmentBenchmark, rng::AbstractRNG; stock_ini_max=nothing, kwargs...
+    b::DynamicReplenishmentBenchmark,
+    rng::AbstractRNG;
+    stock_ini_fill_rate=nothing,
+    kwargs...,
 )
-    return isnothing(stock_ini_max) ? Environment(b, rng) : Environment(b, rng; stock_ini_max)
+    return if isnothing(stock_ini_fill_rate)
+        Environment(b, rng)
+    else
+        Environment(b, rng; stock_ini_fill_rate)
+    end
 end
 
 """

@@ -196,10 +196,12 @@ function total_cost(state::DRPState)
     )
 end
 
-function reset_state!(state::DRPState, rng::AbstractRNG; reset_stock_ini=false)
+function reset_state!(
+    state::DRPState, rng::AbstractRNG; reset_stock_ini=false, stock_ini_fill_rate::Real=0.5
+)
     N = item_count(state.config)
     if reset_stock_ini
-        s0 = rand(rng, 0:10, N)
+        s0 = draw_stock_ini(rng, N, stock_sup(state.config), stock_ini_fill_rate)
     else
         s0 = stock_ini(state)
     end
