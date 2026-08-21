@@ -108,6 +108,19 @@ function plot_sample(
     )
 end
 
+"""
+Plot a full episode.
+
+With `aggregated=true`, quantities are summed over items and shown time step by time
+step; the shelf bounds `[stock_inf, stock_sup]` are drawn as two dashed lines, since they
+constrain exactly that total and are what the over/under stock penalty is computed on.
+Note that the physical stock of a step is the one observed *before* that step's sales, so
+the bar to compare against the bounds for the penalty incurred at step `t` is the one at
+`t + 1`.
+
+With `aggregated=false`, each time step gets its own item-by-item subplot; the bounds are
+not drawn there, as they bear on the total rather than on any single item.
+"""
 function plot_trajectory(
     bench::DynamicReplenishmentBenchmark,
     trajectory::Vector{<:DataSample};
@@ -127,7 +140,7 @@ function plot_trajectory(
         repls = [sum(sample.y) for sample in trajectory[steps]]
         sales = [sum(sample.next_sales) for sample in trajectory[steps]]
         nb_customers = [sample.customers for sample in trajectory[steps]]
-        return bar_plot_stock_repl_sales(
+        p = bar_plot_stock_repl_sales(
             stocks,
             stocks_p,
             repls,
@@ -139,6 +152,16 @@ function plot_trajectory(
             legend=:topright,
             kwargs...,
         )
+        # Single `hline!` call for both bounds: two lines, one legend entry.
+        hline!(
+            p,
+            Float64[bench.stock_inf, bench.stock_sup];
+            linestyle=:dash,
+            color="#b23a48",
+            lw=2,
+            label="Shelf bounds",
+        )
+        return p
     else
         plots = [
             plot_sample(
