@@ -80,20 +80,48 @@ function compute_dol_item(state::DRPState, item::Int)
 end
 
 """
+Number of dynamic (state-dependent) columns appended per item.
+"""
+nb_dynamic_item_features(config) = 19
+
+"""
+Number of rows of the item block, i.e. the input size of the `θ` model.
+"""
+item_features_size(config) = feature_count(config) + 1 + nb_dynamic_item_features(config)
+
+"""
+Number of stock-level columns appended by [`create_stock_features`](@ref).
+"""
+const NB_STOCK_FEATURES = 12
+
+"""
+Number of rows of the stock block, i.e. the input size of the `η` model.
+Be careful: the feature matrix has one additional row, the item identifier.
+"""
+stock_features_size(config) = item_features_size(config) + NB_STOCK_FEATURES
+
+"""
 $TYPEDSIGNATURES
 
-Create features per item. 
-The first nb_features columns correspond to static features (price + dols).
-The last 6 columns correspond to dynamic features:
-- current stock and scaled with price
-- mean sales and scaled with price
-- mean days on lot and scaled with price (to be implemented)
+Create features per item.
+The first `feature_count(config) + 1` columns correspond to static features (scaled price
+and item features). The remaining [`nb_dynamic_item_features`](@ref) columns are dynamic:
+
+- current *virtual* stock, and scaled with price
+- mean sales, and scaled with price
+- mean stock, and scaled with price
+- mean number of customers in the past
+- mean days on lot, and scaled with price
+- current *physical* stock, and scaled with price
+- stock in transit (`stock - physical_stock`), and scaled with price
+- five state-level columns, identical for every item: the total physical stock, the slack to `stock_inf` and to `stock_sup`, the two bound *violations* actually being paid
+  right now, and the remaining horizon
 """
 function create_items_features(state::DRPState)
     config = state.config
     N = item_count(config)
     nb_static = feature_count(config) + 1     # replaces instance.nb_features
-    nb_features = nb_static + 9
+    nb_features = item_features_size(config)
     item_features = zeros(Float32, N, nb_features)
 
     # precompute once
@@ -101,13 +129,22 @@ function create_items_features(state::DRPState)
     mean_sales = mean_sales_history(state)
     mean_stock = mean_stock_history(state)
     current_stock = stock(state)
+    phys_stock = physical_stock(state)
     static_features = scaled_features(config)
+
+    # state-level quantities, shared by every item
+    total_physical = sum(phys_stock)
+    inf_slack = total_physical - stock_inf(config)
+    sup_slack = stock_sup(config) - total_physical
+    under_violation = max(0, -inf_slack)
+    over_violation = max(0, -sup_slack)
+    remaining_horizon = max_steps(config) - current_epoch(state)
 
     for i in 1:N
         p = prices(config)[i]
         ## static features
         item_features[i, 1:nb_static] = static_features[:, i]
-        ## current stock
+        ## current total stock (virtual + physical)
         item_features[i, nb_static + 1] = current_stock[i]
         item_features[i, nb_static + 2] = current_stock[i] * p
         ## mean sales
@@ -120,10 +157,24 @@ function create_items_features(state::DRPState)
         item_features[i, nb_static + 6] = mst * p
         ## mean customers in the past
         item_features[i, nb_static + 7] = mean_or_zero(state.customer_history)
-        ## diol item_features
+        ## dol item_features
         dols = compute_dol_item(state, i)
         item_features[i, nb_static + 8] = mean_or_zero(dols)
         item_features[i, nb_static + 9] = mean_or_zero(dols) * p
+        ## physical stock
+        item_features[i, nb_static + 10] = phys_stock[i]
+        item_features[i, nb_static + 11] = phys_stock[i] * p
+        ## stock in transit
+        in_transit = current_stock[i] - phys_stock[i]
+        item_features[i, nb_static + 12] = in_transit
+        item_features[i, nb_static + 13] = in_transit * p
+        ## state-level features (same for all items)
+        item_features[i, nb_static + 14] = total_physical
+        item_features[i, nb_static + 15] = inf_slack
+        item_features[i, nb_static + 16] = sup_slack
+        item_features[i, nb_static + 17] = under_violation
+        item_features[i, nb_static + 18] = over_violation
+        item_features[i, nb_static + 19] = remaining_horizon
     end
     return item_features
 end
@@ -131,13 +182,19 @@ end
 """
 $TYPEDSIGNATURES
 
-Create features per stock level per archetype.
-The first instance.nb_features+6 columns correspond to static the archetype features.
-The last 8 columns correspond to dynamic stock features:
-- deviation from stock_inf and scaled with price 
-- deviation from stock_sup and scaled with price
-- deviation from min_quota and i and scaled with price
+Create features per stock level per archetype. Row `(i, j)` describes the candidate
+post-decision (virtual) stock level `j` for item `i`.
+
+The first `item_features_size(config)` columns repeat the item features, the next
+[`NB_STOCK_FEATURES`](@ref) are dynamic stock features, and the last one is the item
+identifier used by [`StatisticalModel`](@ref):
+
+- deviation from `stock_inf` and scaled with price
+- deviation from `stock_sup` and scaled with price
 - deviation from mean stock and scaled with price
+- deviation from `max_quotas` and scaled with price
+- *coupled* deviation from `stock_inf` and `stock_sup`, i.e. what the total physical stock would be if item
+  `i` were at level `j`, and scaled with price
 """
 function create_stock_features(state::DRPState, item_features::Matrix{Float32})
     config = state.config
@@ -145,11 +202,13 @@ function create_stock_features(state::DRPState, item_features::Matrix{Float32})
     ub = ub_per_item(state)
     nb_fi = size(item_features, 2)
     total_rows = sum(ub)
-    stock_features = zeros(Float32, total_rows, nb_fi + 8 + 1) # +1 for unique index
+    stock_features = zeros(Float32, total_rows, nb_fi + NB_STOCK_FEATURES + 1) # +1 for unique index
     t = current_epoch(state)
 
     pos_items = items_with_positive_stock(state)
     mean_stock = mean_stock_history(state)
+    phys_stock = physical_stock(state)
+    total_physical = sum(phys_stock)
 
     stock_inf = config.stock_inf
     stock_sup = config.stock_sup
@@ -167,6 +226,10 @@ function create_stock_features(state::DRPState, item_features::Matrix{Float32})
         stock_sup_dev = stock_sup .- js
         stock_mean_dev = js .- item_mean_feature(mean_stock, i, pos_items)
         max_quotas_dev = max_quotas(state.config)[t, i] .- js
+        # Total stock if item i ended at level j
+        others_physical = total_physical - phys_stock[i]
+        total_inf_dev = (others_physical .+ js) .- stock_inf
+        total_sup_dev = stock_sup .- (others_physical .+ js)
 
         stock_features[rows, nb_fi + 1] = stock_inf_dev
         stock_features[rows, nb_fi + 2] = stock_inf_dev .* p
@@ -176,7 +239,11 @@ function create_stock_features(state::DRPState, item_features::Matrix{Float32})
         stock_features[rows, nb_fi + 6] = stock_mean_dev .* p
         stock_features[rows, nb_fi + 7] = max_quotas_dev
         stock_features[rows, nb_fi + 8] = max_quotas_dev .* p
-        stock_features[rows, nb_fi + 9] .= i # identifier for the item for the statistical model
+        stock_features[rows, nb_fi + 9] = total_inf_dev
+        stock_features[rows, nb_fi + 10] = total_inf_dev .* p
+        stock_features[rows, nb_fi + 11] = total_sup_dev
+        stock_features[rows, nb_fi + 12] = total_sup_dev .* p
+        stock_features[rows, nb_fi + NB_STOCK_FEATURES + 1] .= i # identifier for the item for the statistical model
     end
     return stock_features
 end
