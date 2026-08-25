@@ -82,7 +82,7 @@ end
 """
 Number of dynamic (state-dependent) columns appended per item.
 """
-nb_dynamic_item_features(config) = 19
+nb_dynamic_item_features(config) = 17
 
 """
 Number of rows of the item block, i.e. the input size of the `θ` model.
@@ -114,8 +114,8 @@ and item features). The remaining [`nb_dynamic_item_features`](@ref) columns are
 - mean days on lot, and scaled with price
 - current *physical* stock, and scaled with price
 - stock in transit (`stock - physical_stock`), and scaled with price
-- five state-level columns, identical for every item: the total physical stock, the slack to `stock_inf` and to `stock_sup`, the two bound *violations* actually being paid
-  right now, and the remaining horizon
+- four state-level columns, identical for every item: the total physical stock, the
+  slack to `stock_inf` and to `stock_sup`, and the remaining horizon
 """
 function create_items_features(state::DRPState)
     config = state.config
@@ -136,8 +136,6 @@ function create_items_features(state::DRPState)
     total_physical = sum(phys_stock)
     inf_slack = total_physical - stock_inf(config)
     sup_slack = stock_sup(config) - total_physical
-    under_violation = max(0, -inf_slack)
-    over_violation = max(0, -sup_slack)
     remaining_horizon = max_steps(config) - current_epoch(state)
 
     for i in 1:N
@@ -172,9 +170,7 @@ function create_items_features(state::DRPState)
         item_features[i, nb_static + 14] = total_physical
         item_features[i, nb_static + 15] = inf_slack
         item_features[i, nb_static + 16] = sup_slack
-        item_features[i, nb_static + 17] = under_violation
-        item_features[i, nb_static + 18] = over_violation
-        item_features[i, nb_static + 19] = remaining_horizon
+        item_features[i, nb_static + 17] = remaining_horizon
     end
     return item_features
 end
