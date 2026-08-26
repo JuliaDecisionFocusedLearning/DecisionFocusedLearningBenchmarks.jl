@@ -90,7 +90,8 @@ end
         stock_sup=30,
         ub_same_item=30,
         delivery_delay=3,
-        max_steps=10
+        max_steps=10,
+        over_stock_bound_cost=nothing
     )
 
 Constructor for [`DynamicReplenishmentBenchmark`](@ref).
@@ -103,6 +104,13 @@ The user can choose between
 - only providing a number of constraints, in which case the constructor generates a random constraints matrix and random quotas
 - providing both a constraints matrix and quotas, in which case the constructor uses them as is.
 For quotas, the user can choose between fixed quotas (same for all time steps) or random quotas (different for each time step).
+
+`over_stock_bound_cost` sets the unit penalty applied to a physical stock outside
+`[stock_inf, stock_sup]` (see [`compute_total_cost`](@ref)). It was originally introduced
+to force the anticipative baseline to order a little, so it would have something to imitate.
+`nothing` (default) keeps that historical behaviour (`maximum(prices)`); pass `0` to disable
+the surcost entirely and rely only on `stock_inf`/`stock_sup` as soft targets driving
+`virtual_stock_cost`/`physical_stock_cost`.
 """
 function DynamicReplenishmentBenchmark(;
     N::Int=10,
@@ -116,6 +124,7 @@ function DynamicReplenishmentBenchmark(;
     ub_same_item::Int=30,
     delivery_delay::Int=3,
     max_steps::Int=10,
+    over_stock_bound_cost::Union{Real,Nothing}=nothing,
     customer_choice_model=nothing,
     prices=nothing,
     features=nothing,
@@ -175,7 +184,11 @@ function DynamicReplenishmentBenchmark(;
 
     virtual_stock_cost = prices ./ (max_steps * 10)
     physical_stock_cost = prices ./ (max_steps * 5)
-    over_stock_bound_cost = maximum(prices)
+    over_stock_bound_cost = if isnothing(over_stock_bound_cost)
+        maximum(prices)
+    else
+        Float64(over_stock_bound_cost)
+    end
     max_quotas = Matrix{Int}(undef, max_steps, N)
     for i in 1:N, t in 1:max_steps
         max_quotas[t, i] = minimum(

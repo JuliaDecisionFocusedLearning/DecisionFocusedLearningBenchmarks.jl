@@ -1,3 +1,5 @@
+using Statistics: mean
+
 const DR = DecisionFocusedLearningBenchmarks.DynamicReplenishment
 
 @testset "DynamicReplenishment - Benchmark Construction" begin
@@ -81,7 +83,9 @@ const DR = DecisionFocusedLearningBenchmarks.DynamicReplenishment
     @test b_other.static_utilities != b_custom.static_utilities
 
     @test_throws AssertionError DynamicReplenishmentBenchmark(; N=4, prices=[1.0, 2.0])
-    @test_throws AssertionError DynamicReplenishmentBenchmark(; N=4, d=2, features=zeros(3, 4))
+    @test_throws AssertionError DynamicReplenishmentBenchmark(;
+        N=4, d=2, features=zeros(3, 4)
+    )
 end
 
 @testset "DynamicReplenishment - Environment Initialization" begin
@@ -224,7 +228,8 @@ end
 
     # x is stock_features' : (nb_features, sum(UB))
     @test size(x, 2) == sum(ub)
-    @test size(x, 1) >= DR.feature_count(b) + 1
+    # the item block, the stock block and the trailing item identifier
+    @test size(x, 1) == DR.stock_features_size(b) + 1
     static_features = x[1:(DR.feature_count(b) + 1), :]
 
     # The static block is the *scaled* price/features matrix, the one
@@ -240,6 +245,154 @@ end
         block = static_features[:, rows]
         @test all(block .≈ ref)
     end
+end
+
+@testset "DynamicReplenishment - Feature block sizes" begin
+    # The statistical model slices `x` by hand, so the declared sizes and the actual
+    # feature matrix must stay in lockstep: a feature added on one side only would
+    # silently shift every column of the other block.
+    for b in (
+        DynamicReplenishmentBenchmark(; seed=0),
+        DynamicReplenishmentBenchmark(; N=4, d=2, delivery_delay=1, max_steps=4, seed=1),
+        DynamicReplenishmentBenchmark(; N=3, d=7, delivery_delay=5, max_steps=4, seed=2),
+    )
+        rng = Xoshiro(0)
+        env = DR.Environment(b, rng)
+        state = env.state
+
+        item_features = DR.create_items_features(state)
+        @test size(item_features) == (DR.item_count(b), DR.item_features_size(b))
+
+        x, _ = observe(env)
+        @test size(x, 1) == DR.stock_features_size(b) + 1
+        @test size(x, 1) - (DR.NB_STOCK_FEATURES + 1) == DR.item_features_size(b)
+
+        model = generate_statistical_model(b)
+        @test size(model.θ_model[1].weight, 2) == DR.item_features_size(b)
+        @test size(model.η_model[1].weight, 2) == DR.stock_features_size(b)
+        @test all(isfinite.(model(x)))
+    end
+end
+
+@testset "DynamicReplenishment - Physical stock features" begin
+    # λ=1 keeps the demand far below the initial stock, so the physical stock never hits
+    # the `max(0, ...)` floor and the transit identity below is exact
+    b = DynamicReplenishmentBenchmark(;
+        N=3, d=2, λ=1, delivery_delay=3, max_steps=6, stock_inf=5, stock_sup=20, seed=0
+    )
+    rng = Xoshiro(1)
+    env = DR.Environment(b, rng; stock_ini=[6, 5, 4])
+    step!(env, [2, 0, 1], rng)
+    step!(env, [0, 3, 0], rng)
+
+    state = env.state
+    @test DR.current_epoch(state) == 3
+    item_features = DR.create_items_features(state)
+
+    nb_static = DR.feature_count(b) + 1
+    phys = DR.physical_stock(state)
+    virt = DR.stock(state)
+
+    # physical stock and its price-scaled version
+    @test item_features[:, nb_static + 10] ≈ Float32.(phys)
+    @test item_features[:, nb_static + 11] ≈ Float32.(phys .* DR.prices(b))
+    # stock in transit: the two orders placed so far, none of them delivered yet since
+    # delivery_delay = 3 and we are at epoch 3
+    @test item_features[:, nb_static + 12] ≈ Float32.(virt .- phys)
+    @test item_features[:, nb_static + 12] ≈ Float32.([2, 3, 1])
+    @test item_features[:, nb_static + 13] ≈ Float32.((virt .- phys) .* DR.prices(b))
+
+    # state-level features are identical for every item
+    total_physical = sum(phys)
+    @test all(item_features[:, nb_static + 14] .≈ Float32(total_physical))
+    @test all(item_features[:, nb_static + 15] .≈ Float32(total_physical - DR.stock_inf(b)))
+    @test all(item_features[:, nb_static + 16] .≈ Float32(DR.stock_sup(b) - total_physical))
+    @test all(
+        item_features[:, nb_static + 17] .≈
+        Float32(DR.max_steps(b) - DR.current_epoch(state)),
+    )
+    # the state-level block ends there: the last dynamic column is the horizon
+    @test nb_static + 17 == DR.item_features_size(b)
+end
+
+@testset "DynamicReplenishment - Stock level features stay linear in j" begin
+    # The bound penalty is paid on the physical stock, which the replenishment contained in
+    # a virtual level `j` only reaches `delivery_delay` epochs later: a hinge in `j` would
+    # place its kink at a threshold the sales of the lead time will have moved. The stock
+    # level block is therefore linear in `j`, bounds included.
+    b = DynamicReplenishmentBenchmark(;
+        N=2, d=2, λ=1, delivery_delay=2, max_steps=4, stock_inf=10, stock_sup=12, seed=4
+    )
+    state = DR.Environment(b, Xoshiro(0); stock_ini=[2, 2]).state
+    ub = DR.ub_per_item(state)
+    stock_features = DR.create_stock_features(state, DR.create_items_features(state))
+    nb_fi = DR.item_features_size(b)
+    rows_1 = 1:ub[1]
+    # levels straddling both bounds, so a hinge would be visible if one had been added
+    @test ub[1] >= 12
+    @test stock_features[rows_1, nb_fi + 9] ≈ Float32.((2 .+ (1:ub[1])) .- 10)
+    @test stock_features[rows_1, nb_fi + 11] ≈ Float32.(12 .- (2 .+ (1:ub[1])))
+    @test any(stock_features[rows_1, nb_fi + 9] .< 0)
+    @test any(stock_features[rows_1, nb_fi + 11] .< 0)
+end
+
+@testset "DynamicReplenishment - Coupled stock bound features" begin
+    b = DynamicReplenishmentBenchmark(;
+        N=3, d=2, delivery_delay=2, max_steps=5, stock_inf=8, stock_sup=25, seed=3
+    )
+    rng = Xoshiro(2)
+    env = DR.Environment(b, rng; stock_ini=[5, 4, 3])
+    step!(env, [1, 2, 0], rng)
+
+    state = env.state
+    ub = DR.ub_per_item(state)
+    item_features = DR.create_items_features(state)
+    stock_features = DR.create_stock_features(state, item_features)
+    nb_fi = DR.item_features_size(b)
+
+    phys = DR.physical_stock(state)
+    total_physical = sum(phys)
+    starts = [1; cumsum(ub)[1:(end - 1)] .+ 1]
+    ends = cumsum(ub)
+
+    for i in 1:DR.item_count(b)
+        rows = starts[i]:ends[i]
+        js = 1:ub[i]
+        p = DR.prices(b)[i]
+        others = total_physical - phys[i]
+        expected_inf = (others .+ js) .- DR.stock_inf(b)
+        expected_sup = DR.stock_sup(b) .- (others .+ js)
+
+        @test stock_features[rows, nb_fi + 9] ≈ Float32.(expected_inf)
+        @test stock_features[rows, nb_fi + 10] ≈ Float32.(expected_inf .* p)
+        @test stock_features[rows, nb_fi + 11] ≈ Float32.(expected_sup)
+        @test stock_features[rows, nb_fi + 12] ≈ Float32.(expected_sup .* p)
+        # the coupled deviations stay linear in j: no hinge at this level, since the
+        # replenishment j contains only reaches the physical stock delivery_delay epochs
+        # later, so a kink here would sit at a threshold the future does not respect
+        @test all(diff(stock_features[rows, nb_fi + 9]) .≈ 1)
+        @test all(diff(stock_features[rows, nb_fi + 11]) .≈ -1)
+        # the item identifier stays the very last column
+        @test all(stock_features[rows, end] .≈ i)
+    end
+
+    # `stock_inf`/`stock_sup` are global bounds: comparing them to the level of a single
+    # item ignores the stock the other items hold, which is exactly `others_physical`
+    @test stock_features[:, nb_fi + 1] != stock_features[:, nb_fi + 9]
+
+    # the uncoupled and coupled columns agree only for an item whose siblings are empty
+    env_solo = DR.Environment(b, Xoshiro(2); stock_ini=[5, 0, 0])
+    state_solo = env_solo.state
+    sf_solo = DR.create_stock_features(state_solo, DR.create_items_features(state_solo))
+    ub_solo = DR.ub_per_item(state_solo)
+    starts_solo = [1; cumsum(ub_solo)[1:(end - 1)] .+ 1]
+    ends_solo = cumsum(ub_solo)
+    rows_1 = starts_solo[1]:ends_solo[1]
+    @test sf_solo[rows_1, nb_fi + 1] ≈ sf_solo[rows_1, nb_fi + 9]
+    @test sf_solo[rows_1, nb_fi + 3] ≈ sf_solo[rows_1, nb_fi + 11]
+    rows_2 = starts_solo[2]:ends_solo[2]
+    @test sf_solo[rows_2, nb_fi + 9] ≈ sf_solo[rows_2, nb_fi + 1] .+ 5
+    @test sf_solo[rows_2, nb_fi + 11] ≈ sf_solo[rows_2, nb_fi + 3] .- 5
 end
 
 @testset "DynamicReplenishment - Statistical Model" begin
