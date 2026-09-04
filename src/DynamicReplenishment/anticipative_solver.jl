@@ -376,8 +376,15 @@ function anticipative_solver(
     @variable(m, α[i in 1:(N + 1), t in 1:T, k in 1:n_customers[t]], Bin) # sales
     @variable(m, v[1:(T + 1), 1:N] >= 0, Int) # physical stock
     @variable(m, z[i in 1:N, t in 2:(T + 1)], Bin) # auxiliary binary for physical stock linearization
-    @variable(m, s_min[1:T] >= 0, Int) # stock under min
-    @variable(m, s_sup[1:T] >= 0, Int) # stock over max
+    # Over-bound penalties are only modeled when they actually cost something.
+    use_stock_bounds = !iszero(over_stock_bound_cost(env))
+    if use_stock_bounds
+        @variable(m, s_min[1:T] >= 0, Int) # stock under min
+        @variable(m, s_sup[1:T] >= 0, Int) # stock over max
+    else
+        s_min = Float64[]
+        s_sup = Float64[]
+    end
 
     ## Constraints
     stock_constraints!(m, y, s, α, T, N, n_customers, s0)
@@ -389,7 +396,8 @@ function anticipative_solver(
     physical_stock_constraints!(
         m, y, α, v, z, T, N, delivery_delay(env), s0, n_customers, bigM_ps
     )
-    stock_bounds_constraints!(m, v, T, N, s_min, s_sup, stock_inf(env), stock_sup(env))
+    use_stock_bounds &&
+        stock_bounds_constraints!(m, v, T, N, s_min, s_sup, stock_inf(env), stock_sup(env))
 
     ## Objective
     objective = compute_objective(y, s, α, v, T, s_min, s_sup, env, n_customers)

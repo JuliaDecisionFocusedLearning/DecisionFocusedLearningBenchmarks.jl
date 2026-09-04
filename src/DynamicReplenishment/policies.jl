@@ -199,8 +199,12 @@ function saa_policy(
     ) # sales
     @variable(m, v[1:nb_scenarios, 1:(T + 1), 1:N] >= 0, Int) # physical stock
     @variable(m, z[1:nb_scenarios, 1:N, 2:(T + 1)], Bin) # auxiliary binary for physical stock linearization
-    @variable(m, s_min[1:nb_scenarios, 1:T] >= 0, Int) # stock under min
-    @variable(m, s_sup[1:nb_scenarios, 1:T] >= 0, Int) # stock over max
+    # Over-bound penalties are only modeled when they actually cost something.
+    use_stock_bounds = !iszero(over_stock_bound_cost(env))
+    if use_stock_bounds
+        @variable(m, s_min[1:nb_scenarios, 1:T] >= 0, Int) # stock under min
+        @variable(m, s_sup[1:nb_scenarios, 1:T] >= 0, Int) # stock over max
+    end
 
     ## Constraints
     @constraint(m, [s_idx in 2:nb_scenarios, i in 1:N], y[1, 1, i] == y[s_idx, 1, i]) # first replenishment is the same for all scenarios
@@ -242,16 +246,20 @@ function saa_policy(
             n_customers[s_idx],
             bigM_ps[s_idx],
         )
-        stock_bounds_constraints!(
-            m,
-            v[s_idx, :, :],
-            T,
-            N,
-            s_min[s_idx, :],
-            s_sup[s_idx, :],
-            stock_inf(env),
-            stock_sup(env),
-        )
+        s_min_s = use_stock_bounds ? s_min[s_idx, :] : Float64[]
+        s_sup_s = use_stock_bounds ? s_sup[s_idx, :] : Float64[]
+        if use_stock_bounds
+            stock_bounds_constraints!(
+                m,
+                v[s_idx, :, :],
+                T,
+                N,
+                s_min_s,
+                s_sup_s,
+                stock_inf(env),
+                stock_sup(env),
+            )
+        end
         ## Objective
         objective += compute_objective(
             y[s_idx, :, :],
@@ -259,8 +267,8 @@ function saa_policy(
             α[s_idx, :, :, :],
             v[s_idx, :, :],
             T,
-            s_min[s_idx, :],
-            s_sup[s_idx, :],
+            s_min_s,
+            s_sup_s,
             env,
             n_customers[s_idx],
         )
