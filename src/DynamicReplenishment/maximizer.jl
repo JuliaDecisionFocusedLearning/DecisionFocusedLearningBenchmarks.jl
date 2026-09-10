@@ -7,10 +7,12 @@ function _obj_function(N::Int, ub::Vector{Int}, Θ, y, z)
         offset += ub[i]
     end
     utility_reward = sum(θ[i] * y[i] for i in 1:N)
-    stock_penalization = sum(
-        η[i][1] * z[i, 1] - sum(z[i, j] * sum(η[i][k] for k in 2:j) for j in 2:ub[i]) for
-        i in 1:N
-    )
+    # La somme cumulée part de `k = 1` : `η[i][1]` est un cran de pente comme les
+    # autres, donc il entre dans TOUTES les pénalités, pas seulement celle du
+    # niveau 1 (convention du 2026-09-10, voir `EtaParametrization`). C'est ce qui
+    # rend `m_i(j) - m_i(j+1) = η[i][j+1] ≥ 0`, donc la concavité automatique.
+    stock_penalization =
+        -sum(sum(z[i, j] * sum(η[i][k] for k in 1:j) for j in 1:ub[i]) for i in 1:N)
     return utility_reward + stock_penalization
 end
 
@@ -85,8 +87,11 @@ function g(y; state::DRPState, kwargs...)
     yη = Vector{Float64}(undef, sum(ub))
     row = 1
     for i in 1:N
-        yη[row] = stock_and_replenishment[i] > 0 ? 1 : 0
-        for k in 2:ub[i]
+        # `Σ_j z[i,j] Σ_{k≤j} η[i][k] = Σ_k η[i][k] max(0, x[i] - k + 1)`, pour
+        # `k = 1..ub` sans cas particulier — `k = 1` donne `-x[i]`. Ces coefficients
+        # DOIVENT suivre l'objectif, sinon `⟨g(y), Θ⟩` cesse de valoir l'objectif du
+        # maximiseur en `y` et le gradient de la perte de Fenchel-Young est faux.
+        for k in 1:ub[i]
             yη[row + k - 1] = -max(0, stock_and_replenishment[i] - (k - 1))
         end
         row += ub[i]

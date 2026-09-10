@@ -282,7 +282,7 @@ function solver_variable_to_dataset(
         @assert length(θ) == N + sum(ub_per_item(dataset[1].state))
         final_obj_val += κ * dot(θ, g_y)
     end
-    if !isapprox(obj_val, final_obj_val, atol=1e-3, rtol=1e-3)
+    if !isapprox(obj_val, final_obj_val; atol=1e-3, rtol=1e-3)
         # Écart entre l'objectif rapporté par le solveur et l'objectif recalculé
         # depuis la trajectoire arrondie : signe d'instabilité numérique du solveur
         # (le même MILP produit les warnings SCIP "LP solution value is above SCIP's
@@ -316,9 +316,9 @@ function g_model(m, N, ub, y, s)
     y_eta_vec = Vector{AffExpr}(undef, sum(ub))
     row = 1
     for i in 1:N
-        y_eta_vec[row] = 1 * z_eta[i, 1]
-        for k in 2:ub[i]
-            # max(0, s[i] + y[i] - (k - 1)) = number of levels j >= k that are filled
+        for k in 1:ub[i]
+            # max(0, s[i] + y[i] - (k - 1)) = number of levels j >= k that are filled.
+            # `k` starts at 1: same convention as `_obj_function` and `g` (2026-09-10).
             y_eta_vec[row + k - 1] = -sum(z_eta[i, j] for j in k:ub[i])
         end
         row += ub[i]
