@@ -15,96 +15,95 @@ so the marginal utility of its `j`-th unit is
 `η ≥ 0` (softplus), so `m_i(j) - m_i(j+1) = η[i][j+1] ≥ 0`: the curve is concave
 and the threshold is where it crosses zero.
 
-# Les trois variantes, et la seule chose qui les distingue
+# The three variants, and the only thing that sets them apart
 
-Elles ne diffèrent que par le NOMBRE de `η` réellement produits par le modèle :
+They differ only in the NUMBER of `η` the model actually produces:
 
-| | `m_i(j)` | `η` par item |
+| | `m_i(j)` | `η` per item |
 |---|---|---|
 | [`PiecewiseConstantEta`](@ref) (`full`)  | `θ_i − Σ_{k≤j} η_{i,k}` | `ub_i` |
 | [`SlopeEta`](@ref) (`slope`)             | `θ_i − j · η_i`         | `1` |
 | [`NoEta`](@ref) (`none`)                 | `θ_i`                   | `0` |
 
-`slope` est exactement `full` avec `η_{i,k} ≡ η_i` : la première unité EST
-pénalisée (`m_i(1) = θ_i − η_i`), contrairement aux anciennes `SlopeEta` /
-`LevelSlopeEta` qui exemptaient le niveau 1 et ont été retirées.
+`slope` is exactly `full` with `η_{i,k} ≡ η_i`: the first unit IS penalized
+(`m_i(1) = θ_i − η_i`), unlike the former `SlopeEta` / `LevelSlopeEta` which
+exempted level 1 and have since been removed.
 
-# ⚠️ Pourquoi la longueur de `Θ` change, et pourquoi c'est le point
+# ⚠️ Why the length of `Θ` varies, and why that is the whole point
 
-`Θ = [θ (N) ; η (nb_eta)]`, et `nb_eta` vaut `Σ ub_i`, `N` ou `0` selon la
-variante. Une version antérieure gardait `Θ` à pleine longueur et remplissait le
-bloc `η` de zéros pour `none` — mais la perte de Fenchel-Young perturbe
-`Θ` coordonnée par coordonnée (`PerturbedAdditive` : `θ .+ ε·Z` sur TOUT le
-vecteur). Les zéros recevaient donc du bruit, devenaient négatifs une fois sur
-deux, et un `η` négatif RÉCOMPENSE le stock : l'ablation « pas de seuil »
-s'entraînait en fait contre des cibles portant un seuil aléatoire.
+`Θ = [θ (N) ; η (nb_eta)]`, and `nb_eta` is `Σ ub_i`, `N` or `0` depending on
+the variant. An earlier version kept `Θ` at full length and padded the `η` block
+with zeros for `none` — but the Fenchel-Young loss perturbs `Θ` coordinate by
+coordinate (`PerturbedAdditive`: `θ .+ ε·Z` over the WHOLE vector). The zeros
+therefore received noise, went negative half of the time, and a negative `η`
+REWARDS stock: the "no threshold" ablation was in fact training against targets
+that carried a random threshold.
 
-Mesuré avant correction, sur les instances de l'étude, part des tirages où le
-bruit sur `η` changeait la décision perturbée :
+Measured before the fix, on the instances of the study, share of the draws in
+which the noise on `η` changed the perturbed decision:
 
     ε = 1    n = 10 : 68 %   n = 50 : 94 %
     ε = 10   n = 10 : 96 %   n = 50 : 99 %
 
-En ne produisant que les `η` qui existent, le bruit ne peut plus porter que sur
-des degrés de liberté réels. Effet de bord bienvenu : le modèle est plus petit
-et le vecteur perturbé plus court.
+By producing only the `η` that exist, the noise can no longer fall anywhere but
+on real degrees of freedom. A welcome side effect: the model is smaller and the
+perturbed vector shorter.
 
-⚠️ Conséquence : `Θ` n'a plus la même longueur d'une variante à l'autre, donc
-[`replenishment_problem`](@ref), [`g`](@ref) et `g_model` doivent connaître la
-paramétrisation. Les trois la reçoivent, et [`nb_eta`](@ref) /
-[`expand_eta`](@ref) ci-dessous sont leur unique source de vérité : toute
-divergence entre eux casserait l'identité `⟨g(y), Θ⟩ = objectif(y)` dont dépend
-le gradient de la perte.
+⚠️ Consequence: `Θ` no longer has the same length across variants, so
+[`replenishment_problem`](@ref), [`g`](@ref) and `g_model` must know the
+parametrization. All three receive it, and [`nb_eta`](@ref) /
+[`expand_eta`](@ref) below are their single source of truth: any divergence
+between them would break the identity `⟨g(y), Θ⟩ = objective(y)` that the
+gradient of the loss relies on.
 """
 abstract type EtaParametrization end
 
 """
-`full` — la variante la plus expressive : un `η` par item et par niveau, donc
-`m_i(j) = θ_i − Σ_{k≤j} η_{i,k}`, concave et constante par morceaux.
+`full` — the most expressive variant: one `η` per item and per level, hence
+`m_i(j) = θ_i − Σ_{k≤j} η_{i,k}`, concave and piecewise constant.
 """
 struct PiecewiseConstantEta <: EtaParametrization end
 
 """
-`none` — ablation : aucun `η` n'est produit, `m_i ≡ θ_i`. L'objectif devient
-linéaire en `y`, donc l'optimum est un sommet du polytope des quotas
-(bang-bang) et aucun seuil n'est exprimable.
+`none` — ablation: no `η` is produced at all, `m_i ≡ θ_i`. The objective becomes
+linear in `y`, so the optimum is a vertex of the quota polytope (bang-bang) and
+no threshold can be expressed.
 """
 struct NoEta <: EtaParametrization end
 
 """
-`slope` — un seul `η_i` par item, appliqué à TOUS les niveaux :
-`m_i(j) = θ_i − j·η_i`. Deux paramètres effectifs par item, `θ_i` et `η_i`.
+`slope` — a single `η_i` per item, applied to ALL levels:
+`m_i(j) = θ_i − j·η_i`. Two effective parameters per item, `θ_i` and `η_i`.
 
-La pente unique est lue sur la colonne de niveau [`SLOPE_LEVEL`](@ref) du bloc
-de l'item.
+The single slope is read off the level column [`SLOPE_LEVEL`](@ref) of the
+item's block.
 """
 struct SlopeEta <: EtaParametrization end
 
 """
-Colonne de niveau sur laquelle [`SlopeEta`](@ref) lit la pente unique de chaque
-item : `j = 1`, la première du bloc.
+Level column on which [`SlopeEta`](@ref) reads the single slope of each item:
+`j = 1`, the first one of the block.
 
-⚠️ Le choix naturel serait `j = s_i + 1`, le niveau de la prochaine unité, donc
-le point de fonctionnement courant. Il n'est PAS accessible ici : le modèle
-statistique est appelé `m(x)` et ne reçoit pas l'état, et `s_i` n'est pas
-reconstructible depuis `x` — `ScaledModel` divise les features par un `scale`
-que le modèle ne connaît pas, donc `max_quotas_dev = max_quotas[t,i] − j`
-n'est plus lisible en entier. Le rendre accessible demanderait soit de faire
-passer l'état jusqu'au modèle (donc de toucher la boucle de perte dans
-DecisionFocusedLearningAlgorithms), soit d'ajouter une feature de niveau non
-normalisée (donc d'invalider tous les modèles archivés).
+⚠️ The natural choice would be `j = s_i + 1`, the level of the next unit, hence
+the current operating point. It is NOT reachable here: the statistical model is
+called as `m(x)` and never receives the state, and `s_i` cannot be reconstructed
+from `x` — `ScaledModel` divides the features by a `scale` the model knows
+nothing about, so `max_quotas_dev = max_quotas[t,i] − j` can no longer be read
+back as an integer. Making it reachable would mean either threading the state
+down to the model (hence touching the loss loop in
+DecisionFocusedLearningAlgorithms), or adding an unnormalized level feature
+(hence invalidating every archived model).
 
-En pratique l'écart est faible : les features d'item sont identiques sur toutes
-les colonnes d'un item, et seules les 12 features de niveau varient. Sur les
-instances parcimonieuses (`λ/N = 0.2`) la plupart des items ont `s_i = 0`, pour
-lesquels `j = 1` EST `s_i + 1`.
+In practice the gap is small: the item features are identical across all columns
+of an item, and only the 12 level features vary. On sparse instances
+(`λ/N = 0.2`) most items have `s_i = 0`, for which `j = 1` IS `s_i + 1`.
 """
 const SLOPE_LEVEL = 1
 
 """
 $TYPEDSIGNATURES
 
-Longueur du bloc `η` de `Θ` — la seule fonction qui la définit.
+Length of the `η` block of `Θ` — the only function that defines it.
 """
 nb_eta(::PiecewiseConstantEta, ub::AbstractVector{<:Integer}) = sum(ub)
 nb_eta(::SlopeEta, ub::AbstractVector{<:Integer}) = length(ub)
@@ -113,17 +112,17 @@ nb_eta(::NoEta, ub::AbstractVector{<:Integer}) = 0
 """
 $TYPEDSIGNATURES
 
-Décompacte le bloc `η` en ses incréments PAR NIVEAU `η[i][k]`, `k = 1..ub[i]`.
+Unpacks the `η` block into its PER-LEVEL increments `η[i][k]`, `k = 1..ub[i]`.
 
-C'est la forme que lisent la fonction objectif et les figures ; `slope` répète
-son unique pente sur tous les niveaux, `none` rend des zéros. Ne sert PAS à
-construire `Θ` — le modèle, lui, produit la forme compacte.
+This is the form read by the objective function and by the figures; `slope`
+repeats its single slope across every level, `none` returns zeros. It is NOT
+used to build `Θ` — the model itself produces the compact form.
 """
 function expand_eta(::PiecewiseConstantEta, ηc::AbstractVector, ub::AbstractVector{<:Integer})
     out = Vector{Vector{eltype(ηc)}}(undef, length(ub))
     off = 0
     for i in eachindex(ub)
-        out[i] = collect(ηc[(off + 1):(off + ub[i])])
+        out[i] = collect(ηc[(off+1):(off+ub[i])])
         off += ub[i]
     end
     return out
@@ -172,7 +171,7 @@ function (m::StatisticalModel)(x)
 
     # the stock block and the trailing item identifier sit on top of the item block
     nb_item_features = size(x, 1) - (NB_STOCK_FEATURES + 1)
-    x_features = @view x[1:(end - 1), :]
+    x_features = @view x[1:(end-1), :]
     x_item = x_features[1:(nb_item_features), starts]
     θ = m.θ_model(x_item)
     return vcat(vec(θ), eta_block(m.parametrization, m.η_model, x_features, starts))
@@ -192,18 +191,18 @@ end
 """
 $TYPEDSIGNATURES
 
-Assemble le bloc `η` COMPACT depuis les features de niveau `x`.
+Assembles the COMPACT `η` block from the level features `x`.
 
-Sa longueur est [`nb_eta`](@ref), pas `sum(ub)` : c'est tout l'objet de la
-refonte, voir [`EtaParametrization`](@ref). `none` ne fait tourner aucune tête
-`η`, `slope` ne la fait tourner que sur une colonne par item.
+Its length is [`nb_eta`](@ref), not `sum(ub)`: that is the very purpose of the
+rework, see [`EtaParametrization`](@ref). `none` runs no `η` head at all,
+`slope` runs it on a single column per item.
 """
 eta_block(::PiecewiseConstantEta, η_model, x, starts) = vec(η_model(x))
 
-# Aucun `η` : on rend un vecteur VIDE, et non des zéros. Un zéro serait une
-# coordonnée de `Θ` que la perturbation de Fenchel-Young irait bruiter.
+# No `η` at all: return an EMPTY vector rather than zeros. A zero would be a
+# coordinate of `Θ` for the Fenchel-Young perturbation to add noise to.
 eta_block(::NoEta, η_model, x, starts) = similar(x, 0)
 
-# Une seule colonne par item — donc `N` passes avant au lieu de `sum(ub)`.
+# A single column per item — hence `N` forward passes instead of `sum(ub)`.
 eta_block(::SlopeEta, η_model, x, starts) =
-    vec(η_model(x[:, starts .+ (SLOPE_LEVEL - 1)]))
+    vec(η_model(x[:, starts .+ (SLOPE_LEVEL-1)]))

@@ -289,7 +289,7 @@ function Utils.build_environment(
 )
     hasproperty(sample, :state) || error(
         "`build_environment` needs the epoch state in `sample.state`, got a DataSample " *
-        "with $(propertynames(sample)).",
+            "with $(propertynames(sample)).",
     )
     state = sample.state
     state isa DRPState ||
@@ -307,7 +307,7 @@ be passed to `LinearMaximizer` without a closure.
 """
 struct MaximizerProblem{M,P<:EtaParametrization}
     model_builder::M
-    "paramétrisation du bloc `η` — décide la longueur attendue de `Θ`"
+    "parametrization of the `η` block"
     parametrization::P
 end
 MaximizerProblem(model_builder) = MaximizerProblem(model_builder, PiecewiseConstantEta())
@@ -320,8 +320,8 @@ end
 """
 $TYPEDEF
 
-Carte de features `g` figée sur une paramétrisation, pour la passer à
-`LinearMaximizer` sans fermeture — même motif que [`MaximizerProblem`](@ref).
+Feature map `g` fixed on a parametrization, to pass it to
+`LinearMaximizer` without a closure — same pattern as [`MaximizerProblem`](@ref).
 """
 struct GFeatureMap{P<:EtaParametrization}
     parametrization::P
@@ -331,12 +331,8 @@ end
 """
 $TYPEDSIGNATURES
 
-Le maximiseur du benchmark, figé sur une paramétrisation de `η`.
-
-⚠️ `parametrization` doit être CELLE du modèle statistique : elle décide la
-longueur de `Θ` et celle du bloc `η` de `g(y)`. Un désaccord est détecté par
-[`replenishment_problem`](@ref), qui lève plutôt que de résoudre un MILP dont
-l'objectif ne correspondrait pas à `⟨g(y), Θ⟩`.
+The benchmark's maximizer, fixed on a parametrization of `η`.
+BE CAREFUL: the `parametrization` must be the SAME as that of the statistical model!
 """
 function Utils.generate_maximizer(
     ::DynamicReplenishmentBenchmark;

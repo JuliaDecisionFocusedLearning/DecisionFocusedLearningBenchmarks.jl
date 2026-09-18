@@ -18,10 +18,10 @@ function compute_bigM_sales(env::Environment, scenario::Scenario)
             big_M[t_m][k] = zeros(Int, N + 1)
             sorted_indices = sortperm(utilities[t][k])  # ascending order
             no_buy_index = findfirst(==(N + 1), sorted_indices)
-            for (index, i_1) in enumerate(sorted_indices[1:(end - 1)])
+            for (index, i_1) in enumerate(sorted_indices[1:(end-1)])
                 if index >= no_buy_index
                     higher_items = [
-                        i_2 for i_2 in sorted_indices[(index + 1):end] if i_2 <= N
+                        i_2 for i_2 in sorted_indices[(index+1):end] if i_2 <= N
                     ]
                     ini_stock_sum = sum(s0[i_2] for i_2 in higher_items)
                     quota_sum = sum(max_q[τ, i_2] for τ in 1:t for i_2 in higher_items)
@@ -43,10 +43,10 @@ function compute_bigM_physical_stock(env::Environment, scenario::Scenario)
     n_customer = nb_customers(scenario)[current_epoch(env):end]  # borne des ventes
 
     big_M = zeros(Int, N, T + 1)
-    for i in 1:N, t in 2:(T + 1)
+    for i in 1:N, t in 2:(T+1)
         t_arrived = max(0, t - delay)
         pos = s0[i] + sum(max_q[τ, i] for τ in 1:t_arrived; init=0)   # borne x_hi
-        neg = sum(n_customer[1:(t - 1)])                                    # borne -x_lo (≤ ventes cumulées)
+        neg = sum(n_customer[1:(t-1)])                                    # borne -x_lo (≤ ventes cumulées)
         big_M[i, t] = max(pos, neg)
     end
     return big_M
@@ -59,7 +59,7 @@ function stock_constraints!(m, y, s, α, T, N, nb_customers, stock_ini)
     @constraint(
         m,
         [i in 1:N, t in 1:T],
-        s[t + 1, i] == s[t, i] + y[t, i] - sum(α[i, t, k] for k in 1:nb_customers[t])
+        s[t+1, i] == s[t, i] + y[t, i] - sum(α[i, t, k] for k in 1:nb_customers[t])
     )
     return nothing
 end
@@ -67,7 +67,7 @@ end
 function customer_constraints!(m, α, T, N, nb_customers)
     # Each customer buys at most one vehicle (no purchase option included)
     @constraint(
-        m, [t in 1:T, k in 1:nb_customers[t]], sum(α[i, t, k] for i in 1:(N + 1)) == 1
+        m, [t in 1:T, k in 1:nb_customers[t]], sum(α[i, t, k] for i in 1:(N+1)) == 1
     )
     return nothing
 end
@@ -77,7 +77,7 @@ function sales_order_constraints!(m, y, s, α, T, N, nb_customers, utilities, bi
         for k in 1:nb_customers[t]
             sorted_indices = sortperm(utilities[t][k])  # ascending order
             no_buy_index = findfirst(==(N+1), sorted_indices)
-            for (index, i_1) in enumerate(sorted_indices[1:(end - 1)])
+            for (index, i_1) in enumerate(sorted_indices[1:(end-1)])
                 # no-buy case
                 if index < no_buy_index
                     @constraint(m, α[i_1, t, k] == 0)
@@ -89,9 +89,9 @@ function sales_order_constraints!(m, y, s, α, T, N, nb_customers, utilities, bi
                             m,
                             α[i_1, t, k] <= (
                                 1 -
-                                sum(
+                                    sum(
                                     s[t, i_2] + y[t, i_2] for
-                                    i_2 in sorted_indices[(index + 1):end] if i_2 <= N
+                                    i_2 in sorted_indices[(index+1):end] if i_2 <= N
                                 ) / bigM_s[t][k][i_1]
                             ),
                         )
@@ -100,10 +100,10 @@ function sales_order_constraints!(m, y, s, α, T, N, nb_customers, utilities, bi
                             m,
                             α[i_1, t, k] <= (
                                 1 -
-                                sum(
+                                    sum(
                                     s[t, i_2] + y[t, i_2] -
-                                    sum(α[i_2, t, j] for j in 1:(k - 1)) for
-                                    i_2 in sorted_indices[(index + 1):end] if i_2 <= N
+                                        sum(α[i_2, t, j] for j in 1:(k-1)) for
+                                    i_2 in sorted_indices[(index+1):end] if i_2 <= N
                                 ) / bigM_s[t][k][i_1]
                             ),
                         )
@@ -142,20 +142,20 @@ function physical_stock_constraints!(
     # v = max(0, x_phys) via indicatrice z (z=1 ⟺ x_phys ≥ 0)
     @constraint(
         m,
-        [i in 1:N, t in 2:(T + 1)],
+        [i in 1:N, t in 2:(T+1)],
         v[t, i] >=
-            stock_ini[i] + sum(y[τ, i] for τ in 1:(t - delivery_delay); init=zero(AffExpr)) -
-        sum(α[i, τ, k] for τ in 1:(t - 1) for k in 1:nb_customers[τ]; init=zero(AffExpr))
+            stock_ini[i] + sum(y[τ, i] for τ in 1:(t-delivery_delay); init=zero(AffExpr)) -
+            sum(α[i, τ, k] for τ in 1:(t-1) for k in 1:nb_customers[τ]; init=zero(AffExpr))
     )
     @constraint(
         m,
-        [i in 1:N, t in 2:(T + 1)],
+        [i in 1:N, t in 2:(T+1)],
         v[t, i] <=
-            stock_ini[i] + sum(y[τ, i] for τ in 1:(t - delivery_delay); init=zero(AffExpr)) -
-        sum(α[i, τ, k] for τ in 1:(t - 1) for k in 1:nb_customers[τ]; init=zero(AffExpr)) +
-        bigM_ps[i, t] * (1 - z[i, t])
+            stock_ini[i] + sum(y[τ, i] for τ in 1:(t-delivery_delay); init=zero(AffExpr)) -
+            sum(α[i, τ, k] for τ in 1:(t-1) for k in 1:nb_customers[τ]; init=zero(AffExpr)) +
+            bigM_ps[i, t] * (1 - z[i, t])
     )
-    @constraint(m, [i in 1:N, t in 2:(T + 1)], v[t, i] <= bigM_ps[i, t] * z[i, t])
+    @constraint(m, [i in 1:N, t in 2:(T+1)], v[t, i] <= bigM_ps[i, t] * z[i, t])
     return nothing
 end
 
@@ -165,8 +165,8 @@ $TYPEDSIGNATURES
 Add stock bounds constraints.
 """
 function stock_bounds_constraints!(m, v, T, N, s_min, s_sup, stock_inf, stock_sup)
-    @constraint(m, [t in 1:T], s_min[t] >= stock_inf - sum(v[t + 1, i] for i in 1:N))
-    @constraint(m, [t in 1:T], s_sup[t] >= sum(v[t + 1, i] for i in 1:N) - stock_sup)
+    @constraint(m, [t in 1:T], s_min[t] >= stock_inf - sum(v[t+1, i] for i in 1:N))
+    @constraint(m, [t in 1:T], s_sup[t] >= sum(v[t+1, i] for i in 1:N) - stock_sup)
     return nothing
 end
 
@@ -182,15 +182,15 @@ function compute_objective(y, s, α, v, T, s_min, s_sup, env, nb_customers)
     # horizon), in which case the inner sum is empty and would throw without it.
     margin = sum(
         prices(env)[i] *
-        sum(α[i, t, k] for t in 1:T for k in 1:nb_customers[t]; init=zero(AffExpr)) for
+            sum(α[i, t, k] for t in 1:T for k in 1:nb_customers[t]; init=zero(AffExpr)) for
         i in 1:N;
         init=zero(AffExpr),
     )
     # virtual stock cost
-    virtual_stock = sum(virtual_stock_cost(env)[i] * s[t + 1, i] for t in 1:T for i in 1:N)
+    virtual_stock = sum(virtual_stock_cost(env)[i] * s[t+1, i] for t in 1:T for i in 1:N)
     # physical stock cost
     physical_stock = sum(
-        physical_stock_cost(env)[i] * v[t + 1, i] for t in 1:T for i in 1:N
+        physical_stock_cost(env)[i] * v[t+1, i] for t in 1:T for i in 1:N
     )
     # over bound stock
     under_stock_min = sum(s_min)
@@ -198,7 +198,7 @@ function compute_objective(y, s, α, v, T, s_min, s_sup, env, nb_customers)
 
     objective =
         margin - virtual_stock - physical_stock -
-        over_stock_bound_cost(env) * (under_stock_min + over_stock_sup)
+            over_stock_bound_cost(env) * (under_stock_min + over_stock_sup)
 
     return objective
 end
@@ -251,9 +251,9 @@ function solver_variable_to_dataset(
             current_epoch=t,
             stock=s_val[t, :],
             stock_history=s_val[1:t, :],
-            replenishment_history=y_val[1:(t - 1), :],
-            sales_history=sales_full[1:(t - 1), :],
-            customer_history=n_customers[1:(t - 1)],
+            replenishment_history=y_val[1:(t-1), :],
+            sales_history=sales_full[1:(t-1), :],
+            customer_history=n_customers[1:(t-1)],
             ub_per_item=s_val[t, :] .+ max_q[t, :],
         )
         y_true = y_val[t, :]
@@ -268,12 +268,12 @@ function solver_variable_to_dataset(
     final_state = DRPState(;
         config=config,
         current_epoch=T + 1,
-        stock=s_val[T + 1, :],
-        stock_history=s_val[1:(T + 1), :],
+        stock=s_val[T+1, :],
+        stock_history=s_val[1:(T+1), :],
         replenishment_history=y_val[1:T, :],
         sales_history=sales_full[1:T, :],
         customer_history=n_customers[1:T],
-        ub_per_item=s_val[T + 1, :] .+ max_q[end, :],
+        ub_per_item=s_val[T+1, :] .+ max_q[end, :],
     )
     final_obj_val = total_cost(final_state)
 
@@ -311,16 +311,12 @@ function g_model(m, N, ub, y, s, p::EtaParametrization=PiecewiseConstantEta())
     @variable(m, z_eta[i in 1:N, j in 1:ub[i]], Bin)
 
     @constraint(m, [i in 1:N], sum(z_eta[i, j] for j in 1:ub[i]) == s[i] + y[i])
-    @constraint(m, [i in 1:N, j in 1:(ub[i] - 1)], z_eta[i, j] >= z_eta[i, j + 1])
+    @constraint(m, [i in 1:N, j in 1:(ub[i]-1)], z_eta[i, j] >= z_eta[i, j+1])
 
-    # Version JuMP de `_eta_features` : la partie `η` doit avoir la MÊME longueur
-    # compacte que `Θ`, sinon `⟨g(y), Θ⟩` cesse de valoir l'objectif et le
-    # gradient de la perte de Fenchel-Young est faux. Voir `EtaParametrization`.
     y_eta_vec = if p isa NoEta
         AffExpr[]
     elseif p isa SlopeEta
-        # `Σ_k (−Σ_{j≥k} z_j) = −Σ_j j·z_j` : la somme sur `k` de la ligne `full`,
-        # puisque `slope` répète la même pente à tous les niveaux.
+        # `Σ_k (−Σ_{j≥k} z_j) = −Σ_j j·z_j` : because `slope` has same eta value.
         [-sum(j * z_eta[i, j] for j in 1:ub[i]) for i in 1:N]
     else
         v = Vector{AffExpr}(undef, sum(ub))
@@ -329,7 +325,7 @@ function g_model(m, N, ub, y, s, p::EtaParametrization=PiecewiseConstantEta())
             for k in 1:ub[i]
                 # max(0, s[i] + y[i] - (k - 1)) = number of levels j >= k that are filled.
                 # `k` starts at 1: same convention as `_obj_function` and `g`.
-                v[row + k - 1] = -sum(z_eta[i, j] for j in k:ub[i])
+                v[row+k-1] = -sum(z_eta[i, j] for j in k:ub[i])
             end
             row += ub[i]
         end
@@ -357,13 +353,7 @@ function anticipative_solver(
     κ::Float64=1.0,
     mip_gap::Float64=0.0,
     time_limit::Union{Real,Nothing}=nothing,
-    # Only when the solve can be cut short: without a time limit the solver ends on a
-    # proven optimum and always has an incumbent, so the MIP start would be pure
-    # overhead (it costs a start-completion sub-MIP). With one, it is what guarantees
-    # an answer at all — see the block before `optimize!`.
-    warm_start::Bool=!isnothing(time_limit),
-    # Doit être la MÊME que celle du modèle statistique : `g_model` en dépend
-    # pour donner au bloc `η` de `g(y)` la longueur compacte de `Θ`.
+    warm_start::Bool=(!isnothing(time_limit)),
     parametrization::EtaParametrization=PiecewiseConstantEta(),
 )
     if reset_env
@@ -392,10 +382,10 @@ function anticipative_solver(
     s0 = stock(env)
     ## Variables
     @variable(m, y[1:T, 1:N] >= 0, Int) # replenishments
-    @variable(m, s[1:(T + 1), 1:N] >= 0, Int) # stock
-    @variable(m, α[i in 1:(N + 1), t in 1:T, k in 1:n_customers[t]], Bin) # sales
-    @variable(m, v[1:(T + 1), 1:N] >= 0, Int) # physical stock
-    @variable(m, z[i in 1:N, t in 2:(T + 1)], Bin) # auxiliary binary for physical stock linearization
+    @variable(m, s[1:(T+1), 1:N] >= 0, Int) # stock
+    @variable(m, α[i in 1:(N+1), t in 1:T, k in 1:n_customers[t]], Bin) # sales
+    @variable(m, v[1:(T+1), 1:N] >= 0, Int) # physical stock
+    @variable(m, z[i in 1:N, t in 2:(T+1)], Bin) # auxiliary binary for physical stock linearization
     # Over-bound penalties are only modeled when they actually cost something.
     use_stock_bounds = !iszero(over_stock_bound_cost(env))
     if use_stock_bounds
@@ -433,12 +423,7 @@ function anticipative_solver(
     end
     @objective(m, Max, objective)
 
-    # Warm start: replenishing nothing is always feasible, so the solver holds an
-    # incumbent from the root node on. Without it a run under `time_limit` can end
-    # with no feasible point at all — at N >= 100 that happened on whole splits,
-    # leaving `NaN` bounds (episode silently dropped) or, on the parametric oracle
-    # of a mirror-descent round, a `nothing` trajectory that crashes the round.
-    # Same trick as the SAA policy, see `policies.jl`.
+    # Warm start: replenishing nothing is always feasible
     if warm_start
         for t in 1:T, i in 1:N
             set_start_value(y[t, i], 0)
