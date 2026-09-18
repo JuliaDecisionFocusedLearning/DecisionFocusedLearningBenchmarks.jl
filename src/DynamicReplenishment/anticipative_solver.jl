@@ -305,23 +305,35 @@ $TYPEDSIGNATURES
 
 Construct yη vector for 
 """
-function g_model(m, N, ub, y, s)
+function g_model(m, N, ub, y, s, p::EtaParametrization=PiecewiseConstantEta())
     # Same encoding as `replenishment_problem`: z is the staircase indicator of the
-    # stock level, z[i, j] = 1 iff j <= s[i] + y[i]. 
+    # stock level, z[i, j] = 1 iff j <= s[i] + y[i].
     @variable(m, z_eta[i in 1:N, j in 1:ub[i]], Bin)
 
     @constraint(m, [i in 1:N], sum(z_eta[i, j] for j in 1:ub[i]) == s[i] + y[i])
     @constraint(m, [i in 1:N, j in 1:(ub[i] - 1)], z_eta[i, j] >= z_eta[i, j + 1])
 
-    y_eta_vec = Vector{AffExpr}(undef, sum(ub))
-    row = 1
-    for i in 1:N
-        for k in 1:ub[i]
-            # max(0, s[i] + y[i] - (k - 1)) = number of levels j >= k that are filled.
-            # `k` starts at 1: same convention as `_obj_function` and `g` (2026-09-10).
-            y_eta_vec[row + k - 1] = -sum(z_eta[i, j] for j in k:ub[i])
+    # Version JuMP de `_eta_features` : la partie `η` doit avoir la MÊME longueur
+    # compacte que `Θ`, sinon `⟨g(y), Θ⟩` cesse de valoir l'objectif et le
+    # gradient de la perte de Fenchel-Young est faux. Voir `EtaParametrization`.
+    y_eta_vec = if p isa NoEta
+        AffExpr[]
+    elseif p isa SlopeEta
+        # `Σ_k (−Σ_{j≥k} z_j) = −Σ_j j·z_j` : la somme sur `k` de la ligne `full`,
+        # puisque `slope` répète la même pente à tous les niveaux.
+        [-sum(j * z_eta[i, j] for j in 1:ub[i]) for i in 1:N]
+    else
+        v = Vector{AffExpr}(undef, sum(ub))
+        row = 1
+        for i in 1:N
+            for k in 1:ub[i]
+                # max(0, s[i] + y[i] - (k - 1)) = number of levels j >= k that are filled.
+                # `k` starts at 1: same convention as `_obj_function` and `g`.
+                v[row + k - 1] = -sum(z_eta[i, j] for j in k:ub[i])
+            end
+            row += ub[i]
         end
-        row += ub[i]
+        v
     end
     return vcat(vec(y), y_eta_vec)
 end
@@ -345,6 +357,14 @@ function anticipative_solver(
     κ::Float64=1.0,
     mip_gap::Float64=0.0,
     time_limit::Union{Real,Nothing}=nothing,
+    # Only when the solve can be cut short: without a time limit the solver ends on a
+    # proven optimum and always has an incumbent, so the MIP start would be pure
+    # overhead (it costs a start-completion sub-MIP). With one, it is what guarantees
+    # an answer at all — see the block before `optimize!`.
+    warm_start::Bool=!isnothing(time_limit),
+    # Doit être la MÊME que celle du modèle statistique : `g_model` en dépend
+    # pour donner au bloc `η` de `g(y)` la longueur compacte de `Θ`.
+    parametrization::EtaParametrization=PiecewiseConstantEta(),
 )
     if reset_env
         reset!(env, rng)
@@ -407,11 +427,23 @@ function anticipative_solver(
                 abs, θ
             ) nonfinite_theta = count(!isfinite, θ) epoch = current_epoch(env) maxlog = 10
         end
-        g_y = g_model(m, N, ub_per_item(state), y[1, :], s[1, :])
+        g_y = g_model(m, N, ub_per_item(state), y[1, :], s[1, :], parametrization)
         @assert length(θ) == N + sum(ub_per_item(state))
         objective += κ * dot(θ, g_y)
     end
     @objective(m, Max, objective)
+
+    # Warm start: replenishing nothing is always feasible, so the solver holds an
+    # incumbent from the root node on. Without it a run under `time_limit` can end
+    # with no feasible point at all — at N >= 100 that happened on whole splits,
+    # leaving `NaN` bounds (episode silently dropped) or, on the parametric oracle
+    # of a mirror-descent round, a `nothing` trajectory that crashes the round.
+    # Same trick as the SAA policy, see `policies.jl`.
+    if warm_start
+        for t in 1:T, i in 1:N
+            set_start_value(y[t, i], 0)
+        end
+    end
 
     optimize!(m)
     if primal_status(m) == MOI.FEASIBLE_POINT

@@ -305,17 +305,47 @@ $TYPEDEF
 Callable wrapping [`replenishment_problem`](@ref) with a fixed `model_builder`, so it can
 be passed to `LinearMaximizer` without a closure.
 """
-struct MaximizerProblem{M}
+struct MaximizerProblem{M,P<:EtaParametrization}
     model_builder::M
+    "paramétrisation du bloc `η` — décide la longueur attendue de `Θ`"
+    parametrization::P
 end
+MaximizerProblem(model_builder) = MaximizerProblem(model_builder, PiecewiseConstantEta())
 function (p::MaximizerProblem)(Θ; kwargs...)
-    return replenishment_problem(Θ; kwargs..., model_builder=p.model_builder)
+    return replenishment_problem(
+        Θ; kwargs..., model_builder=p.model_builder, parametrization=p.parametrization
+    )
 end
 
+"""
+$TYPEDEF
+
+Carte de features `g` figée sur une paramétrisation, pour la passer à
+`LinearMaximizer` sans fermeture — même motif que [`MaximizerProblem`](@ref).
+"""
+struct GFeatureMap{P<:EtaParametrization}
+    parametrization::P
+end
+(f::GFeatureMap)(y; kwargs...) = g(y; kwargs..., parametrization=f.parametrization)
+
+"""
+$TYPEDSIGNATURES
+
+Le maximiseur du benchmark, figé sur une paramétrisation de `η`.
+
+⚠️ `parametrization` doit être CELLE du modèle statistique : elle décide la
+longueur de `Θ` et celle du bloc `η` de `g(y)`. Un désaccord est détecté par
+[`replenishment_problem`](@ref), qui lève plutôt que de résoudre un MILP dont
+l'objectif ne correspondrait pas à `⟨g(y), Θ⟩`.
+"""
 function Utils.generate_maximizer(
-    ::DynamicReplenishmentBenchmark; model_builder=highs_model
+    ::DynamicReplenishmentBenchmark;
+    model_builder=highs_model,
+    parametrization::EtaParametrization=PiecewiseConstantEta(),
 )
-    return LinearMaximizer(MaximizerProblem(model_builder); g)
+    return LinearMaximizer(
+        MaximizerProblem(model_builder, parametrization); g=GFeatureMap(parametrization)
+    )
 end
 
 """
