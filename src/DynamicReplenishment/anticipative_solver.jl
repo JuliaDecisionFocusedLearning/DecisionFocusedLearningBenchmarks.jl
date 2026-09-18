@@ -215,6 +215,7 @@ function solver_variable_to_dataset(
     κ=1.0,
     state::DRPState=env.state,
     mip_gap=nothing,
+    parametrization::EtaParametrization=PiecewiseConstantEta(),
 )
     s_val = Int.(round.(s_val))      # (T+1, N)
     y_val = Int.(round.(y_val))      # (T, N)
@@ -278,8 +279,9 @@ function solver_variable_to_dataset(
     final_obj_val = total_cost(final_state)
 
     if !isnothing(θ)
-        g_y = g(dataset[1].y; state=dataset[1].state)
-        @assert length(θ) == N + sum(ub_per_item(dataset[1].state))
+        g_y = g(dataset[1].y; state=dataset[1].state, parametrization)
+        @assert length(θ) ==
+            N + nb_eta(parametrization, ub_per_item(dataset[1].state))
         final_obj_val += κ * dot(θ, g_y)
     end
     if !isapprox(obj_val, final_obj_val; atol=1e-3, rtol=1e-3)
@@ -418,7 +420,14 @@ function anticipative_solver(
             ) nonfinite_theta = count(!isfinite, θ) epoch = current_epoch(env) maxlog = 10
         end
         g_y = g_model(m, N, ub_per_item(state), y[1, :], s[1, :], parametrization)
-        @assert length(θ) == N + sum(ub_per_item(state))
+        length(θ) == N + nb_eta(parametrization, ub_per_item(state)) || throw(
+            DimensionMismatch(
+                "θ is of length $(length(θ)) instead of " *
+                "$(N + nb_eta(parametrization, ub_per_item(state))) for " *
+                "$(parametrization) : the statistical model and the parametric " *
+                "anticipative solver do not use the same parametrization of η.",
+            ),
+        )
         objective += κ * dot(θ, g_y)
     end
     @objective(m, Max, objective)
@@ -450,6 +459,7 @@ function anticipative_solver(
             κ=κ,
             state=state,
             mip_gap=mip_gap,
+            parametrization=parametrization,
         )
         return obj_val, dataset
     else

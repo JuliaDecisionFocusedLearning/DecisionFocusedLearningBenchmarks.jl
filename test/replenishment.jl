@@ -431,20 +431,27 @@ end
     end
 end
 
+# Le solveur anticipatif paramétré reçoit `θ = model(x)` : sa paramétrisation de `η`
+# doit être celle du modèle, sinon il attend un `θ` d'une AUTRE longueur. Le cas
+# `full` seul passait tant que la paramétrisation ne descendait pas jusqu'à lui —
+# Mirror Descent cassait alors sur le premier ré-étiquetage d'un run `slope`/`none`.
 @testset "DynamicReplenishment - Parametric Anticipative trajectory is feasible for the CO layer" begin
-    b = DynamicReplenishmentBenchmark(; N=5, max_steps=3)
-    rng = Xoshiro(0)
-    env = generate_environments(b, 1; seed=0)
-    model = generate_statistical_model(b)
-    param_ant_solver = DR.generate_parametric_anticipative_solver(b)
-    while !is_terminated(env[1])
-        x, _ = observe(env[1])
-        @test !any(isnan.(x))
-        θ = model(x)
-        y_true = param_ant_solver(θ, env[1].env.scenario, env[1])[1].y
-        y_hat = DR.generate_maximizer(b)(θ; state=env[1].env.state, y_true=y_true)
-        @test y_true == y_hat
-        step!(env[1].env, y_true, rng)
+    for parametrization in (DR.PiecewiseConstantEta(), DR.SlopeEta(), DR.NoEta())
+        b = DynamicReplenishmentBenchmark(; N=5, max_steps=3)
+        rng = Xoshiro(0)
+        env = generate_environments(b, 1; seed=0)
+        model = generate_statistical_model(b; parametrization)
+        param_ant_solver = DR.generate_parametric_anticipative_solver(b; parametrization)
+        maximizer = DR.generate_maximizer(b; parametrization)
+        while !is_terminated(env[1])
+            x, _ = observe(env[1])
+            @test !any(isnan.(x))
+            θ = model(x)
+            y_true = param_ant_solver(θ, env[1].env.scenario, env[1])[1].y
+            y_hat = maximizer(θ; state=env[1].env.state, y_true=y_true)
+            @test y_true == y_hat
+            step!(env[1].env, y_true, rng)
+        end
     end
 end
 @testset "DynamicReplenishment - Policies" begin

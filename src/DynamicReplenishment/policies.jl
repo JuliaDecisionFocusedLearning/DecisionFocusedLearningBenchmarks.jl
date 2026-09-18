@@ -173,6 +173,7 @@ function saa_policy(
     θ=nothing,
     state::DRPState=env.state,
     κ::Float64=1.0,
+    parametrization::EtaParametrization=PiecewiseConstantEta(),
 )
     scenarios = [generate_scenario(env.config; rng=rng) for _ in 1:nb_scenarios]
     bigM_s = [compute_bigM_sales(env, scenario) for scenario in scenarios]
@@ -275,8 +276,8 @@ function saa_policy(
     end
 
     if θ !== nothing
-        g_y = g_model(m, N, ub_per_item(state), y[1, 1, :], s[1, 1, :])
-        @assert length(θ) == N + sum(ub_per_item(state))
+        g_y = g_model(m, N, ub_per_item(state), y[1, 1, :], s[1, 1, :], parametrization)
+        @assert length(θ) == N + nb_eta(parametrization, ub_per_item(state))
         objective += κ * dot(θ, g_y)
     end
     @objective(m, Max, objective)

@@ -398,21 +398,28 @@ $TYPEDEF
 Callable wrapping [`anticipative_solver`](@ref) (scenario-conditioned) with a fixed
 `model_builder`, returned by [`Utils.generate_parametric_anticipative_solver`](@ref).
 """
-struct ParametricAnticipativeSolverCall{M}
+struct ParametricAnticipativeSolverCall{M,P<:EtaParametrization}
     model_builder::M
     "relative MIP gap tolerance"
     mip_gap::Float64
     "solver time limit in seconds, `nothing` to solve to optimality"
     time_limit::Union{Float64,Nothing}
+    "parametrization of the `η` block — same role as in [`MaximizerProblem`](@ref): it
+    fixes the length of `θ`, so it MUST be the one of the statistical model producing it"
+    parametrization::P
 end
 
 function ParametricAnticipativeSolverCall(
-    model_builder::M; mip_gap::Real=0.0, time_limit::Union{Real,Nothing}=nothing
+    model_builder::M;
+    mip_gap::Real=0.0,
+    time_limit::Union{Real,Nothing}=nothing,
+    parametrization::EtaParametrization=PiecewiseConstantEta(),
 ) where {M}
-    return ParametricAnticipativeSolverCall{M}(
+    return ParametricAnticipativeSolverCall(
         model_builder,
         Float64(mip_gap),
         isnothing(time_limit) ? nothing : Float64(time_limit),
+        parametrization,
     )
 end
 
@@ -428,6 +435,7 @@ function (s::ParametricAnticipativeSolverCall)(
         θ,
         mip_gap=s.mip_gap,
         time_limit=s.time_limit,
+        parametrization=s.parametrization,
         kwargs...,
         model_builder=s.model_builder,
     )
@@ -439,8 +447,11 @@ function Utils.generate_parametric_anticipative_solver(
     model_builder=highs_model,
     mip_gap::Real=0.0,
     time_limit::Union{Real,Nothing}=nothing,
+    parametrization::EtaParametrization=PiecewiseConstantEta(),
 )
-    return ParametricAnticipativeSolverCall(model_builder; mip_gap, time_limit)
+    return ParametricAnticipativeSolverCall(
+        model_builder; mip_gap, time_limit, parametrization
+    )
 end
 
 """
