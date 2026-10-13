@@ -115,7 +115,13 @@ With `x_i = s_i + y_i` :
 function g(y; state::DRPState, parametrization::EtaParametrization=PiecewiseConstantEta(), kwargs...)
     N = item_count(state.config)
     ub = ub_per_item(state)
-    x = round.(Int, state.stock .+ y)
+    # No rounding: Mirror Descent targets are averages of perturbed decisions, hence
+    # fractional. Rounding `x` dropped the stock penalty of the fractional units, which put
+    # `g(ȳ)` outside conv(g(Y)) and made the Fenchel-Young loss unbounded below. Without it,
+    # the `full` block is the exact linear interpolation between integer levels; integer
+    # `y` are unchanged.
+    # x = round.(Int, state.stock .+ y)
+    x = state.stock .+ y
     return vcat(vec(y), _eta_features(parametrization, x, ub, N))
 end
 
