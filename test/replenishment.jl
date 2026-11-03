@@ -552,6 +552,69 @@ end
     @test isapprox(DR.total_cost(env.env.state), ant_obj; rtol=1e-5)
 end
 
+@testset "DynamicReplenishment - Terminal stock penalty" begin
+    @test DR.terminal_stock_penalty(DynamicReplenishmentBenchmark()) == 0.0
+    @test iszero(DR.terminal_stock_cost(DynamicReplenishmentBenchmark()))
+    @test_throws ArgumentError DynamicReplenishmentBenchmark(; terminal_stock_penalty=-0.1)
+
+    α = 0.5
+    # few customers, so that stock is left at the end
+    b0 = DynamicReplenishmentBenchmark(; N=5, λ=3, max_steps=4, seed=3)
+    bα = DynamicReplenishmentBenchmark(;
+        N=5, λ=3, max_steps=4, seed=3, terminal_stock_penalty=α
+    )
+    @test DR.terminal_stock_cost(bα) ≈ α .* DR.prices(bα)
+    @test DR.prices(bα) == DR.prices(b0) && DR.quotas(bα) == DR.quotas(b0)
+
+    # Same scenario, same decisions: only the last reward changes, by the value of the
+    # final virtual stock.
+    function replay(b, decisions)
+        env = generate_environment(b; seed=0)
+        # the scenario `evaluate_policy!` plays, see the test above
+        reset_to_initial!(env)
+        rewards = [step!(env.env, y, env.rng) for y in decisions]
+        return rewards, env.env.state
+    end
+    N = DR.item_count(b0)
+    decisions = [fill(1, N), zeros(Int, N), fill(1, N), zeros(Int, N)]
+    r0, state0 = replay(b0, decisions)
+    rα, stateα = replay(bα, decisions)
+    final_stock = DR.stock(stateα)
+    @test sum(final_stock) > 0
+    @test r0[1:(end - 1)] == rα[1:(end - 1)]
+    @test rα[end] ≈ r0[end] - α * sum(DR.prices(bα) .* final_stock)
+    @test DR.total_cost(stateα) ≈ sum(rα)
+    @test DR.total_cost(stateα; terminal=false) ≈ sum(r0)
+
+    # The MILP objective is still the replayed reward, and the penalty can only shrink the
+    # value of what the anticipative policy leaves on the shelf.
+    function anticipative(b)
+        env = generate_environment(b; seed=0)
+        obj, traj = evaluate_policy!(DR.AnticipativePolicy(), env)
+        rewards, state = replay(b, [s.y for s in traj])
+        return obj, sum(rewards), state
+    end
+    obj0, rew0, end0 = anticipative(b0)
+    objα, rewα, endα = anticipative(bα)
+    @test isapprox(rew0, obj0; rtol=1e-5)
+    @test isapprox(rewα, objα; rtol=1e-5)
+    @test objα <= obj0 + 1e-6
+    @test sum(DR.prices(bα) .* DR.stock(endα)) <= sum(DR.prices(b0) .* DR.stock(end0)) + 1e-6
+
+    # Started mid-horizon, the solver charges the terminal stock as well: its objective is
+    # the reward of the remaining epochs.
+    env = generate_environment(bα; seed=0)
+    step!(env.env, zeros(Int, N), env.rng)
+    obj_mid, traj_mid = DR.anticipative_solver(env.env, env.rng; reset_env=false)
+    rewards_mid = [step!(env.env, s.y, env.rng) for s in traj_mid]
+    @test isapprox(sum(rewards_mid), obj_mid; rtol=1e-5)
+
+    # SAA sees the penalty through the same objective
+    env = generate_environment(bα; seed=0)
+    y_saa = DR.saa_policy(env.env; nb_scenarios=2, rng=Xoshiro(1))
+    @test DR.is_feasible(env.env.state, y_saa)
+end
+
 @testset "DynamicReplenishment - rollout logs the anticipative solver's fields" begin
     b = DynamicReplenishmentBenchmark(; N=5, max_steps=4)
     env = generate_environment(b; seed=0)

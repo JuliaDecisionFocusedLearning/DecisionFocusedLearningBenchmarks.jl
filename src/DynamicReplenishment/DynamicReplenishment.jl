@@ -70,6 +70,8 @@ struct DynamicReplenishmentBenchmark{M} <: AbstractDynamicBenchmark{true}
     physical_stock_cost::Vector{Float64}
     "over stock bound cost"
     over_stock_bound_cost::Float64
+    "α: fraction of its price lost by each unit left in virtual stock at the end of the horizon"
+    terminal_stock_penalty::Float64
     "number of steps per episode"
     max_steps::Int
     "max quota per time step per item (max_steps x N)"
@@ -91,7 +93,8 @@ end
         ub_same_item=30,
         delivery_delay=3,
         max_steps=10,
-        over_stock_bound_cost=nothing
+        over_stock_bound_cost=nothing,
+        terminal_stock_penalty=0.0
     )
 
 Constructor for [`DynamicReplenishmentBenchmark`](@ref).
@@ -111,6 +114,10 @@ to force the anticipative baseline to order a little, so it would have something
 `nothing` (default) keeps that historical behaviour (`maximum(prices)`); pass `0` to disable
 the surcost entirely and rely only on `stock_inf`/`stock_sup` as soft targets driving
 `virtual_stock_cost`/`physical_stock_cost`.
+
+`terminal_stock_penalty` (α ≥ 0) charges `α * prices[i]` for each unit of item `i` left in
+virtual stock at the end of the horizon (see [`terminal_stock_cost`](@ref)). The default `0`
+keeps the historical objective.
 """
 function DynamicReplenishmentBenchmark(;
     N::Int=10,
@@ -125,6 +132,7 @@ function DynamicReplenishmentBenchmark(;
     delivery_delay::Int=3,
     max_steps::Int=10,
     over_stock_bound_cost::Union{Real,Nothing}=nothing,
+    terminal_stock_penalty::Real=0.0,
     customer_choice_model=nothing,
     prices=nothing,
     features=nothing,
@@ -189,6 +197,11 @@ function DynamicReplenishmentBenchmark(;
     else
         Float64(over_stock_bound_cost)
     end
+    terminal_stock_penalty >= 0 || throw(
+        ArgumentError(
+            "`terminal_stock_penalty` must be nonnegative, got $terminal_stock_penalty."
+        ),
+    )
     max_quotas = Matrix{Int}(undef, max_steps, N)
     for i in 1:N, t in 1:max_steps
         max_quotas[t, i] = minimum(
@@ -215,6 +228,7 @@ function DynamicReplenishmentBenchmark(;
         virtual_stock_cost,
         physical_stock_cost,
         over_stock_bound_cost,
+        Float64(terminal_stock_penalty),
         max_steps,
         max_quotas,
         static_utilities,
@@ -240,6 +254,15 @@ feature_transform(b::DynamicReplenishmentBenchmark) = b.feature_transform
 virtual_stock_cost(b::DynamicReplenishmentBenchmark) = b.virtual_stock_cost
 physical_stock_cost(b::DynamicReplenishmentBenchmark) = b.physical_stock_cost
 over_stock_bound_cost(b::DynamicReplenishmentBenchmark) = b.over_stock_bound_cost
+terminal_stock_penalty(b::DynamicReplenishmentBenchmark) = b.terminal_stock_penalty
+
+"""
+$TYPEDSIGNATURES
+
+Cost of one unit of each item left in virtual stock at the end of the horizon (N):
+`terminal_stock_penalty(b) * prices(b)`.
+"""
+terminal_stock_cost(b::DynamicReplenishmentBenchmark) = b.terminal_stock_penalty .* b.prices
 nb_constraints(b::DynamicReplenishmentBenchmark) = size(b.constraints_matrix, 1)
 max_quotas(b::DynamicReplenishmentBenchmark) = b.max_quotas
 

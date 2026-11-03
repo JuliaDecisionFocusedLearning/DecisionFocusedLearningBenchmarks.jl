@@ -35,6 +35,8 @@ features(env::Environment) = features(env.config)
 virtual_stock_cost(env::Environment) = virtual_stock_cost(env.config)
 physical_stock_cost(env::Environment) = physical_stock_cost(env.config)
 over_stock_bound_cost(env::Environment) = over_stock_bound_cost(env.config)
+terminal_stock_penalty(env::Environment) = terminal_stock_penalty(env.config)
+terminal_stock_cost(env::Environment) = terminal_stock_cost(env.config)
 max_quotas(env::Environment) = max_quotas(env.config)
 
 current_epoch(env::Environment) = current_epoch(env.state)

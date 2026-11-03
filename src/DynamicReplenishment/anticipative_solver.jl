@@ -199,6 +199,12 @@ function compute_objective(y, s, α, v, T, s_min, s_sup, env, nb_customers)
     objective =
         margin - virtual_stock - physical_stock -
             over_stock_bound_cost(env) * (under_stock_min + over_stock_sup)
+    # unsold units at the end of the horizon (`s[T+1]` is always the last epoch: T counts
+    # the remaining epochs). Skipped when free, so that α = 0 builds the same model as before.
+    if !iszero(terminal_stock_penalty(env))
+        c_end = terminal_stock_cost(env)
+        objective -= sum(c_end[i] * s[T + 1, i] for i in 1:N)
+    end
 
     return objective
 end
@@ -276,7 +282,8 @@ function solver_variable_to_dataset(
         customer_history=n_customers[1:T],
         ub_per_item=s_val[T+1, :] .+ max_q[end, :],
     )
-    final_obj_val = total_cost(final_state)
+    # the trajectory runs to the end of the horizon even when it starts mid-horizon
+    final_obj_val = total_cost(final_state; terminal=true)
 
     if !isnothing(θ)
         g_y = g(dataset[1].y; state=dataset[1].state, parametrization)

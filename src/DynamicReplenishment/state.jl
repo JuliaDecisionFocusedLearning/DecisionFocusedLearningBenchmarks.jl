@@ -65,13 +65,18 @@ $TYPEDSIGNATURES
 
 Compute the cumulative cost of a complete history (epochs 1:T where T = size(sales_history,1)),
 from raw data.
+
+`terminal` charges the [`terminal_stock_cost`](@ref) on the last virtual stock
+`stock_history[T + 1, :]`. By default it is charged when the history covers the whole
+horizon; pass `terminal=true` for a history that starts mid-horizon and runs to its end.
 """
 function compute_total_cost(
     config,
     s0::Vector{Int},
     stock_history::AbstractMatrix{Int},
     replenishment_history::AbstractMatrix{Int},
-    sales_history::AbstractMatrix{Int},
+    sales_history::AbstractMatrix{Int};
+    terminal::Bool=(size(sales_history, 1) == max_steps(config)),
 )
     T = size(sales_history, 1)
     T == 0 && return 0.0
@@ -91,7 +96,8 @@ function compute_total_cost(
             max(0, sum(phys_stocks[t]) - stock_sup(config))
         ) for t in 1:T
     )
-    return margin_sales - v_stock_cost - p_stock_cost - stock_bound_cost
+    terminal_cost = terminal ? sum(terminal_stock_cost(config) .* stock_history[T + 1, :]) : 0.0
+    return margin_sales - v_stock_cost - p_stock_cost - stock_bound_cost - terminal_cost
 end
 
 """
@@ -184,15 +190,16 @@ ub_per_item(state::DRPState) = state.ub_per_item
 $TYPEDSIGNATURES
 
 Compute the cumulative cost of the state's history so far, from raw data (see
-[`compute_total_cost`](@ref)).
+[`compute_total_cost`](@ref), which `kwargs` are passed to).
 """
-function total_cost(state::DRPState)
+function total_cost(state::DRPState; kwargs...)
     return compute_total_cost(
         state.config,
         stock_ini(state),
         stock_history(state),
         replenishment_history(state),
-        sales_history(state),
+        sales_history(state);
+        kwargs...,
     )
 end
 
@@ -234,7 +241,8 @@ end
 $TYPEDSIGNATURES
 
 Compute the cost delta incurred at the current epoch (sales margin minus virtual and
-physical stock costs minus over/under stock bound penalties), matching
+physical stock costs minus over/under stock bound penalties, minus the terminal stock cost
+at the last epoch), matching
 [`compute_total_cost`](@ref) exactly. Must be called after `state.sales_history` and
 `state.stock_history` have been updated for the current epoch (i.e. once this epoch's
 sales are known). Does not read or write `state.physical_stock`: the physical stock used
@@ -261,8 +269,14 @@ function update_cost!(state::DRPState)
     under = max(0, stock_inf(config) - total_physical)
     over = max(0, total_physical - stock_sup(config))
     penalty = over_stock_bound_cost(config) * (under + over)
+    # unsold units at the end of the horizon
+    terminal_cost = if t == max_steps(config)
+        sum(terminal_stock_cost(config) .* virtual_stock)
+    else
+        0.0
+    end
 
-    return margin - virtual_cost - physical_cost - penalty
+    return margin - virtual_cost - physical_cost - penalty - terminal_cost
 end
 
 function apply_replenishment!(state::DRPState, replenishment::Vector{Int})
