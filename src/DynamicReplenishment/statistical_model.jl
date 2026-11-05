@@ -165,12 +165,21 @@ function Utils.generate_statistical_model(
     return StatisticalModel(; θ_model, η_model, parametrization)
 end
 
+# Input height of the first `Dense` of `θ_model`; `:v1` layout as a fallback.
+function _theta_input_size(θ_model, nrows::Int)
+    layer = θ_model isa Chain ? first(θ_model.layers) : θ_model
+    hasproperty(layer, :weight) && return size(layer.weight, 2)
+    return nrows - (NB_STOCK_FEATURES + 1)
+end
+
 function (m::StatisticalModel)(x)
     item_ids = @view x[end, :]
     starts = [findfirst(==(i), item_ids) for i in 1:maximum(Int, item_ids)]
 
-    # the stock block and the trailing item identifier sit on top of the item block
-    nb_item_features = size(x, 1) - (NB_STOCK_FEATURES + 1)
+    # the stock block and the trailing item identifier sit on top of the item block; the
+    # item block is what `θ_model` reads, so its height is the input size of `θ_model`
+    # (the number of stock-level columns depends on the feature set, cf. `nb_stock_features`)
+    nb_item_features = _theta_input_size(m.θ_model, size(x, 1))
     x_features = @view x[1:(end-1), :]
     x_item = x_features[1:(nb_item_features), starts]
     θ = m.θ_model(x_item)

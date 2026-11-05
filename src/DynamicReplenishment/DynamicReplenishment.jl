@@ -19,7 +19,7 @@ using JuMP:
     set_attribute,
     set_start_value
 using Random: Random, AbstractRNG, seed!, randperm, Xoshiro
-using Distributions: Poisson, Uniform, Gumbel
+using Distributions: Poisson, Uniform, Gumbel, cdf, ccdf
 using Flux: Chain, Dense, @layer, softplus, relu
 using InferOpt: LinearMaximizer
 using DocStringExtensions: TYPEDEF, TYPEDFIELDS, TYPEDSIGNATURES

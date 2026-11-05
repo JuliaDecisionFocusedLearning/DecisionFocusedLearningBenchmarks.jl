@@ -79,10 +79,48 @@ function compute_dol_item(state::DRPState, item::Int)
     return dols
 end
 
+# =============================================================================
+# Feature sets
+#
+# `:v1` (default) is the historical set, unchanged. `:v2` (2026-11-05) drops the
+# days-on-lot columns, keeps the stock-bound columns only when they cost something
+# (`over_stock_bound_cost > 0`), and adds primary-demand columns estimated by
+# simulating the instance's customer generator (no policy needed: every item
+# available, first choice counted), crossed with the remaining horizon — plus the
+# expected end-of-horizon cost when `terminal_stock_penalty > 0`. See
+# [`create_items_features_v2`](@ref) and [`create_stock_features_v2`](@ref).
+#
+# The set is process-wide (`set_feature_set!`): the run that trains a model and every
+# script that replays it must select the same one. A mismatch is loud — the `Dense`
+# layers reject an input of the wrong height.
+# =============================================================================
+
+const FEATURE_SET = Ref(:v1)
+
+"""
+    set_feature_set!(s::Symbol)
+
+Select the feature set (`:v1` or `:v2`) used by [`compute_features`](@ref) for the
+whole process.
+"""
+function set_feature_set!(s::Symbol)
+    s in (:v1, :v2) || throw(ArgumentError("feature set must be :v1 or :v2, got :$s"))
+    FEATURE_SET[] = s
+    return s
+end
+feature_set() = FEATURE_SET[]
+
+uses_stock_bound_features(config) = !iszero(over_stock_bound_cost(config))
+uses_terminal_features(config) = terminal_stock_penalty(config) > 0
+
 """
 Number of dynamic (state-dependent) columns appended per item.
 """
-nb_dynamic_item_features(config) = 17
+function nb_dynamic_item_features(config)
+    feature_set() === :v1 && return 17
+    return 12 + 4 + (uses_terminal_features(config) ? 1 : 0) +
+           (uses_stock_bound_features(config) ? 3 : 0)
+end
 
 """
 Number of rows of the item block, i.e. the input size of the `θ` model.
@@ -90,15 +128,71 @@ Number of rows of the item block, i.e. the input size of the `θ` model.
 item_features_size(config) = feature_count(config) + 1 + nb_dynamic_item_features(config)
 
 """
-Number of stock-level columns appended by [`create_stock_features`](@ref).
+Number of stock-level columns appended by [`create_stock_features`](@ref) in the `:v1`
+set ([`nb_stock_features`](@ref) gives the count of the active set).
 """
 const NB_STOCK_FEATURES = 12
+
+"""
+Number of stock-level columns appended per candidate level, in the active set.
+"""
+function nb_stock_features(config)
+    feature_set() === :v1 && return NB_STOCK_FEATURES
+    return 8 + 3 + (uses_terminal_features(config) ? 1 : 0) +
+           (uses_stock_bound_features(config) ? 8 : 0)
+end
 
 """
 Number of rows of the stock block, i.e. the input size of the `η` model.
 Be careful: the feature matrix has one additional row, the item identifier.
 """
-stock_features_size(config) = item_features_size(config) + NB_STOCK_FEATURES
+stock_features_size(config) = item_features_size(config) + nb_stock_features(config)
+
+# --- primary demand, by simulation -----------------------------------------------
+
+const PRIMARY_DEMAND_CACHE = Dict{UInt,Vector{Float64}}()
+const PRIMARY_DEMAND_LOCK = ReentrantLock()
+
+"""
+    primary_demand(config; nb_scenarios=200)
+
+Expected number of customers per period whose FIRST choice is item `i`, every item
+being available: the primary demand `μᵢ`. Estimated by simulating `nb_scenarios`
+scenarios of the instance's own generator (`generate_scenario`), i.e. the same
+estimator as the OR baselines (`estimate_primary_demand` in DynamicStoreReplenishment):
+no policy is involved. Computed once per instance (content hash of the static
+utilities and arrival rate) and cached, thread-safe; the rng is seeded from that hash.
+"""
+function primary_demand(config; nb_scenarios::Int=200)
+    key = hash((config.static_utilities, poisson_arrival_rate(config), nb_scenarios))
+    cached = lock(() -> get(PRIMARY_DEMAND_CACHE, key, nothing), PRIMARY_DEMAND_LOCK)
+    isnothing(cached) || return cached
+    N = item_count(config)
+    rng = Xoshiro(key)
+    counts = zeros(Float64, N)
+    periods = 0
+    for _ in 1:nb_scenarios
+        scenario = Utils.generate_scenario(config; rng=rng)
+        for utilities_t in scenario.utilities
+            periods += 1
+            for u in utilities_t
+                c = argmax(u)
+                c <= N && (counts[c] += 1.0)
+            end
+        end
+    end
+    μ = periods == 0 ? counts : counts ./ periods
+    return lock(() -> get!(PRIMARY_DEMAND_CACHE, key, μ), PRIMARY_DEMAND_LOCK)
+end
+
+"`P(D ≥ j)` for `D ~ Poisson(m)`."
+poisson_tail(m::Real, j::Integer) = j <= 0 ? 1.0 : ccdf(Poisson(m), j - 1)
+
+"`E[(s − D)⁺]` for `D ~ Poisson(m)`: expected unsold units out of `s`."
+expected_leftover(m::Real, s::Integer) = s <= 0 ? 0.0 : sum(cdf(Poisson(m), j - 1) for j in 1:s)
+
+"Remaining periods INCLUDING the current one, `τ = T − t + 1`."
+remaining_periods(state::DRPState) = max_steps(state.config) - current_epoch(state) + 1
 
 """
 $TYPEDSIGNATURES
@@ -247,9 +341,155 @@ end
 """
 $TYPEDSIGNATURES
 
-Create features from state.
+`:v2` item features. Same static block as `:v1`; dynamic columns, per item `i`, with
+`τ = T − t + 1` the remaining periods, `sᵢ` the current virtual stock, `μᵢ` the primary
+demand per period ([`primary_demand`](@ref)) and `Dᵢ ~ Poisson(τ μᵢ)` the primary demand
+left until the end:
+
+- current virtual stock, and scaled with price
+- mean sales, and scaled with price
+- mean stock, and scaled with price
+- mean number of customers in the past
+- current physical stock, and scaled with price
+- stock in transit, and scaled with price
+- remaining horizon `T − t`
+- `μᵢ`, `μᵢ · pᵢ`, `τ μᵢ`, `P(Dᵢ ≥ 1)`: the SCALE of the demand, nothing that looks
+  like a decision rule — the probability that the next unit sells, `P(Dᵢ ≥ sᵢ + 1)`, is
+  deliberately left to the level block (`P(Dᵢ ≥ j)` at `j = sᵢ + 1`), where `η` reads it
+- if `terminal_stock_penalty > 0`, with `aᵢ = α pᵢ` the end-of-horizon cost of a unit:
+  `aᵢ E[(sᵢ − Dᵢ)⁺]`, the expected end cost of the stock already there (a state
+  feature: the level block does not carry it)
+- if `over_stock_bound_cost > 0`: total physical stock, slack to `stock_inf` and to
+  `stock_sup`
+
+No days on lot: on short episodes it mostly equals its no-sale fallback, the absolute
+epoch, i.e. a disguised time feature.
+"""
+function create_items_features_v2(state::DRPState)
+    config = state.config
+    N = item_count(config)
+    nb_static = feature_count(config) + 1
+    item_features = zeros(Float32, N, item_features_size(config))
+
+    pos_items = items_with_positive_stock(state)
+    mean_sales = mean_sales_history(state)
+    mean_stock = mean_stock_history(state)
+    current_stock = stock(state)
+    phys_stock = physical_stock(state)
+    static_features = scaled_features(config)
+    μ = primary_demand(config)
+    τ = remaining_periods(state)
+    remaining_horizon = max_steps(config) - current_epoch(state)
+    terminal = uses_terminal_features(config)
+    bounds = uses_stock_bound_features(config)
+    a = terminal_stock_penalty(config) .* prices(config)
+    total_physical = sum(phys_stock)
+    mean_customers = mean_or_zero(state.customer_history)
+
+    for i in 1:N
+        p = prices(config)[i]
+        s = current_stock[i]
+        m = τ * μ[i]
+        col = nb_static
+        col!(v) = (col += 1; item_features[i, col] = v)
+        item_features[i, 1:nb_static] = static_features[:, i]
+        col!(s); col!(s * p)
+        ms = item_mean_feature(mean_sales, i, pos_items); col!(ms); col!(ms * p)
+        mst = item_mean_feature(mean_stock, i, pos_items); col!(mst); col!(mst * p)
+        col!(mean_customers)
+        col!(phys_stock[i]); col!(phys_stock[i] * p)
+        in_transit = s - phys_stock[i]; col!(in_transit); col!(in_transit * p)
+        col!(remaining_horizon)
+        col!(μ[i]); col!(μ[i] * p); col!(m); col!(poisson_tail(m, 1))
+        if terminal
+            col!(a[i] * expected_leftover(m, s))
+        end
+        if bounds
+            col!(total_physical); col!(total_physical - stock_inf(config))
+            col!(stock_sup(config) - total_physical)
+        end
+        @assert col == size(item_features, 2)
+    end
+    return item_features
+end
+
+"""
+$TYPEDSIGNATURES
+
+`:v2` stock-level features. Row `(i, j)` describes the candidate post-decision virtual
+stock level `j`; after the repeated item block come, with `Dᵢ ~ Poisson(τ μᵢ)`:
+
+- `j`, and scaled with price (the level itself: in `:v1` it only came in through the
+  stock-bound deviations, `j − stock_inf` with `stock_inf = 0`)
+- deviation from mean stock, and scaled with price
+- deviation from `max_quotas`, and scaled with price
+- total virtual stock if item `i` were at level `j`, and scaled with price (the coupling
+  between items, without the bound semantics)
+- `P(Dᵢ ≥ j)` (the `j`-th unit sells before the end), and scaled with price
+- `j − τ μᵢ` (expected excess over the remaining primary demand)
+- if `terminal_stock_penalty > 0`: `α pᵢ (1 − P(Dᵢ ≥ j))`, expected end cost of the `j`-th unit
+- if `over_stock_bound_cost > 0`: the eight `:v1` stock-bound columns
+"""
+function create_stock_features_v2(state::DRPState, item_features::Matrix{Float32})
+    config = state.config
+    N = item_count(config)
+    ub = ub_per_item(state)
+    nb_fi = size(item_features, 2)
+    nb_sf = nb_stock_features(config)
+    stock_features = zeros(Float32, sum(ub), nb_fi + nb_sf + 1)
+    t = current_epoch(state)
+    pos_items = items_with_positive_stock(state)
+    mean_stock = mean_stock_history(state)
+    phys_stock = physical_stock(state)
+    total_physical = sum(phys_stock)
+    current_stock = stock(state)
+    total_virtual = sum(current_stock)
+    μ = primary_demand(config)
+    τ = remaining_periods(state)
+    terminal = uses_terminal_features(config)
+    bounds = uses_stock_bound_features(config)
+    α = terminal_stock_penalty(config)
+
+    starts = [1; cumsum(ub)[1:(end - 1)] .+ 1]
+    ends = cumsum(ub)
+    for i in 1:N
+        rows = starts[i]:ends[i]
+        stock_features[rows, 1:nb_fi] .= item_features[i:i, :]
+        p = prices(config)[i]
+        js = 1:ub[i]
+        m = τ * μ[i]
+        tails = [poisson_tail(m, j) for j in js]
+        col = nb_fi
+        col!(v) = (col += 1; stock_features[rows, col] = v)
+        col!(js); col!(js .* p)
+        dev = js .- item_mean_feature(mean_stock, i, pos_items); col!(dev); col!(dev .* p)
+        q = max_quotas(config)[t, i] .- js; col!(q); col!(q .* p)
+        tot = (total_virtual - current_stock[i]) .+ js; col!(tot); col!(tot .* p)
+        col!(tails); col!(tails .* p); col!(js .- m)
+        terminal && col!(α * p .* (1 .- tails))
+        if bounds
+            others_physical = total_physical - phys_stock[i]
+            inf_dev = js .- stock_inf(config); col!(inf_dev); col!(inf_dev .* p)
+            sup_dev = stock_sup(config) .- js; col!(sup_dev); col!(sup_dev .* p)
+            tinf = (others_physical .+ js) .- stock_inf(config); col!(tinf); col!(tinf .* p)
+            tsup = stock_sup(config) .- (others_physical .+ js); col!(tsup); col!(tsup .* p)
+        end
+        @assert col == nb_fi + nb_sf
+        stock_features[rows, nb_fi + nb_sf + 1] .= i
+    end
+    return stock_features
+end
+
+"""
+$TYPEDSIGNATURES
+
+Create features from state, in the active feature set (see [`set_feature_set!`](@ref)).
 """
 function compute_features(state::DRPState)
+    if feature_set() === :v2
+        item_features = create_items_features_v2(state)
+        return create_stock_features_v2(state, item_features)'
+    end
     # archetype features
     item_features = create_items_features(state)
     # stock features
