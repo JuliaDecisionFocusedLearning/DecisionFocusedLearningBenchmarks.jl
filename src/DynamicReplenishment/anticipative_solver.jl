@@ -363,6 +363,7 @@ function anticipative_solver(
     mip_gap::Float64=0.0,
     time_limit::Union{Real,Nothing}=nothing,
     warm_start::Bool=(!isnothing(time_limit)),
+    start_y::Union{Nothing,AbstractMatrix}=nothing,
     parametrization::EtaParametrization=PiecewiseConstantEta(),
 )
     if reset_env
@@ -439,8 +440,16 @@ function anticipative_solver(
     end
     @objective(m, Max, objective)
 
-    # Warm start: replenishing nothing is always feasible
-    if warm_start
+    # Warm start: replenishing nothing is always feasible. `start_y` (T × N, the
+    # remaining horizon) replaces it by a given replenishment plan, e.g. the rollout of
+    # the current policy under `scenario`: the solver completes the other variables.
+    if !isnothing(start_y)
+        size(start_y) == (T, N) || throw(DimensionMismatch(
+            "start_y is $(size(start_y)), expected $((T, N)) (remaining horizon × items)"))
+        for t in 1:T, i in 1:N
+            set_start_value(y[t, i], start_y[t, i])
+        end
+    elseif warm_start
         for t in 1:T, i in 1:N
             set_start_value(y[t, i], 0)
         end
