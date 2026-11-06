@@ -17,6 +17,9 @@ of decisions) as in [`AbstractStochasticBenchmark`](@ref).
   environment must not manage its own seed/rng: draw randomness from the passed `rng`.
   Users obtain wrapped environments via [`generate_environment`](@ref) (one) or
   [`generate_environments`](@ref) (many).
+- [`build_environment`](@ref)`(bench, sample, scenario)`: rebuild a bare environment sitting
+  at the state carried by `sample` and running on `scenario`. Lets solvers that take an
+  environment be evaluated at any state of a stored trajectory.
 - [`generate_baseline_policies`](@ref)`(bench)`: returns named baseline callables of
   signature `(env) -> Vector{DataSample}` (full trajectory rollout).
 - [`generate_anticipative_solver`](@ref)`(bench)`: returns a callable
@@ -69,6 +72,21 @@ environments cannot be drawn independently (e.g. loaded from files), override
 [`generate_environments`](@ref) instead.
 """
 function build_environment end
+
+"""
+    build_environment(::AbstractDynamicBenchmark, sample::DataSample, scenario)
+        -> AbstractEnvironment
+
+**Optional.** Rebuild a bare environment positioned at the state carried by `sample` and
+running on `scenario`. Useful for solvers that takes an environment as argument.
+Useful for algorithms that need to run an anticipative or parametric solver from a state of
+a stored trajectory.
+"""
+function build_environment(b::AbstractDynamicBenchmark, ::DataSample, scenario)
+    return error(
+        "build_environment(::$(typeof(b)), ::DataSample, scenario) is not implemented"
+    )
+end
 
 """
 $TYPEDSIGNATURES
