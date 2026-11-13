@@ -130,6 +130,10 @@ Apply the replenishment to the stock, apply the sales and increase time.
 """
 function Utils.step!(env::Environment, replenishment, rng::AbstractRNG)
     @assert !Utils.is_terminated(env) "Environment is terminated, cannot act!"
+    # The environment applies any decision; a decision breaking the quotas would be rewarded
+    # as if it were feasible. No policy of the project produces one (audit of 13/11/2026), so
+    # this only warns, to catch a future bug without crashing long runs.
+    is_feasible(env.state, replenishment) || @warn "Infeasible replenishment (quota violated) applied at epoch $(current_epoch(env))" replenishment maxlog = 20
     apply_replenishment!(env.state, replenishment)
     delta_cost = apply_sales!(env.state; env.scenario[current_epoch(env)]...)
     add_customers!(env.state; env.scenario[current_epoch(env)]...)

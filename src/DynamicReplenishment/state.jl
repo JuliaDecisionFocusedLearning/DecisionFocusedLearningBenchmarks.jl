@@ -223,7 +223,7 @@ function reset_state!(
     return state
 end
 
-function is_feasible(state::DRPState, replenishment::Vector{Int}; verbose=false)
+function is_feasible(state::DRPState, replenishment::AbstractVector{<:Real}; verbose=false)
     config = state.config
     cons_mat = constraints_matrix(config)
     q = quotas(config)

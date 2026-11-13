@@ -41,12 +41,14 @@ function compute_bigM_physical_stock(env::Environment, scenario::Scenario)
     max_q = max_quotas(env.config)[current_epoch(env):end, :]
     s0 = stock(env)
     n_customer = nb_customers(scenario)[current_epoch(env):end]  # borne des ventes
+    pending = pending_arrivals(env.state, T, delay)               # en transit, retiré de x
 
     big_M = zeros(Int, N, T + 1)
     for i in 1:N, t in 2:(T+1)
         t_arrived = max(0, t - delay)
         pos = s0[i] + sum(max_q[τ, i] for τ in 1:t_arrived; init=0)   # borne x_hi
-        neg = sum(n_customer[1:(t-1)])                                    # borne -x_lo (≤ ventes cumulées)
+        # borne -x_lo (≤ ventes cumulées + unités encore en transit, retirées de x)
+        neg = sum(n_customer[1:(t-1)]) + pending[t, i]
         big_M[i, t] = max(pos, neg)
     end
     return big_M
@@ -132,26 +134,71 @@ end
 """
 $TYPEDSIGNATURES
 
+Units ordered before the current epoch of `state` and still in transit at each epoch of a
+problem of `T` remaining epochs: `P[t, i]`, for `t = 1..T+1`, is the epoch
+`current_epoch(state) + t − 1`. An order placed at epoch `τ` is physically there from epoch
+`τ + delay` on ([`compute_physical_stock`](@ref)), so it is pending at epoch `e` iff
+`e − delay < τ ≤ current_epoch(state) − 1`.
+
+The virtual stock `stock(state)` already counts these units (customers buy from it); the
+physical stock, which carries the physical holding cost, must not until they arrive. All zero
+when solving from the first epoch (no history), and, with `delay ≤ 2`, at every epoch where
+the physical stock is charged (`t ≥ 2`) — hence only problems started mid-horizon with
+`delay ≥ 3` are affected.
+"""
+function pending_arrivals(state::DRPState, T::Int, delay::Int)
+    t0 = current_epoch(state)
+    history = replenishment_history(state)      # (t0 − 1) × N
+    N = item_count(state.config)
+    P = zeros(Int, T + 1, N)
+    for t in 1:(T + 1), τ in max(1, t0 + t - delay):(t0 - 1), i in 1:N
+        P[t, i] += history[τ, i]
+    end
+    return P
+end
+
+"""
+$TYPEDSIGNATURES
+
 Add physical stock constraints (exact linearization of v = max(0, x) via indicator binaries).
+
+`pending[t, i]` ([`pending_arrivals`](@ref)) are the units already ordered but not delivered
+at epoch `t` of the problem: counted in `stock_ini` (the virtual stock), they are removed
+from the physical stock until their arrival. Before 13/11/2026 they were not, so a problem
+started mid-horizon with `delivery_delay ≥ 3` charged the physical holding cost of units in
+transit (its objective differed from the environment's reward by 1-11 % in tests).
 """
 function physical_stock_constraints!(
-    m, y, α, v, z, T, N, delivery_delay, stock_ini, nb_customers, bigM_ps
+    m,
+    y,
+    α,
+    v,
+    z,
+    T,
+    N,
+    delivery_delay,
+    stock_ini,
+    nb_customers,
+    bigM_ps;
+    pending=zeros(Int, T + 1, N),
 )
-    @constraint(m, [i in 1:N], v[1, i] == stock_ini[i])
+    @constraint(m, [i in 1:N], v[1, i] == max(0, stock_ini[i] - pending[1, i]))
 
     # v = max(0, x_phys) via indicatrice z (z=1 ⟺ x_phys ≥ 0)
     @constraint(
         m,
         [i in 1:N, t in 2:(T+1)],
         v[t, i] >=
-            stock_ini[i] + sum(y[τ, i] for τ in 1:(t-delivery_delay); init=zero(AffExpr)) -
+            stock_ini[i] - pending[t, i] +
+            sum(y[τ, i] for τ in 1:(t-delivery_delay); init=zero(AffExpr)) -
             sum(α[i, τ, k] for τ in 1:(t-1) for k in 1:nb_customers[τ]; init=zero(AffExpr))
     )
     @constraint(
         m,
         [i in 1:N, t in 2:(T+1)],
         v[t, i] <=
-            stock_ini[i] + sum(y[τ, i] for τ in 1:(t-delivery_delay); init=zero(AffExpr)) -
+            stock_ini[i] - pending[t, i] +
+            sum(y[τ, i] for τ in 1:(t-delivery_delay); init=zero(AffExpr)) -
             sum(α[i, τ, k] for τ in 1:(t-1) for k in 1:nb_customers[τ]; init=zero(AffExpr)) +
             bigM_ps[i, t] * (1 - z[i, t])
     )
@@ -272,18 +319,30 @@ function solver_variable_to_dataset(
             extra=(; next_sales=sales_full[t, :], customers=n_customers[t]),
         )
     end
-    final_state = DRPState(;
-        config=config,
-        current_epoch=T + 1,
-        stock=s_val[T+1, :],
-        stock_history=s_val[1:(T+1), :],
-        replenishment_history=y_val[1:T, :],
-        sales_history=sales_full[1:T, :],
-        customer_history=n_customers[1:T],
-        ub_per_item=s_val[T+1, :] .+ max_q[end, :],
-    )
-    # the trajectory runs to the end of the horizon even when it starts mid-horizon
-    final_obj_val = total_cost(final_state; terminal=true)
+    # Reward of the remaining epochs as the environment computes it: on the WHOLE history of
+    # the episode, minus the cost of the epochs already played (`compute_total_cost` adds up
+    # epoch by epoch). The physical stock of an epoch depends on orders placed before `state`
+    # and still in transit, which a sub-history starting at `state` cannot see: `total_cost`
+    # on it took the virtual stock at `state` as physical — the same error as the MILP before
+    # `pending_arrivals` (13/11/2026), so the check agreed with the wrong objective at delay 3.
+    # The trajectory runs to the end of the horizon even when it starts mid-horizon.
+    s0_episode = stock_ini(state)
+    final_obj_val =
+        compute_total_cost(
+            config,
+            s0_episode,
+            vcat(stock_history(state), s_val[2:(T+1), :]),
+            vcat(replenishment_history(state), y_val[1:T, :]),
+            vcat(sales_history(state), sales_full[1:T, :]);
+            terminal=true,
+        ) - compute_total_cost(
+            config,
+            s0_episode,
+            stock_history(state),
+            replenishment_history(state),
+            sales_history(state);
+            terminal=false,
+        )
 
     if !isnothing(θ)
         g_y = g(dataset[1].y; state=dataset[1].state, parametrization)
@@ -414,7 +473,8 @@ function anticipative_solver(
     )
     quota_constraints!(m, y, T, N, constraints_matrix(env), q)
     physical_stock_constraints!(
-        m, y, α, v, z, T, N, delivery_delay(env), s0, n_customers, bigM_ps
+        m, y, α, v, z, T, N, delivery_delay(env), s0, n_customers, bigM_ps;
+        pending=pending_arrivals(env.state, T, delivery_delay(env)),
     )
     use_stock_bounds &&
         stock_bounds_constraints!(m, v, T, N, s_min, s_sup, stock_inf(env), stock_sup(env))

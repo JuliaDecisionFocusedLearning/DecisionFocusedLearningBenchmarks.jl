@@ -190,6 +190,7 @@ function saa_policy(
     n_customers = [nb_customers(scenario)[current_epoch(env):end] for scenario in scenarios]
     q = quotas(env)[current_epoch(env):end, :]
     s0 = stock(env)
+    pending = pending_arrivals(env.state, T, delivery_delay(env))   # en transit à chaque époque
     ## Variables
     @variable(m, y[1:nb_scenarios, 1:T, 1:N] >= 0, Int) # replenishments
     @variable(m, s[1:nb_scenarios, 1:(T + 1), 1:N] >= 0, Int) # stock
@@ -245,7 +246,8 @@ function saa_policy(
             delivery_delay(env),
             s0,
             n_customers[s_idx],
-            bigM_ps[s_idx],
+            bigM_ps[s_idx];
+            pending,
         )
         s_min_s = use_stock_bounds ? s_min[s_idx, :] : Float64[]
         s_sup_s = use_stock_bounds ? s_sup[s_idx, :] : Float64[]

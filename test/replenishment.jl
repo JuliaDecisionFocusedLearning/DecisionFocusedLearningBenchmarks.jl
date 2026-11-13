@@ -661,6 +661,34 @@ end
     end
 end
 
+@testset "DynamicReplenishment - mid-horizon MILP with stock in transit" begin
+    # Started mid-horizon, orders placed in the last `delay − 1` epochs are in the virtual
+    # stock but not yet in the physical one. Before 13/11/2026 the MILP counted them as
+    # physical from its first epoch: exact at delay ≤ 2, off by 1-11 % at delay 3.
+    for delay in (2, 3), seed in 1:3, k in 1:3
+        b = DynamicReplenishmentBenchmark(;
+            N=5, λ=6, max_steps=8, seed, delivery_delay=delay, terminal_stock_penalty=0.5
+        )
+        N = DR.item_count(b)
+        env = generate_environment(b; seed=0)
+        reset_to_initial!(env)
+        for _ in 1:k                      # nonzero orders, so that some are in transit
+            y = fill(2, N)
+            DR.is_feasible(env.env.state, y) || (y = fill(1, N))
+            step!(env.env, y, env.rng)
+        end
+        st = env.env.state
+        T = DR.max_steps(b) - DR.current_epoch(st) + 1
+        P = DR.pending_arrivals(st, T, delay)
+        # the pending units at the current epoch are exactly virtual − physical stock
+        @test max.(0, DR.stock(st) .- P[1, :]) == st.physical_stock
+        @test all(iszero, P[max(2, delay):end, :])   # nothing pending once delivered
+        obj_mid, traj_mid = DR.anticipative_solver(env.env, env.rng; reset_env=false)
+        rewards_mid = [step!(env.env, s.y, env.rng) for s in traj_mid]
+        @test isapprox(sum(rewards_mid), obj_mid; rtol=1e-6, atol=1e-6)
+    end
+end
+
 @testset "DynamicReplenishment - Θ ̇g(y) = obj(co_layer)" begin
     b = DynamicReplenishmentBenchmark(; N=5, max_steps=5)
     rng = Xoshiro(42)
@@ -676,7 +704,7 @@ end
     Θ = model(x_1)
     Y_oracle = maximizer(Θ; state=state_1)
     Z_oracle = DR.get_z_from_y(Y_oracle, state_1)
-    maximizer_obj = DR._obj_function(N, ub, Θ, Y_oracle, Z_oracle)
+    maximizer_obj = DR._obj_function(N, ub, Θ, Y_oracle, Z_oracle, DR.PiecewiseConstantEta())
     Θ_dot_g_y = DR.dot(Θ, DR.g(Y_oracle; state=state_1))
     @test isapprox(maximizer_obj, Θ_dot_g_y; rtol=1e-5)
 end

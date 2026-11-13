@@ -507,7 +507,9 @@ function simulated_reference_rollout(state::DRPState; decided::Bool=false)
             for h in 1:H
                 h > 1 && (lev += clamp(S[h][i] - lev, 0, R[k, i, h]))
                 q = min(C[k, i, h], lev); lev -= q; so += q
-                ho += (hv[i] + (h > L ? hp[i] : 0.0)) * lev
+                # physique dès le pas h = L : l'environnement facture le coût physique de
+                # l'époque e sur le stock de e + 1 (`update_cost!`) ; `h > L` jusqu'au 13/11
+                ho += (hv[i] + (h >= L ? hp[i] : 0.0)) * lev
             end
             le += lev
         end
