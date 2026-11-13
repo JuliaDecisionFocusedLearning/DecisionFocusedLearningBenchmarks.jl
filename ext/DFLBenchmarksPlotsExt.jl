@@ -23,5 +23,6 @@ include("plots/svs_plots.jl")
 include("plots/dvs_plots.jl")
 include("plots/dynamic_assortment_plots.jl")
 include("plots/maintenance_plots.jl")
+include("plots/dynamic_replenishment_plots.jl")
 
 end
