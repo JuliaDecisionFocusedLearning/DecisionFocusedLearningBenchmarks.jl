@@ -13,8 +13,8 @@ Generate a single unlabeled [`DataSample`](@ref) (with `y=nothing`) for the benc
 function generate_instance(bench::AbstractBenchmark, rng::AbstractRNG; kwargs...)
     return error(
         "`generate_instance` is not implemented for $(typeof(bench)). " *
-        "Implement `generate_instance(::$(typeof(bench)), rng; kwargs...) -> DataSample`. " *
-        "For static benchmarks, you may also override `generate_sample` directly instead.",
+            "Implement `generate_instance(::$(typeof(bench)), rng; kwargs...) -> DataSample`. " *
+            "For static benchmarks, you may also override `generate_sample` directly instead.",
     )
 end
 
@@ -26,7 +26,7 @@ Returns a callable `f(θ; kwargs...) -> y`, solving a maximization problem.
 function generate_maximizer(bench::AbstractBenchmark; kwargs...)
     return error(
         "`generate_maximizer` is not implemented for $(typeof(bench)). " *
-        "Implement `generate_maximizer(::$(typeof(bench)); kwargs...) -> f(θ; kwargs...) -> y`.",
+            "Implement `generate_maximizer(::$(typeof(bench)); kwargs...) -> f(θ; kwargs...) -> y`.",
     )
 end
 
@@ -40,7 +40,7 @@ randomness for reproducibility.
 function generate_statistical_model(bench::AbstractBenchmark, seed=nothing; kwargs...)
     return error(
         "`generate_statistical_model` is not implemented for $(typeof(bench)). " *
-        "Implement `generate_statistical_model(::$(typeof(bench)), seed=nothing; kwargs...) -> model`.",
+            "Implement `generate_statistical_model(::$(typeof(bench)), seed=nothing; kwargs...) -> model`.",
     )
 end
 
@@ -97,7 +97,7 @@ $TYPEDSIGNATURES
 Compute the objective value of the target in the sample (needs to exist).
 """
 function objective_value(bench::AbstractBenchmark, sample::DataSample)
-    isnothing(sample.y) && error("Sample has no target solution (y=nothing)")
+    isnothing(sample.y) && error("Sample has no target solution (y=nothing) to evaluate the objective on.")
     return objective_value(bench, sample, sample.y)
 end
 
