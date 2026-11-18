@@ -83,7 +83,7 @@ function column_generation(
             cons,
             @constraint(
                 model, path_cost - sum(λ[v] for v in job_indices if v in p_star) >= 0
-            )
+            ),
         )
     end
 

@@ -172,7 +172,7 @@ end
 """
 $TYPEDEF
 
-Deterministic vsp maximizer for the [StochasticVehicleSchedulingBenchmark](@ref).
+Deterministic vsp maximizer for the [`StochasticVehicleSchedulingBenchmark`](@ref).
 """
 struct StochasticVechicleSchedulingMaximizer{M}
     "mip solver model to use"

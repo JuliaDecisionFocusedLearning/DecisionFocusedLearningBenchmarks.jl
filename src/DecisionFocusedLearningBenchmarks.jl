@@ -24,9 +24,15 @@ function __init__()
     register(
         DataDep(
             "warcraft",
-            "Warcraft shortest path dataset",
-            "http://cermics.enpc.fr/~bouvierl/warcraft_TP/data.zip";
-            post_fetch_method=unpack,
+            """
+            Warcraft shortest path dataset (only the 12x12 grids are kept after unpacking).
+            Source: Vlastelica et al., "Differentiation of Blackbox Combinatorial Solvers", ICLR 2020.
+            DOI: 10.17617/3.YJCQ5S (Edmond, Max Planck), license CC BY 4.0.
+            The download is about 915 MB.
+            """,
+            "https://edmond.mpg.de/api/access/datafile/102059",
+            "5a1e534a02bc2271bcfa16f0b1e504417b166f78aa4a02148def98b2381decf4";
+            post_fetch_method=Warcraft.unpack_warcraft_12x12,
         ),
     )
 
