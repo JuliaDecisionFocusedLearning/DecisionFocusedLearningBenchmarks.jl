@@ -65,6 +65,7 @@ include("ContextualStochasticArgmax/ContextualStochasticArgmax.jl")
 include("DynamicVehicleScheduling/DynamicVehicleScheduling.jl")
 include("DynamicAssortment/DynamicAssortment.jl")
 include("Maintenance/Maintenance.jl")
+include("DynamicReplenishment/DynamicReplenishment.jl")
 
 using .Utils
 
@@ -115,6 +116,7 @@ using .ContextualStochasticArgmax
 using .DynamicVehicleScheduling
 using .DynamicAssortment
 using .Maintenance
+using .DynamicReplenishment
 
 export Argmax2DBenchmark
 export ArgmaxBenchmark
@@ -128,5 +130,6 @@ export SubsetSelectionBenchmark
 export WarcraftBenchmark
 export MaintenanceBenchmark
 export ContextualStochasticArgmaxBenchmark
+export DynamicReplenishmentBenchmark
 
 end # module DecisionFocusedLearningBenchmarks
