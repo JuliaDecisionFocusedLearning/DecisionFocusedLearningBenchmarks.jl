@@ -407,8 +407,13 @@ const SIM_PATHS_LOCK = ReentrantLock()
 function simulation_paths(config)
     # `:v4` in the key: the same paths as the removed `:v4` and the 09/11 coherence figure
     key = hash((prices(config), features(config), poisson_arrival_rate(config), max_steps(config), SIM_PATHS, :v4))
+    # 20/11 : la clé du CACHE inclut aussi les utilités. Deux instances aux mêmes prix et features mais à part
+    # de marché (ou échelle d'utilité, ou modèle de choix) différente partageaient sinon les chemins du
+    # premier appel dans un même processus (rejeu de plusieurs runs). La GRAINE reste `key` : un processus
+    # qui ne voit qu'une configuration (un run) tire exactement les mêmes chemins qu'avant, bit à bit.
+    cache_key = hash((key, config.static_utilities))
     lock(SIM_PATHS_LOCK) do
-        get!(SIM_PATHS_CACHE, key) do
+        get!(SIM_PATHS_CACHE, cache_key) do
             rng = Xoshiro(key)
             map(1:SIM_PATHS) do _
                 sc = Utils.generate_scenario(config; rng=rng)
