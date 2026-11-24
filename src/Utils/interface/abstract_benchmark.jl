@@ -163,7 +163,7 @@ Switches to test mode and computes the gap inline.
 """
 function compute_gap(
     bench::AbstractBenchmark,
-    dataset::AbstractVector{<:DataSample{<:Any,<:Any,<:Any,<:AbstractArray}},
+    dataset::AbstractVector{<:DataSample},
     model::Lux.AbstractLuxLayer,
     ps,
     st,
