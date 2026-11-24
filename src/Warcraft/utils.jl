@@ -1,6 +1,32 @@
 """
 $TYPEDSIGNATURES
 
+Post-fetch method of the `"warcraft_official"` data dependency.
+Extracts only the `warcraft_shortest_path_oneskin/12x12` folder of the downloaded `.tar.gz` archive
+into the directory containing it, then deletes the archive.
+The larger grid sizes of the archive are never written to disk.
+The archive format is forced to gzip and tar, so the file name and extension do not matter.
+"""
+function unpack_warcraft_12x12(archive::AbstractString)
+    directory = dirname(archive)
+    wanted = "warcraft_shortest_path_oneskin/12x12"
+    DataDeps.p7zip() do exe7z
+        return run(
+            pipeline(
+                `$exe7z x $archive -tgzip -y -so`,
+                `$exe7z x -si -ttar -y -o$directory $wanted`,
+            ),
+        )
+    end
+    isdir(joinpath(directory, "warcraft_shortest_path_oneskin", "12x12")) ||
+        error("The Warcraft archive does not contain the expected 12x12 folder.")
+    rm(archive)
+    return nothing
+end
+
+"""
+$TYPEDSIGNATURES
+
 Read the dataset of type `dtype` at the `decompressed_path` location.
 The dataset is made of images of Warcraft terrains, cell cost labels and shortest path labels.
 They are returned separately, with proper axis permutation and image scaling to be consistent with

@@ -342,14 +342,3 @@ function objective_value(
         objective_value(saa.benchmark, sample, y, ξ) for ξ in sample.extra.scenarios
     )
 end
-
-"""
-$TYPEDSIGNATURES
-
-Evaluate the target solution in the sample against stored scenarios.
-"""
-function objective_value(
-    saa::SampleAverageApproximation, sample::DataSample{CTX,EX,F,S,C}
-) where {CTX,EX,F,S<:AbstractArray,C}
-    return objective_value(saa, sample, sample.y)
-end

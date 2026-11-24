@@ -2,7 +2,7 @@ module Warcraft
 
 using ..Utils
 
-using DataDeps: @datadep_str
+using DataDeps: DataDeps, @datadep_str
 using DocStringExtensions: TYPEDEF, TYPEDFIELDS, TYPEDSIGNATURES
 using Graphs: Graphs, nv, vertices, inneighbors, dijkstra_shortest_paths
 using Images: RGB, N0f8
@@ -46,7 +46,7 @@ Downloads and decompresses the Warcraft dataset the first time it is called.
 function Utils.generate_dataset(
     ::WarcraftBenchmark, dataset_size::Int=10; target_policy=nothing, kwargs...
 )
-    decompressed_path = datadep"warcraft/data"
+    decompressed_path = datadep"warcraft"
     dataset = create_dataset(decompressed_path, dataset_size)
     return isnothing(target_policy) ? dataset : target_policy.(dataset)
 end
