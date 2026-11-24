@@ -3,7 +3,9 @@
 # the DFL agent learns to predict adjusted costs that implicitly hedge against uncertainty.
 
 using DecisionFocusedLearningBenchmarks
+using Lux: Lux
 using Plots
+using StableRNGs: StableRNG
 
 b = StochasticVehicleSchedulingBenchmark(; nb_tasks=10)
 
@@ -29,12 +31,12 @@ plot_context(b, sample)
 # ## Untrained policy
 
 # A DFL policy chains two components: a statistical model predicting adjusted edge costs:
-model = generate_statistical_model(b)     # linear map: task features -> adjusted edge costs
+model, ps, st = generate_statistical_model(b, StableRNG(0))     # linear map: task features -> adjusted edge costs
 # and a maximizer solving the deterministic VSP given those costs:
 maximizer = generate_maximizer(b)         # deterministic VSP solver (HiGHS MIP)
 
 # The untrained model predicts random edge costs; the resulting schedule is arbitrary:
-θ_pred = model(sample.x)
+θ_pred, _ = model(sample.x, ps, Lux.testmode(st))
 y_pred = maximizer(θ_pred; sample.context...)
 plot_sample(b, DataSample(sample; θ=θ_pred, y=y_pred))
 

@@ -5,8 +5,10 @@
 # understanding DFL concepts.
 
 using DecisionFocusedLearningBenchmarks
+using Lux: Lux
 using Plots
 using Statistics
+using StableRNGs: StableRNG
 
 b = ArgmaxBenchmark(; seed=0)
 
@@ -31,19 +33,20 @@ plot_sample(b, sample)
 # ## Untrained policy
 
 # A DFL policy chains two components: a statistical model predicting scores from features:
-model = generate_statistical_model(b)     # linear map: features → predicted scores
+model, ps, st = generate_statistical_model(b, StableRNG(0))     # linear map: features → predicted scores
 # and a maximizer turning those scores into a decision:
 maximizer = generate_maximizer(b)         # one-hot argmax
 
 # A randomly initialized policy makes essentially random decisions:
-θ_pred = model(sample.x)
+st_test = Lux.testmode(st)
+θ_pred, _ = model(sample.x, ps, st_test)
 y_pred = maximizer(θ_pred)
 #
 plot_sample(b, DataSample(sample; θ=θ_pred, y=y_pred))
 
 # The goal of training is to find parameters that maximize accuracy.
 # Current accuracy on the dataset:
-mean(maximizer(model(s.x)) == s.y for s in dataset)
+mean(maximizer(first(model(s.x, ps, st_test))) == s.y for s in dataset)
 
 # ---
 # ## Problem Description

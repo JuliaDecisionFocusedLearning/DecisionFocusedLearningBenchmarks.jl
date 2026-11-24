@@ -2,8 +2,8 @@ module Argmax
 
 using ..Utils
 using DocStringExtensions: TYPEDEF, TYPEDFIELDS, TYPEDSIGNATURES
-using Flux: Chain, Dense
-using Random: Random, AbstractRNG, seed!, randn
+using Lux: Chain, Dense, WrappedFunction
+using Random: AbstractRNG
 
 using LinearAlgebra: dot
 
@@ -15,13 +15,13 @@ Basic benchmark problem with an argmax as the CO algorithm.
 # Fields
 $TYPEDFIELDS
 """
-struct ArgmaxBenchmark{E} <: AbstractStaticBenchmark
+struct ArgmaxBenchmark{W<:AbstractMatrix} <: AbstractStaticBenchmark
     "instances dimension, total number of classes"
     instance_dim::Int
     "number of features"
     nb_features::Int
-    "true mapping between features and costs"
-    encoder::E
+    "true weight matrix mapping features to costs"
+    encoder_weights::W
 end
 
 function Base.show(io::IO, bench::ArgmaxBenchmark)
@@ -39,9 +39,8 @@ $TYPEDSIGNATURES
 Custom constructor for [`ArgmaxBenchmark`](@ref).
 """
 function ArgmaxBenchmark(; instance_dim::Int=10, nb_features::Int=5, seed=nothing)
-    Random.seed!(seed)
-    model = Chain(Dense(nb_features => 1; bias=false), vec)
-    return ArgmaxBenchmark(instance_dim, nb_features, model)
+    encoder_weights = randn(Utils.make_rng(seed), Float32, 1, nb_features)
+    return ArgmaxBenchmark(instance_dim, nb_features, encoder_weights)
 end
 
 function Utils.is_minimization_problem(::ArgmaxBenchmark)
@@ -78,9 +77,9 @@ and adds noise to the costs before computing a target solution.
 function Utils.generate_sample(
     bench::ArgmaxBenchmark, rng::AbstractRNG; noise_std::Float32=0.0f0
 )
-    (; instance_dim, nb_features, encoder) = bench
+    (; instance_dim, nb_features, encoder_weights) = bench
     features = randn(rng, Float32, nb_features, instance_dim)
-    θ_true = encoder(features)
+    θ_true = vec(encoder_weights * features)
     noisy_y_true = one_hot_argmax(θ_true + noise_std * randn(rng, Float32, instance_dim))
     return DataSample(; x=features, θ=θ_true, y=noisy_y_true)
 end
@@ -88,12 +87,11 @@ end
 """
 $TYPEDSIGNATURES
 
-Initialize a linear model for `bench` using `Flux`.
+Returns a Lux model architecture (single linear layer) for the argmax benchmark.
 """
-function Utils.generate_statistical_model(bench::ArgmaxBenchmark; seed=nothing)
+function Utils.generate_statistical_model(bench::ArgmaxBenchmark)
     (; nb_features) = bench
-    Random.seed!(seed)
-    return Chain(Dense(nb_features => 1; bias=false), vec)
+    return Chain(Dense(nb_features => 1; use_bias=false), WrappedFunction(vec))
 end
 
 export ArgmaxBenchmark

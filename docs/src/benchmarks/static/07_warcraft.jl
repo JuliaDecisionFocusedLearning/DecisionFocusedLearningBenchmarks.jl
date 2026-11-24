@@ -3,7 +3,9 @@
 # be inferred from the RGB terrain image using a neural network.
 
 using DecisionFocusedLearningBenchmarks
+using Lux: Lux
 using Plots
+using StableRNGs: StableRNG
 
 b = WarcraftBenchmark()
 
@@ -26,17 +28,17 @@ plot_sample(b, sample)
 # ## Untrained policy
 
 # A DFL policy chains two components: a CNN predicting cell travel costs from the terrain image:
-model = generate_statistical_model(b)     # ResNet18 CNN: terrain image → 12×12 cost map
+model, ps, st = generate_statistical_model(b, StableRNG(0))     # CNN: terrain image → 12×12 cost map
 # and a maximizer finding the shortest path given those costs:
 maximizer = generate_maximizer(b)         # Dijkstra shortest path on the 12×12 grid
 
 # An untrained CNN produces a near-uniform cost map, yielding a near-straight path:
-θ_pred = model(sample.x)
+θ_pred, _ = model(sample.x, ps, Lux.testmode(st))
 y_pred = maximizer(θ_pred)
 plot_sample(b, DataSample(sample; θ=θ_pred, y=y_pred))
 
 # Optimality gap on this sample (lower is better):
-compute_gap(b, [sample], model, maximizer)
+compute_gap(b, [sample], model, ps, st, maximizer)
 
 # ---
 # ## Problem Description

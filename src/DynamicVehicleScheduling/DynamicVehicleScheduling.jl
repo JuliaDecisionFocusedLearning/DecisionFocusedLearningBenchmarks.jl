@@ -5,7 +5,7 @@ using ..Utils
 using Base: @kwdef
 using DataDeps: @datadep_str
 using DocStringExtensions: TYPEDEF, TYPEDFIELDS, TYPEDSIGNATURES
-using Flux: Chain, Dense
+using Lux: Chain, Dense, WrappedFunction
 using Graphs
 using HiGHS
 using InferOpt: LinearMaximizer
@@ -148,11 +148,8 @@ Generate a statistical model for the dynamic vehicle scheduling benchmark.
 The model is a simple linear chain with a single dense layer that maps features to a scalar output.
 The input dimension depends on whether two-dimensional features are used (2 features) or not (27 features).
 """
-function Utils.generate_statistical_model(
-    b::DynamicVehicleSchedulingBenchmark; seed=nothing
-)
-    Random.seed!(seed)
-    return Chain(Dense((b.two_dimensional_features ? 2 : 27) => 1), vec)
+function Utils.generate_statistical_model(b::DynamicVehicleSchedulingBenchmark)
+    return Chain(Dense((b.two_dimensional_features ? 2 : 27) => 1), WrappedFunction(vec))
 end
 
 export DynamicVehicleSchedulingBenchmark

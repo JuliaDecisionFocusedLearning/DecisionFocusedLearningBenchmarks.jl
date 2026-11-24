@@ -13,7 +13,7 @@
 
     dataset = generate_dataset(b_identity, 50)
     dataset2 = generate_dataset(b, 50)
-    model = generate_statistical_model(b)
+    model, ps, st = generate_statistical_model(b, StableRNG(0))
     maximizer = generate_maximizer(b)
 
     for (i, sample) in enumerate(dataset)
@@ -29,7 +29,7 @@
         # Features and true weights should be equal
         @test all(θ_true .== x)
 
-        θ = model(x)
+        θ, _ = model(x, ps, Lux.testmode(st))
         @test length(θ) == n
 
         y = maximizer(θ)
@@ -37,7 +37,7 @@
         @test sum(y) == k
     end
 
-    gap = compute_gap(b, dataset[1:5], model, maximizer)
+    gap = compute_gap(b, dataset[1:5], model, ps, st, maximizer)
     @test isfinite(gap)
     @test gap >= 0
 

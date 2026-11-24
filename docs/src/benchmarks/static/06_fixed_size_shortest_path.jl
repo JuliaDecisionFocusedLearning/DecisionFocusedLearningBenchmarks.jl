@@ -3,7 +3,9 @@
 # edge costs are unknown and must be predicted from instance features.
 
 using DecisionFocusedLearningBenchmarks
+using Lux: Lux
 using Plots
+using StableRNGs: StableRNG
 
 b = FixedSizeShortestPathBenchmark()
 
@@ -28,17 +30,17 @@ plot_sample(b, sample)
 # ## Untrained policy
 
 # A DFL policy chains two components: a statistical model predicting edge costs:
-model = generate_statistical_model(b)     # linear map: features → predicted edge costs
+model, ps, st = generate_statistical_model(b, StableRNG(0))     # linear map: features → predicted edge costs
 # and a maximizer finding the shortest path given those costs:
 maximizer = generate_maximizer(b)         # Dijkstra shortest path on the grid graph
 
 # A randomly initialized policy predicts arbitrary costs, yielding a near-straight path:
-θ_pred = model(sample.x)
+θ_pred, _ = model(sample.x, ps, Lux.testmode(st))
 y_pred = maximizer(θ_pred)
 plot_sample(b, DataSample(sample; θ=θ_pred, y=y_pred))
 
 # Optimality gap on the dataset (lower is better):
-compute_gap(b, dataset, model, maximizer)
+compute_gap(b, dataset, model, ps, st, maximizer)
 
 # ---
 # ## Problem Description

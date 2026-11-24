@@ -60,8 +60,8 @@ generate_dataset(bench::MyBenchmark, N::Int; kwargs...) -> Vector{DataSample}
 ### Pipeline components (required)
 
 ```julia
-generate_statistical_model(bench::MyBenchmark; seed=nothing)
-# Returns an untrained Flux model mapping x -> θ
+generate_statistical_model(bench::MyBenchmark)
+# Returns a Lux model architecture (mapping x -> θ)
 
 generate_maximizer(bench::MyBenchmark)
 # Returns a callable (θ; context...) -> y

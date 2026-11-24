@@ -11,10 +11,10 @@
     @test String(take!(io)) == "ArgmaxBenchmark(instance_dim=10, nb_features=5)"
 
     dataset = generate_dataset(b, 50)
-    model = generate_statistical_model(b)
+    model, ps, st = generate_statistical_model(b, StableRNG(0))
     maximizer = generate_maximizer(b)
 
-    gap = compute_gap(b, dataset, model, maximizer)
+    gap = compute_gap(b, dataset, model, ps, st, maximizer)
     @test gap >= 0
 
     for (i, sample) in enumerate(dataset)
@@ -27,7 +27,7 @@
         @test isempty(sample.context)
         @test all(y_true .== maximizer(θ_true))
 
-        θ = model(x)
+        θ, _ = model(x, ps, Lux.testmode(st))
         @test length(θ) == instance_dim
 
         y = maximizer(θ)

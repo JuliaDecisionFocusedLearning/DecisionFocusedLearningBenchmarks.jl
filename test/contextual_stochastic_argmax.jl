@@ -14,7 +14,8 @@
 
     # Maximizer and model
     maximizer = generate_maximizer(b)
-    model = generate_statistical_model(b; seed=0)
+    model, ps, st = generate_statistical_model(b, StableRNG(0))
+    st_test = Lux.testmode(st)
     @test sum(maximizer(sample.scenario)) ≈ 1.0  # one-hot
 
     # Test with anticipative target_policy
@@ -99,8 +100,8 @@ end
     @test sum(first(labeled).y) ≈ 1.0
 
     # compute_gap averages over stored scenarios via objective_value override
-    model = generate_statistical_model(saa; seed=0)
-    gap = compute_gap(saa, labeled, model, maximizer)
+    model, ps, st = generate_statistical_model(saa, StableRNG(0))
+    gap = compute_gap(saa, labeled, model, ps, st, maximizer)
     @test isfinite(gap)
 end
 
@@ -121,8 +122,8 @@ end
     b = ContextualStochasticArgmaxBenchmark(; n=5, d=3, seed=0)
     policies = generate_baseline_policies(b)
     dataset = generate_dataset(b, 2; nb_scenarios=2, target_policy=policies.saa)
-    model = generate_statistical_model(b; seed=0)
-    sample = DataSample(dataset[1]; θ=model(dataset[1].x))
+    model, ps, st = generate_statistical_model(b, StableRNG(0))
+    sample = DataSample(dataset[1]; θ=first(model(dataset[1].x, ps, Lux.testmode(st))))
 
     @test has_visualization(b)
     fig1 = plot_context(b, dataset[1])

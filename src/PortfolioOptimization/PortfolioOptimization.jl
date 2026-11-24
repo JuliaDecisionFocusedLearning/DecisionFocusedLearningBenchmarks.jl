@@ -3,11 +3,11 @@ module PortfolioOptimization
 using ..Utils
 using DocStringExtensions: TYPEDEF, TYPEDFIELDS, TYPEDSIGNATURES
 using Distributions: Uniform, Bernoulli
-using Flux: Chain, Dense
 using Ipopt: Ipopt
 using JuMP: @variable, @objective, @constraint, optimize!, value, Model, set_silent
 using LinearAlgebra: I, dot
-using Random: Random, AbstractRNG
+using Lux: Dense
+using Random: AbstractRNG
 
 """
 $TYPEDEF
@@ -109,14 +109,11 @@ end
 """
 $TYPEDSIGNATURES
 
-Initialize a linear model for `bench` using `Flux`.
+Returns a Lux model architecture for the portfolio optimization benchmark.
 """
-function Utils.generate_statistical_model(
-    bench::PortfolioOptimizationBenchmark; seed=nothing
-)
-    Random.seed!(seed)
+function Utils.generate_statistical_model(bench::PortfolioOptimizationBenchmark)
     (; p, d) = bench
-    return Dense(p, d)
+    return Dense(p => d)
 end
 
 export PortfolioOptimizationBenchmark

@@ -32,15 +32,15 @@
     maximizer = generate_maximizer(b)
 
     x, instance = observe(env)
-    model = generate_statistical_model(b)
-    θ = model(x)
+    model, ps, st = generate_statistical_model(b, StableRNG(0))
+    θ, _ = model(x, ps, Lux.testmode(st))
     y = maximizer(θ; instance)
 
     environments2 = generate_environments(b2, 10; seed=0)
     env2 = environments2[1]
     x2, instance2 = observe(env2)
-    model2 = generate_statistical_model(b2)
-    θ2 = model2(x2)
+    model2, ps2, st2 = generate_statistical_model(b2, StableRNG(0))
+    θ2, _ = model2(x2, ps2, Lux.testmode(st2))
     y2 = maximizer(θ2; instance=instance2)
     @test size(x, 1) == 2
     @test size(x2, 1) == 27

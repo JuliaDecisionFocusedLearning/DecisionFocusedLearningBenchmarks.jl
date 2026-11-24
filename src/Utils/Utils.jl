@@ -1,10 +1,10 @@
 module Utils
 
 using DocStringExtensions: TYPEDEF, TYPEDFIELDS, TYPEDSIGNATURES
-using Flux: softplus
 using HiGHS: HiGHS
 using JuMP: Model
 using LinearAlgebra: dot
+using Lux: Lux, softplus
 using Random: Random, AbstractRNG, RandomDevice
 using SCIP: SCIP
 using SimpleWeightedGraphs: SimpleWeightedDiGraph

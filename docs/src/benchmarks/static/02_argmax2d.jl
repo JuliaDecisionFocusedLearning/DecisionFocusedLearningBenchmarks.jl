@@ -5,7 +5,9 @@
 # landscape can be shown as a contour plot over the 2D θ space.
 
 using DecisionFocusedLearningBenchmarks
+using Lux: Lux
 using Plots
+using StableRNGs: StableRNG
 
 b = Argmax2DBenchmark(; seed=0)
 
@@ -31,12 +33,12 @@ plot_sample(b, sample)
 # ## Untrained policy
 
 # A DFL policy chains two components: a statistical model predicting a 2D cost direction:
-model = generate_statistical_model(b)     # linear map: features → 2D cost vector
+model, ps, st = generate_statistical_model(b, StableRNG(0))     # linear map: features → 2D cost vector
 # and a maximizer selecting the best polytope vertex for that direction:
 maximizer = generate_maximizer(b)         # vertex maximizing θᵀv over polytope vertices
 
 # A randomly initialized policy predicts an arbitrary cost direction:
-θ_pred = model(sample.x)
+θ_pred, _ = model(sample.x, ps, Lux.testmode(st))
 y_pred = maximizer(θ_pred; sample.context...)
 plot_sample(b, DataSample(sample; θ=θ_pred, y=y_pred))
 

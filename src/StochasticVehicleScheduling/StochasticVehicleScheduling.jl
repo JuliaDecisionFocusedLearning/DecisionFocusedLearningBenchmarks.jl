@@ -12,7 +12,6 @@ using DocStringExtensions: TYPEDEF, TYPEDFIELDS, TYPEDSIGNATURES
 using ConstrainedShortestPaths:
     stochastic_routing_shortest_path, stochastic_routing_shortest_path_with_threshold
 using Distributions: Distribution, LogNormal, Uniform, DiscreteUniform
-using Flux: Chain, Dense
 using Graphs:
     AbstractGraph,
     SimpleDiGraph,
@@ -27,6 +26,7 @@ using Graphs:
     outneighbors
 using JuMP:
     JuMP, Model, @variable, @objective, @constraint, optimize!, value, set_silent, dual
+using Lux: Chain, Dense, WrappedFunction
 using Printf: @printf
 using Random: Random, AbstractRNG
 using SparseArrays: sparse, SparseMatrixCSC
@@ -201,12 +201,11 @@ end
 
 """
 $TYPEDSIGNATURES
+
+Returns a Lux model architecture for the stochastic vehicle scheduling benchmark.
 """
-function Utils.generate_statistical_model(
-    ::StochasticVehicleSchedulingBenchmark; seed=nothing
-)
-    Random.seed!(seed)
-    return Chain(Dense(20 => 1; bias=false), vec)
+function Utils.generate_statistical_model(::StochasticVehicleSchedulingBenchmark)
+    return Chain(Dense(20 => 1; use_bias=false), WrappedFunction(vec))
 end
 
 end

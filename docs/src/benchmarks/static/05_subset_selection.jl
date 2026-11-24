@@ -3,7 +3,9 @@
 # must be identified from observable features alone.
 
 using DecisionFocusedLearningBenchmarks
+using Lux: Lux
 using Plots
+using StableRNGs: StableRNG
 
 b = SubsetSelectionBenchmark(; identity_mapping=false)
 
@@ -27,17 +29,17 @@ plot_sample(b, sample)
 # ## Untrained policy
 
 # A DFL policy chains two components: a statistical model predicting item scores:
-model = generate_statistical_model(b)     # linear map: features → predicted item scores
+model, ps, st = generate_statistical_model(b, StableRNG(0))     # linear map: features → predicted item scores
 # and a maximizer selecting the top-k items by those scores:
 maximizer = generate_maximizer(b)         # top-k selection
 
 # A randomly initialized policy selects items with no relation to their true values:
-θ_pred = model(sample.x)
+θ_pred, _ = model(sample.x, ps, Lux.testmode(st))
 y_pred = maximizer(θ_pred)
 plot_sample(b, DataSample(sample; θ=θ_pred, y=y_pred))
 
 # Optimality gap on the dataset (lower is better):
-compute_gap(b, dataset, model, maximizer)
+compute_gap(b, dataset, model, ps, st, maximizer)
 
 # ---
 # ## Problem Description

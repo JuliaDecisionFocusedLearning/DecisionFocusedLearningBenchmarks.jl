@@ -55,10 +55,10 @@
     @test figure_2 isa Plots.Plot
 
     maximizer = generate_maximizer(b)
-    model = generate_statistical_model(b)
+    model, ps, st = generate_statistical_model(b, StableRNG(0))
 
     # compute_gap runs and returns finite values
-    gap = compute_gap(b, saa_dataset, model, maximizer)
+    gap = compute_gap(b, saa_dataset, model, ps, st, maximizer)
     @test isfinite(gap)
 
     # Features, maximizer output, and feasibility
@@ -67,7 +67,7 @@
         instance = sample.instance
         E = ne(instance.graph)
         @test size(x) == (20, E)
-        θ = model(x)
+        θ, _ = model(x, ps, Lux.testmode(st))
         @test length(θ) == E
         y = maximizer(θ; instance=instance)
         @test length(y) == E

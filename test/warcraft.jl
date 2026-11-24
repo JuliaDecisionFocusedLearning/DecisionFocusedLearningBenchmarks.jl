@@ -9,7 +9,7 @@
     dataset = generate_dataset(b, N)
     @test length(dataset) == N
 
-    model = generate_statistical_model(b)
+    model, ps, st = generate_statistical_model(b, StableRNG(0))
     bellman_maximizer = generate_maximizer(b; dijkstra=false)
     dijkstra_maximizer = generate_maximizer(b; dijkstra=true)
 
@@ -20,7 +20,7 @@
     @test figure2 isa Plots.Plot
     figure3 = plot_sample(b, DataSample(dataset[1]; y=dataset[2].y))
     @test figure3 isa Plots.Plot
-    gap = compute_gap(b, dataset, model, dijkstra_maximizer)
+    gap = compute_gap(b, dataset, model, ps, st, dijkstra_maximizer)
     @test gap >= 0
 
     for (i, sample) in enumerate(dataset)
@@ -31,7 +31,7 @@
         @test all(θ_true .<= 0)
         @test isempty(sample.context)
 
-        θ = model(x)
+        θ, _ = model(x, ps, Lux.testmode(st))
         @test size(θ) == size(θ_true)
         @test all(θ .<= 0)
 
