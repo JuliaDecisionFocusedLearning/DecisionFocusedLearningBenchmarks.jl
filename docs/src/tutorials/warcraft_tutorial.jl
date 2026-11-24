@@ -76,19 +76,8 @@ loss = FenchelYoungLoss(perturbed_maximizer)
 # The objective function must follow the signature `(model, ps, st, data) -> (loss_value, updated_st, stats)`.
 # We wrap our InferOpt loss in a callable struct to make it compatible with this interface:
 
-<<<<<<< HEAD
 struct LuxLoss{L}
     loss::L
-=======
-opt_state = Flux.setup(Adam(1e-3), model)
-loss_history = Float64[]
-for epoch in 1:50
-    val, grads = Flux.withgradient(model) do m
-        return sum([loss(m(x), y) for (; x, y) in train_dataset]) / length(train_dataset)
-    end
-    Flux.update!(opt_state, model, grads[1])
-    push!(loss_history, val)
->>>>>>> main
 end
 
 function (obj::LuxLoss)(model, ps, st, (x, y))
